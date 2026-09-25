@@ -49,6 +49,13 @@ test('cities and places: provider minimum 125, our maximum 500, sized to what is
   assert.equal(verifyCents(10), 7); assert.equal(verifyCents(1), 1);
 });
 
+test('small scrape quotes include the provider minimum instead of understating cost', () => {
+  const quote = quoteJob({ industry: 'roofing', state: 'FL', targetCells: 10, useFallback: false });
+  assert.equal(quote.expectedBusinesses, 50);
+  assert.equal(quote.estimatedVendorCents, 75, 'USD 0.50 minimum scrape plus estimated phone verification');
+  assert.ok(quote.capCents >= quote.estimatedVendorCents);
+});
+
 test('sample gate: under half the expected clean rate stops the job with the numbers in the reason', () => {
   const fail = sampleGate(40, 2, 0.2, 0.5);
   assert.equal(fail.pass, false); assert.match(fail.reason ?? '', /5% clean on 40 verified vs 20% expected/);
@@ -124,7 +131,7 @@ test('quote: recipe C and D route to the mapped register, cost verify only (C) o
   assert.equal(pa.recipe, 'C'); assert.equal(pa.registerSource, 'pa_childcare'); assert.deepEqual(pa.blockers, []);
   const fl = quoteJob({ industry: 'florida contractors', state: 'FL', targetCells: 100, useFallback: false });
   assert.equal(fl.recipe, 'D'); assert.equal(fl.registerSource, 'fl_dbpr_construction'); assert.deepEqual(fl.blockers, []);
-  assert.equal(fl.estimatedVendorCents, Math.ceil(fl.expectedBusinesses * 0.7 + fl.expectedBusinesses * 0.4), 'D pays verify plus the Maps scrape');
+  assert.equal(fl.estimatedVendorCents, Math.ceil(fl.expectedBusinesses * 0.7 + scrapeCents(fl.expectedBusinesses)), 'D pays verify plus the Maps scrape');
   assert.ok(fl.cities.length > 0);
   // Recipe D over the national NPPES register: mapped under *, no blocker.
   const chiro = quoteJob({ industry: 'chiropractor direct line', state: 'FL', targetCells: 100, useFallback: false });

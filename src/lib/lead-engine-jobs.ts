@@ -85,6 +85,15 @@ export const TRACE_CHUNK = 50;
 export const TRACE_CENTS_PER_PERSON = 7;
 export const traceCents = (persons: number) => persons * TRACE_CENTS_PER_PERSON;
 
+// Apify bills each city as a separate run and refuses a run smaller than
+// MIN_PLACES_PER_RUN. Reflect that floor in the quote so small pilots do not
+// appear cheaper than the request the runner can actually submit.
+function billedScrapePlaces(expectedBusinesses: number): number {
+  const fullRuns = Math.floor(expectedBusinesses / MAX_PLACES_PER_RUN);
+  const remainder = expectedBusinesses % MAX_PLACES_PER_RUN;
+  return fullRuns * MAX_PLACES_PER_RUN + (remainder === 0 ? 0 : Math.max(MIN_PLACES_PER_RUN, remainder));
+}
+
 function invalid(message: string): never { throw new LeadEngineError(400, 'invalid_input', message); }
 
 export function parseJobInput(body: unknown): JobInput {
@@ -151,10 +160,11 @@ export function quoteJob(input: Pick<JobInput, 'industry' | 'state' | 'targetCel
   // Vendor estimate for the operator's eyes. A: scrape every business, verify the ~70% that publish a
   // phone. B: skip trace every resolved home ($0.07 each; names and parcels are free). C: verify only (the
   // register is free). D: C plus one Maps scrape over the register's cities.
+  const estimatedScrapeCents = scrapeCents(billedScrapePlaces(expectedBusinesses));
   const estimatedVendorCents = recipe === 'B' ? traceCents(traces)
     : recipe === 'C' ? Math.ceil(expectedBusinesses * VERIFY_CENTS_PER_NUMBER)
-    : recipe === 'D' ? Math.ceil(expectedBusinesses * VERIFY_CENTS_PER_NUMBER + expectedBusinesses * APIFY_CENTS_PER_PLACE)
-    : Math.ceil(expectedBusinesses * APIFY_CENTS_PER_PLACE + expectedBusinesses * 0.7 * VERIFY_CENTS_PER_NUMBER);
+    : recipe === 'D' ? Math.ceil(expectedBusinesses * VERIFY_CENTS_PER_NUMBER + estimatedScrapeCents)
+    : Math.ceil(estimatedScrapeCents + expectedBusinesses * 0.7 * VERIFY_CENTS_PER_NUMBER);
   const costPerCleanCellCents = recipe === 'B' ? Math.round(estimatedVendorCents / Math.max(input.targetCells, 1) * 10) / 10 : null;
   const cities = citiesFor(input.state);
   if (cities.length === 0 && recipe !== 'C' && recipe !== 'B') blockers.push(`No city list for ${input.state}.`);

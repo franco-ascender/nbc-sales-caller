@@ -108,12 +108,12 @@ console.log(`- batchdata: ${batchData}`);
 const apify = results.find(result => result.provider === 'apify');
 if (!APPLY) {
   console.log('\nReport only. Re-run with --apply to record the verified Apify rate and balance.');
-  console.log('Execution stays disabled either way: lead_engine_control.execution_enabled is never changed here.');
+  console.log('This check never changes lead_engine_control.execution_enabled.');
 } else if (apify?.status !== 'verified') {
   console.error('\napply: Apify rate could not be verified; nothing was written.');
   process.exitCode = 1;
 } else if (await recordApify(apify)) {
-  console.log('\nRecorded the verified Apify rate and balance. Execution is still disabled by design.');
+  console.log('\nRecorded the verified Apify rate and balance. The execution setting was left unchanged.');
 } else {
   process.exitCode = 1;
 }
