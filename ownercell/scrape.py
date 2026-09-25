@@ -20,30 +20,8 @@ SEARCH_URL = "https://api.outscraper.cloud/maps/search-v3?"
 
 def outscraper(queries: List[str], limit: int, key: str, meter: Any, get: Optional[Callable[..., Any]] = None,
                sleep: Callable[[float], None] = time.sleep, unit_cents: float = UNIT_CENTS["scrape"]) -> List[Dict[str, Any]]:
-    """Async Outscraper job: submit, poll up to 12 minutes, charge the rows actually returned."""
-    get = get or http.get_json
-    gate = meter.check("scrape", VENDOR, len(queries) * limit, unit_cents)
-    if not gate.allowed:
-        raise Frozen("scrape", "cap before scrape (%s): %d cents remaining" % (gate.reason, gate.remaining_cents), {"cursor": 0})
-    parts = [("query", q) for q in queries] + [("limit", str(limit)), ("async", "true"), ("region", "US")]
-    headers = {"X-API-KEY": key}
-    d = get(SEARCH_URL + http.encode(parts), headers=headers, timeout=90, step="scrape")
-    loc = d.get("results_location") if isinstance(d, dict) else None
-    if not loc:
-        raise Frozen("scrape", "Outscraper returned no results_location: %s" % http.body_head(str(d), headers))
-    for _ in range(90):
-        sleep(8)
-        r = get(loc, headers=headers, step="scrape")
-        status = r.get("status") if isinstance(r, dict) else None
-        if status == "Success":
-            rows: List[Dict[str, Any]] = []
-            for b in r.get("data", []):
-                rows.extend(b if isinstance(b, list) else [b])
-            meter.charge("scrape", VENDOR, len(rows), unit_cents)  # bug 5 fix: actual rows, not queries*limit
-            return rows
-        if status in ("Error", "Failed"):
-            raise Frozen("scrape", "Outscraper job failed: %s" % http.body_head(str(r), headers), {"results_location": loc})
-    raise Frozen("scrape", "Outscraper job timed out after 12 minutes", {"results_location": loc})
+    """Paid execution suspended by Franco on 2026-09-25."""
+    raise Frozen("scrape", "Outscraper paid searches are disabled.")
 
 
 def allow_pattern(kw: str, allow: Optional[str]) -> "re.Pattern[str]":

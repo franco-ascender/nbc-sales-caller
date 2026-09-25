@@ -4,25 +4,13 @@ import { createOutscraperDiscoveryProvider } from '../src/services/lead-engine-o
 
 const job = { searchTerm: 'Roofing', location: 'Charlotte, NC', maxResults: 50 };
 
-test('start requests search-v3 async with the documented contract; secrets only in header', async () => {
-  const calls: Array<{ url: URL; options: RequestInit }> = [];
-  const provider = createOutscraperDiscoveryProvider('synthetic-private-key', async (input, options) => {
-    calls.push({ url: new URL(String(input)), options: options! });
-    return Response.json({ results_location: 'https://api.outscraper.cloud/requests/synthetic-1' });
+test('paid searches are blocked before any network request even with valid input and credentials', async () => {
+  let calls = 0;
+  const provider = createOutscraperDiscoveryProvider('synthetic-private-key', async () => {
+    calls++; throw new Error('A suspended provider must never be contacted');
   });
-  const observation = await provider.start(job);
-  assert.equal(calls.length, 1);
-  const { url, options } = calls[0];
-  assert.equal(url.origin, 'https://api.outscraper.cloud');
-  assert.equal(url.pathname, '/maps/search-v3');
-  assert.equal(url.searchParams.get('query'), 'Roofing in Charlotte, NC');
-  assert.equal(url.searchParams.get('limit'), '50');
-  assert.equal(url.searchParams.get('async'), 'true');
-  assert.equal(url.searchParams.get('region'), 'US');
-  assert.equal(url.searchParams.has('X-API-KEY'), false);
-  assert.equal((options.headers as Record<string, string>)['X-API-KEY'], 'synthetic-private-key');
-  assert.equal(options.redirect, 'error'); assert.equal(options.cache, 'no-store'); assert.ok(options.signal);
-  assert.deepEqual(observation, { resultsLocation: 'https://api.outscraper.cloud/requests/synthetic-1', status: 'pending' });
+  await assert.rejects(provider.start(job), /Outscraper paid searches are disabled/);
+  assert.equal(calls, 0);
 });
 
 test('poll parses a Success payload into flattened, typed result rows', async () => {
@@ -49,13 +37,13 @@ test('poll refuses a results_location outside the provider origin', async () => 
   await assert.rejects(provider.poll('https://evil.example/steal'));
 });
 
-test('start and poll fail closed with a sanitized error on malformed, oversized or non-OK responses', async () => {
+test('poll fails closed with a sanitized error on malformed, oversized or non-OK responses', async () => {
   const bad = [new Response('private', { status: 401 }), new Response('private', { status: 500 }),
     new Response('{'), new Response('x'.repeat(262145)), Response.json({ no_results_location: true })];
   for (const response of bad) {
     let count = 0;
     const provider = createOutscraperDiscoveryProvider('synthetic', async () => { count++; return response; });
-    await assert.rejects(provider.start(job), error => error instanceof Error && !error.message.includes('private'));
+    await assert.rejects(provider.poll('https://api.outscraper.cloud/requests/synthetic-1'), error => error instanceof Error && !error.message.includes('private'));
     assert.equal(count, 1);
   }
 });
@@ -74,4 +62,18 @@ test('input validation rejects control characters, empty terms and out-of-range 
   for (const change of [{ searchTerm: '' }, { searchTerm: 'a\nb' }, { maxResults: 0 }, { maxResults: 301 }]) {
     await assert.rejects(provider.start({ ...job, ...change }));
   }
+});
+
+test('poll cannot be used to invoke a paid search or arbitrary provider endpoint', async () => {
+  let calls = 0;
+  const provider = createOutscraperDiscoveryProvider('synthetic', async () => {
+    calls++; return Response.json({});
+  });
+  for (const location of [
+    'https://api.outscraper.cloud/maps/search-v3?query=roofing',
+    'https://api.outscraper.cloud/requests/../maps/search-v3',
+    'https://api.outscraper.cloud/requests/id?query=roofing',
+    'https://api.outscraper.cloud/requests/%2e%2e',
+  ]) await assert.rejects(provider.poll(location));
+  assert.equal(calls, 0);
 });

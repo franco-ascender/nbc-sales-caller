@@ -2,6 +2,12 @@
 
 Scope: one AI call to Franco's own phone and one small Lead Engine pilot. User asked what input is needed and requested an audit. No permission to purchase numbers or spend on new provider runs has been given in this step. The prior no-spend instruction remains applicable.
 
+## Outscraper suspension — subsequent user instruction
+
+Franco explicitly prohibited activating Outscraper after reporting an unexpected invoice. Paid search entrypoints in the TypeScript adapter, Python runner and historical executable are disabled before provider requests. The adapter's result reader accepts only `/requests/{id}` URLs so it cannot invoke a search through its polling argument. Credentials alone cannot enable execution. Existing dashboard job dispatch uses Apify. Free account reads and existing result reads remain possible; no account subscription, payment or external job was changed. Code-level suspension does not stop tasks started independently in the Outscraper account.
+
+User-provided invoice OSFEFA7B4B-0008 is dated September 8, 2026: 106,600 Google Maps records, USD 305.10 total, USD 87.47 applied balance, USD 217.63 due. It provides no request IDs or attribution linking the charges to this project. The PDF remains outside the repository.
+
 ## User inputs
 
 - Phone destination with country code; call timing once the implementation is ready.

@@ -109,18 +109,8 @@ def tz(state, city): return TZ_EXC.get(((state or '').upper(), (city or '').uppe
 
 # ---------------------------------------------------------------- scrape (Lane A)
 def outscraper(queries, limit):
-    key = ENV.get('OUTSCRAPER_API_KEY') or die('OUTSCRAPER_API_KEY missing from .env')
-    parts = [('query', q) for q in queries] + [('limit', str(limit)), ('async', 'true'), ('region', 'US')]
-    d = get_json('https://api.outscraper.cloud/maps/search-v3?' + urllib.parse.urlencode(parts), headers={'X-API-KEY': key}, timeout=90)
-    loc = d.get('results_location') or die(f"Outscraper returned no results_location: {json.dumps(d)[:300]}")
-    for _ in range(90):
-        time.sleep(8); r = get_json(loc, headers={'X-API-KEY': key})
-        if r.get('status') == 'Success':
-            rows = []
-            for b in r.get('data', []): rows.extend(b if isinstance(b, list) else [b])
-            return rows
-        if r.get('status') in ('Error', 'Failed'): die(f"Outscraper job failed: {json.dumps(r)[:300]}")
-    die('Outscraper job timed out after 12 minutes')
+    # Historical executable also observes the account suspension.
+    die('Outscraper paid searches are disabled by Franco.')
 
 def verify(phones):
     key = ENV.get('BATCHDATA_API_KEY') or die('BATCHDATA_API_KEY missing from .env')
