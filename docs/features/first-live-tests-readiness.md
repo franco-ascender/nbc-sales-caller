@@ -10,6 +10,16 @@ User-provided invoice OSFEFA7B4B-0008 is dated September 8, 2026: 106,600 Google
 
 ## User inputs
 
+Update: Franco supplied his own destination and requested Nalify calling a garage door business owner who submitted their information. His portal scenario `Garage Door Business Owner` was found: lead generation, USD 2,500/month, qualification and meeting booking, skeptical prospect, prior-agency and budget objections. Keep the saved scenario intact; prepare a per-call brand/context override. Private destination and draft are in ignored `config/caller-pilot.local.json`, execution disabled. No further voice recordings or past transcripts are required for this pilot.
+
+Requested scraper coverage is roofing, med spas and chiropractors in two states. Proposed starting markets: Miami, Florida and Charlotte, North Carolina. These markets remain proposals, not user-confirmed states or already-supported exact city filters on every route. Med-spa ownership/classification needs review before any paid enrichment; a clinician's NPI does not establish med-spa ownership.
+
+### Proposed first-round budget (not approved)
+
+Recommend USD 25 total incremental usage budget: USD 5 reserved for up to two 10-minute telephone tests, USD 4 for two roofing samples, USD 4 for two chiropractor samples, and USD 12 for two med-spa samples. Per-market scraper allocation: USD 2 / USD 2 / USD 6 respectively. These are proposed admission ceilings with contingency, not current provider quotes, guaranteed results or already-enforced global limits. Target small auditable samples, approximately 50–100 businesses per market where available; never promise an owner mobile count. Stage the work with roofing Miami first and inspect quality/cost before the other markets.
+
+Outscraper allocation is zero. No subscription changes, automatic top-ups, number purchases or broad campaigns are included. Provider minimum top-ups and current account entitlements must be checked separately; exceeding the approved test envelope requires new authorization. Implement/verify cumulative reservation, actual receipt reconciliation and limits across runs before executing. Earlier per-job estimates are code-derived forecasts, and the BatchData account rate is not freshly verified.
+
 - Phone destination with country code; call timing once the implementation is ready.
 - Optional scenario (default proposal: marketing agency qualification and meeting booking). Real offer, price range and qualifying criteria improve the simulation; synthetic details must be explicitly labeled in the test setup.
 - Optional scraper niche/location (default proposal: roofing in Miami, FL). Published business contacts are candidates, not proof of direct owner mobile identity.
