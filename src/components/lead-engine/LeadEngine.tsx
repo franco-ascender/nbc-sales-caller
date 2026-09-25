@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import Link from 'next/link';
 import { ArrowDownToLine, ArrowRight, ArrowUpRight, Check, CheckCheck, FolderOpen, FileSearch, Fingerprint, Globe2, Link2, LockKeyhole, MapPin, Phone, Search, ShieldCheck, SlidersHorizontal, Smartphone, Database, BrainCircuit, X } from "lucide-react";
 import { buildLeadPlan, dollarsToCents, isUsState, LANE_BENCHMARKS, type LeadLane } from "@/lib/lead-engine-plan";
 import styles from "./LeadEngine.module.css";
@@ -51,7 +52,7 @@ export function LeadEngine() {
   return <div className={styles.workspace}>
     <header className={styles.heading}>
       <div className={styles.identity}><span className={styles.brandMark} aria-hidden="true"><Search size={23} /></span><div><span className={styles.eyebrow}>Prospecting</span><h1>Lead Engine</h1></div></div>
-      <div className={styles.mode}><span />Setup in progress<LockKeyhole size={12} /></div>
+      <Link href="/test-center" className={styles.mode}>Open Test Center <ArrowUpRight size={14}/></Link>
     </header>
 
     <div className={styles.navigation} role="tablist" aria-label="Lead Engine workspace">{tabs.map((tab, index) => <button type="button" ref={element => { tabRefs.current[index] = element; }} id={`tab-${tab.id}`} key={tab.id} role="tab" aria-controls={`panel-${tab.id}`} aria-selected={view === tab.id} tabIndex={view === tab.id ? 0 : -1} className={view === tab.id ? styles.activeTab : ''} onClick={() => changeView(tab.id)} onKeyDown={event => {

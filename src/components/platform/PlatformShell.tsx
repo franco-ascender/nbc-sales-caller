@@ -30,7 +30,7 @@ export function PlatformShell({ children }: PlatformShellProps): ReactNode {
   const membership = useMemberNavigation();
   const [profile,setProfile]=useState<{name:string;avatarTone:string}|null>(null);
   useEffect(()=>{const c=new AbortController();const refresh=()=>{void fetch('/api/profile',{headers:{Authorization:`Bearer ${access.token}`},signal:c.signal,cache:'no-store'}).then(async r=>r.ok?r.json():null).then(p=>{if(p&&!c.signal.aborted)setProfile(p);}).catch(()=>{});};refresh();window.addEventListener('nbc-profile-updated',refresh);return()=>{c.abort();window.removeEventListener('nbc-profile-updated',refresh);};},[access.token]);
-  const navigation = [...baseNavigation,...(access.user?.role==='admin'?[{href:'/admin/usage',title:'Usage',icon:BarChart3}]:[])].map(item => item.href === "/members" && membership?.completed ? { ...item, title: "Your Roadmap", icon: Map } : item);
+  const navigation = [...baseNavigation,...(access.user?.role==='admin'?[{href:'/test-center',title:'Test Center',icon:ScanSearch},{href:'/admin/usage',title:'Usage',icon:BarChart3}]:[])].map(item => item.href === "/members" && membership?.completed ? { ...item, title: "Your Roadmap", icon: Map } : item);
   const [menuOpen, setMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   useEffect(() => { try { setCollapsed(localStorage.getItem(`nbc-sidebar:${access.user?.id}`) === "hidden"); } catch { /* Optional visual preference. */ } }, [access.user?.id]);

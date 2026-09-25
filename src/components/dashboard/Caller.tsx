@@ -1,4 +1,5 @@
 "use client";
+import Link from 'next/link';
 
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
@@ -267,6 +268,7 @@ export function Caller(): ReactNode {
     {access.user?.role === "admin" && <section role="tabpanel" id="caller-panel-coverage" aria-labelledby="caller-tab-coverage" hidden={tab !== "coverage"}><CallerCityCoverage active={tab === "coverage"} token={access.token} /></section>}
     {studioOpened && access.user?.role === "admin" && <section role="tabpanel" id="caller-panel-voices" aria-labelledby="caller-tab-voices" hidden={tab !== "voices"}><CallerVoices active={tab === "voices"} /></section>}
     <section role="tabpanel" id="caller-panel-voice" aria-labelledby="caller-tab-voice" hidden={tab !== "voice"}>
+    {access.user?.role === 'admin' && <p><Link href="/test-center" className={ops.secondary}>Open Test Center · Phone test &amp; shared budget</Link></p>}
     <div className={ops.toolsBar}><div><h3>Talk to your AI caller.</h3><p>Browser voice tests let you talk to the AI agent. They do not call a lead.</p></div><div className={ops.actions}><button className={ops.secondary} onClick={()=>setTestOpen(value=>!value)}>{testOpen?"Hide voice test":"Show voice test"}</button><button className={ops.secondary} onClick={()=>document.getElementById("caller-saved-history")?.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth",block:"start"})}>Conversation history</button></div></div>
     {access.user?.role === "admin" && !demo && <CallerKnowledgeLab token={access.token} activeScenario={activeScenario} disabled={active || Boolean(busy) || recovering} onUseScenario={setActiveScenario} />}
     {error && <div className={styles.error} role="alert">{error}</div>}
