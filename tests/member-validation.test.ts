@@ -1,0 +1,15 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { canManageStudent, memberCredits, memberEventTimes, memberId, memberMeetingUrl, memberRole, memberTimezone } from "../src/lib/member-validation.ts";
+import type { Member } from "../src/lib/member-types.ts";
+const make = (id: string, role: Member["role"], coach_id: string | null = null): Member => ({id,role,coach_id,display_name:id,status:"active"});
+const student = make("s","student","c"), other = make("o","student","d"), coach = make("c","coach"), admin = make("a","admin");
+test("students cannot read another student's data", () => { assert(canManageStudent(student,student)); assert(!canManageStudent(student,other)); assert(!canManageStudent(student,admin)); });
+test("coaches only access assigned students, never other staff", () => { assert(canManageStudent(coach,student)); assert(!canManageStudent(coach,other)); assert(!canManageStudent(coach,admin)); assert(!canManageStudent(coach,make("d","coach","c"))); });
+test("suspended memberships fail closed, including admins", () => { assert(!canManageStudent({...admin,status:"suspended"},student)); assert(!canManageStudent(admin,{...student,status:"suspended"})); });
+test("active admins manage active members", () => assert(canManageStudent(admin,student)));
+test("role values cannot be injected or invented", () => { for(const role of ["admin","coach","student"]) assert.equal(memberRole(role),role); for(const value of [null,"owner","ADMIN",{},["admin"]]) assert.throws(()=>memberRole(value)); });
+test("credits use bounded integer units", () => { assert.equal(memberCredits(100),100); for(const value of [0,-1,1.2,Infinity,1000001,"100"]) assert.throws(()=>memberCredits(value)); });
+test("meeting URLs reject scripts, credentials and plain HTTP", () => { assert.equal(memberMeetingUrl("https://meet.example.com/room"),"https://meet.example.com/room"); for(const value of ["javascript:alert(1)","http://meet.example.com","https://user:pass@meet.example.com","bad"]) assert.throws(()=>memberMeetingUrl(value)); });
+test("time zones and meeting duration are validated", () => { assert.equal(memberTimezone("America/New_York"),"America/New_York"); assert.throws(()=>memberTimezone("Mars/Olympus")); assert.throws(()=>memberEventTimes("bad","bad")); assert.throws(()=>memberEventTimes("2026-09-15T11:00Z","2026-09-15T10:00Z")); assert.throws(()=>memberEventTimes("2026-09-15T10:00Z","2026-09-17T10:00Z")); assert.equal(memberEventTimes("2026-09-15T10:00Z","2026-09-15T11:00Z").starts_at,"2026-09-15T10:00:00.000Z"); });
+test("ids reject filters and query expressions", () => { assert.throws(()=>memberId("a,role.eq.admin")); assert.equal(memberId("00000000-0000-4000-8000-000000000001"),"00000000-0000-4000-8000-000000000001"); });

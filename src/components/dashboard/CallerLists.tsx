@@ -1,0 +1,16 @@
+"use client";
+import {useEffect,useRef,useState} from 'react';import {salesRequest} from '@/lib/caller-request';import type {LeadList} from '@/lib/caller-lists';import styles from './CallerOperations.module.css';
+export function useCallerLists(token:string,demo:boolean){
+ const [lists,setLists]=useState<LeadList[]>([]),[busy,setBusy]=useState(false),[error,setError]=useState('');const version=useRef(0),lock=useRef(false),alive=useRef(true),context=useRef({token,demo});context.current={token,demo};
+ useEffect(()=>{alive.current=true;return()=>{alive.current=false;version.current++;};},[]);
+ async function refresh(){if(context.current.token!==token||context.current.demo!==demo)return;const turn=++version.current;const data=await salesRequest<{lists:LeadList[]}>(token,`/api/caller/lists${demo?'?demo=true':''}`);if(!Array.isArray(data.lists))throw new Error("Lead lists could not be read. Refresh Caller to retry.");if(alive.current&&context.current.token===token&&context.current.demo===demo&&turn===version.current)setLists(data.lists);}
+ useEffect(()=>{if(!token)return;setLists([]);setError('');void refresh().catch(failure=>{if(alive.current)setError(failure instanceof Error?failure.message:'Lists could not load.');});},[token,demo]);
+ async function save(id:string,name:string,leadIds:string[]){if(lock.current)return false;lock.current=true;setBusy(true);setError('');try{await salesRequest(token,'/api/caller/lists','POST',{id,name,leadIds,demo});await refresh();return true;}catch(failure){if(alive.current)setError(failure instanceof Error?failure.message:'The list could not be saved.');return false;}finally{lock.current=false;if(alive.current)setBusy(false);}}
+ return{lists,busy,error,save,refresh};
+}
+export type ListStore=ReturnType<typeof useCallerLists>;
+export function CallerSelection({ids,lists,send,clear}:{ids:string[];lists:ListStore;send():void;clear():void}){
+ const [name,setName]=useState(''),[naming,setNaming]=useState(false),[saved,setSaved]=useState('');const request=useRef<{key:string;id:string}|null>(null);
+ async function save(){const key=JSON.stringify([name,ids]);if(request.current?.key!==key)request.current={key,id:crypto.randomUUID()};if(await lists.save(request.current.id,name,ids)){setSaved(`Saved “${name}”. It is available in AI Caller.`);setNaming(false);setName('');}}
+ return <div className={styles.selectionBar}><div className={styles.actions}><strong>{ids.length} selected</strong><button className={styles.primary} disabled={!ids.length} onClick={send}>Send to AI Caller</button><button className={styles.secondary} disabled={!ids.length||lists.busy} onClick={()=>setNaming(value=>!value)}>Save as list</button><button className={styles.textButton} disabled={!ids.length} onClick={clear}>Clear selection</button></div>{naming&&<form className={styles.listForm} onSubmit={event=>{event.preventDefault();void save();}}><label>List name<input maxLength={100} required value={name} onChange={event=>setName(event.target.value)} placeholder="September · Agency owners"/></label><button className={styles.primary} disabled={lists.busy||!name.trim()||!ids.length}>{lists.busy?'Saving…':'Create list'}</button></form>}{saved&&<p role="status" className={styles.success}>{saved}</p>}{lists.error&&<p role="alert" className={styles.error}>{lists.error}</p>}</div>;
+}

@@ -1,0 +1,142 @@
+{
+ "_about": "NPI-2 FL *med spa* 2026-09-21",
+ "body": {
+  "result_count": 2,
+  "results": [
+   {
+    "addresses": [
+     {
+      "address_1": "4800 W FLAGLER ST",
+      "address_2": "SUITE 103",
+      "address_purpose": "MAILING",
+      "address_type": "DOM",
+      "city": "CORAL GABLES",
+      "country_code": "US",
+      "country_name": "United States",
+      "fax_number": "305-442-2816",
+      "postal_code": "331341446",
+      "state": "FL",
+      "telephone_number": "305-443-1172"
+     },
+     {
+      "address_1": "4800 W FLAGLER ST",
+      "address_2": "SUITE 103",
+      "address_purpose": "LOCATION",
+      "address_type": "DOM",
+      "city": "CORAL GABLES",
+      "country_code": "US",
+      "country_name": "United States",
+      "fax_number": "305-442-2816",
+      "postal_code": "331341446",
+      "state": "FL",
+      "telephone_number": "305-443-1172"
+     }
+    ],
+    "basic": {
+     "authorized_official_credential": "M.D",
+     "authorized_official_first_name": "DANIEL",
+     "authorized_official_last_name": "RONCHETTA",
+     "authorized_official_middle_name": "R",
+     "authorized_official_name_prefix": "--",
+     "authorized_official_name_suffix": "--",
+     "authorized_official_telephone_number": "3054431172",
+     "authorized_official_title_or_position": "PRESIDENT",
+     "enumeration_date": "2013-07-24",
+     "last_updated": "2013-07-24",
+     "organization_name": "MED SPA & REHABILITATION CENTER",
+     "organizational_subpart": "NO",
+     "status": "A"
+    },
+    "created_epoch": "1374717535000",
+    "endpoints": [],
+    "enumeration_type": "NPI-2",
+    "identifiers": [
+     {
+      "code": "01",
+      "desc": "Other (non-Medicare)",
+      "identifier": "ME33465",
+      "issuer": "MEDICAL LICENSE",
+      "state": "FL"
+     }
+    ],
+    "last_updated_epoch": "1374717535000",
+    "number": "1477995975",
+    "other_names": [],
+    "practiceLocations": [],
+    "taxonomies": [
+     {
+      "code": "261QP2300X",
+      "desc": "Clinic/Center, Primary Care",
+      "license": null,
+      "primary": true,
+      "state": null,
+      "taxonomy_group": ""
+     }
+    ]
+   },
+   {
+    "addresses": [
+     {
+      "address_1": "4800 W FLAGLER ST",
+      "address_2": "103",
+      "address_purpose": "MAILING",
+      "address_type": "DOM",
+      "city": "CORAL GABLES",
+      "country_code": "US",
+      "country_name": "United States",
+      "fax_number": "305-442-2816",
+      "postal_code": "331341446",
+      "state": "FL",
+      "telephone_number": "305-443-1172"
+     },
+     {
+      "address_1": "4800 W FLAGLER ST",
+      "address_2": "103",
+      "address_purpose": "LOCATION",
+      "address_type": "DOM",
+      "city": "CORAL GABLES",
+      "country_code": "US",
+      "country_name": "United States",
+      "fax_number": "305-442-2816",
+      "postal_code": "331341446",
+      "state": "FL",
+      "telephone_number": "305-443-1172"
+     }
+    ],
+    "basic": {
+     "authorized_official_credential": "MD",
+     "authorized_official_first_name": "DANIEL",
+     "authorized_official_last_name": "RONCHETTA",
+     "authorized_official_middle_name": "R",
+     "authorized_official_name_prefix": "--",
+     "authorized_official_name_suffix": "--",
+     "authorized_official_telephone_number": "3054431172",
+     "authorized_official_title_or_position": "PRESIDENT/OWNER",
+     "enumeration_date": "2013-06-17",
+     "last_updated": "2013-06-17",
+     "organization_name": "MED SPA & REHABILITATION CENTER CORP",
+     "organizational_subpart": "NO",
+     "status": "A"
+    },
+    "created_epoch": "1371508016000",
+    "endpoints": [],
+    "enumeration_type": "NPI-2",
+    "identifiers": [],
+    "last_updated_epoch": "1371508016000",
+    "number": "1235578899",
+    "other_names": [],
+    "practiceLocations": [],
+    "taxonomies": [
+     {
+      "code": "261Q00000X",
+      "desc": "Clinic/Center",
+      "license": null,
+      "primary": true,
+      "state": null,
+      "taxonomy_group": ""
+     }
+    ]
+   }
+  ]
+ }
+}

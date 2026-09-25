@@ -1,0 +1,19 @@
+{
+  "_about": "Shared routing vectors. src/lib/lead-engine-brain.ts and ownercell/brain.py must both produce these answers from src/data/lead-engine-brain.json.",
+  "cases": [
+    { "industry": "hvac", "state": "FL", "recipe": "A", "legalStatus": "ok", "industryKey": "hvac", "expectedClean": 0.2, "creditsPerCleanCell": 2, "fallbackRecipe": null },
+    { "industry": "AC repair", "state": "TX", "recipe": "A", "legalStatus": "ok", "industryKey": "hvac", "expectedClean": 0.2, "creditsPerCleanCell": 2, "fallbackRecipe": null },
+    { "industry": "chiropractor direct line", "state": "FL", "recipe": "D", "legalStatus": "ok", "industryKey": "healthcare_ao_contrast", "expectedClean": 0.3, "creditsPerCleanCell": 2, "fallbackRecipe": null },
+    { "industry": "contractors", "state": "SC", "recipe": "C", "legalStatus": "prohibited", "industryKey": "contractor_registry", "expectedClean": 0.63, "creditsPerCleanCell": 2, "fallbackRecipe": "A" },
+    { "industry": "contractors", "state": "WA", "recipe": "C", "legalStatus": "restricted", "industryKey": "contractor_registry", "expectedClean": 0.63, "creditsPerCleanCell": 2, "fallbackRecipe": null },
+    { "industry": "contractors", "state": "OR", "recipe": "C", "legalStatus": "ok", "industryKey": "contractor_registry", "expectedClean": 0.63, "creditsPerCleanCell": 2, "fallbackRecipe": null },
+    { "industry": "florida contractors", "state": "FL", "recipe": "D", "legalStatus": "ok", "industryKey": "contractor_fl", "expectedClean": 0.45, "creditsPerCleanCell": 2, "fallbackRecipe": null },
+    { "industry": "cpa", "state": "FL", "recipe": "B", "legalStatus": "ok", "industryKey": "cpa", "expectedClean": 0.46, "creditsPerCleanCell": 5, "fallbackRecipe": null },
+    { "industry": "accountants", "state": "TX", "recipe": "B", "legalStatus": "restricted", "industryKey": "cpa", "expectedClean": 0.46, "creditsPerCleanCell": 5, "fallbackRecipe": "A" },
+    { "industry": "daycare", "state": "PA", "recipe": "C", "legalStatus": "ok", "industryKey": "childcare_home", "expectedClean": 0.4, "creditsPerCleanCell": 2, "fallbackRecipe": null },
+    { "industry": "medspa", "state": "NC", "recipe": "B", "legalStatus": "ok", "industryKey": "med_spa", "expectedClean": 0.26, "creditsPerCleanCell": 5, "fallbackRecipe": null },
+    { "industry": "Roofing", "state": "sc", "recipe": "A", "legalStatus": "ok", "industryKey": "roofing", "expectedClean": 0.2, "creditsPerCleanCell": 2, "fallbackRecipe": null }
+  ],
+  "unmatched": ["alpaca farm", ""],
+  "badStates": ["Florida", "F", "xyz"]
+}

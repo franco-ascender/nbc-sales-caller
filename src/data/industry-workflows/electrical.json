@@ -1,0 +1,152 @@
+{
+  "industry": "electrical",
+  "title": "Electrical: published business-contact discovery with license-field safeguards",
+  "hypothesis": "A published electrical-contractor business number can start a business-contact workflow, but Texas TDLR Electrical Contractor owner_name and owner_telephone fields do not independently establish an owner or a second/direct phone. Deliver only after the existing permitted-contact gates and separate owner evidence pass.",
+  "ownerSource": "Texas TDLR Electrical Contractor rows can qualify a licensed electrical business, but the observed owner_name equaled business_name in all 10 sampled rows, so it is business identity rather than owner evidence.",
+  "phoneSource": "Texas TDLR Electrical Contractor business_telephone is a published business-contact candidate. In the observed rows owner_telephone exactly mirrored it, so it must not be treated as an additional or owner phone.",
+  "workflow": [
+    {
+      "id": "discover",
+      "label": "Discover electrical businesses",
+      "detail": "Use the live recipe-A electrical query and require an electrical core term.",
+      "kind": "source"
+    },
+    {
+      "id": "fit",
+      "label": "Electrical relevance",
+      "detail": "Accept electrician, electrical, or electrical-contractor evidence; reject generic contractors and adjacent-only generator, solar, lighting, or low-voltage businesses.",
+      "kind": "filter"
+    },
+    {
+      "id": "tdlr",
+      "label": "Optional Texas license cross-check",
+      "detail": "Use an active Electrical Contractor row as business and license evidence only; do not infer a person from owner_name.",
+      "kind": "source"
+    },
+    {
+      "id": "phone",
+      "label": "Published business phone present?",
+      "detail": "Use business_telephone once. owner_telephone is a mirrored field in the observed sample, not an independent phone source.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdphone",
+      "label": "Hold: no permitted contact",
+      "detail": "Do not append or infer a phone from a license identity row.",
+      "kind": "hold"
+    },
+    {
+      "id": "verify",
+      "label": "Verify permitted business contact",
+      "detail": "Apply line-type, live, DNC, and global delivery-dedupe checks.",
+      "kind": "verify"
+    },
+    {
+      "id": "owner",
+      "label": "Independent owner evidence?",
+      "detail": "A license field named owner_name, a business name, or a shared office phone alone does not establish ownership of the business or handset.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdowner",
+      "label": "Hold business contact",
+      "detail": "Keep a non-owner business-contact classification when independent owner evidence is absent.",
+      "kind": "hold"
+    },
+    {
+      "id": "deliver",
+      "label": "Deliver approved contact",
+      "detail": "Deliver only after all gates pass; owner-confirmed mobile requires separate evidence.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    { "from": "discover", "to": "fit", "label": "candidate" },
+    { "from": "fit", "to": "tdlr", "label": "electrical core evidence" },
+    { "from": "fit", "to": "holdowner", "label": "generic or adjacent-only" },
+    { "from": "tdlr", "to": "phone", "label": "licensed business candidate" },
+    { "from": "phone", "to": "verify", "label": "published business phone" },
+    { "from": "phone", "to": "holdphone", "label": "no published phone" },
+    { "from": "verify", "to": "owner", "label": "line-type, live, DNC, and dedupe passed" },
+    { "from": "verify", "to": "holdphone", "label": "verification failed" },
+    { "from": "owner", "to": "deliver", "label": "independent owner evidence" },
+    { "from": "owner", "to": "holdowner", "label": "business-only or no owner evidence" }
+  ],
+  "failures": [
+    {
+      "risk": "TDLR owner_name is represented as a named owner.",
+      "mitigation": "Treat owner_name as unverified business identity when it duplicates business_name; require independent person/ownership evidence before owner labeling.",
+      "status": "proposed"
+    },
+    {
+      "risk": "TDLR owner_telephone is counted as a second or direct owner phone.",
+      "mitigation": "Normalize and retain one phone candidate per matching business_telephone/owner_telephone pair before verification and delivery dedupe.",
+      "status": "implemented"
+    },
+    {
+      "risk": "Adjacent generator, solar, lighting, or low-voltage businesses are admitted as electrical contractors.",
+      "mitigation": "Require an electrical core term or matching electrical license class; send adjacent-only rows to review or rejection.",
+      "status": "implemented"
+    },
+    {
+      "risk": "Florida electrical requests use a register configuration that claims a phone column absent from the extract.",
+      "mitigation": "Route Florida electrical register rows as identity-only and require a separately published business contact before verification.",
+      "status": "partial"
+    }
+  ],
+  "sources": [
+    {
+      "label": "TX TDLR All Licenses: Electrical Contractor",
+      "scope": "Texas published electrical-contractor business identities and phone fields",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md (TX TDLR row); handoff/07_RESEARCH_BUILD_SPEC.md (Electrical/TX row); https://data.texas.gov/resource/7358-krk7.json",
+      "status": "proposed"
+    },
+    {
+      "label": "Live electrical recipe-A route",
+      "scope": "Published electrical business discovery",
+      "evidence": "VERIFIED",
+      "reference": "src/data/lead-engine-brain.json industries.electrical; src/lib/lead-engine-brain.ts route",
+      "status": "implemented"
+    },
+    {
+      "label": "Florida DBPR construction and electrical extract",
+      "scope": "Florida electrical qualifier candidates without phone fields",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-registers.ts FL_DBPR_FILES, flDbprRecord, flDbprConstruction",
+      "status": "implemented"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "Texas Electrical Contractor owner fields might identify an owner and an additional direct phone.",
+      "test": "Free aggregate-only live query of 10 Electrical Contractor rows on 2026-09-24.",
+      "observed": "10/10 had business_name, owner_name, business_telephone, and owner_telephone; business_name equaled owner_name in 10/10, and business_telephone equaled owner_telephone in 10/10.",
+      "change": "Classify both owner fields as non-independent in this route; keep one business-phone candidate and require separate owner evidence."
+    }
+  ],
+  "measurement": {
+    "kind": "free_source_sample",
+    "sampleSize": 10,
+    "observedAt": "2026-09-24",
+    "result": "TX TDLR 7358-krk7 Electrical Contractor filter: business_name 10/10; owner_name 10/10; business_telephone 10/10; owner_telephone 10/10; business_name exactly equaled owner_name 10/10; business_telephone exactly equaled owner_telephone 10/10. Aggregate evidence only; no contact values retained. It does not measure mobile, live, DNC, owner confirmation, or delivery.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Free public-source field-coverage observation only",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No delivered owner contact was measured. Historical electrical brain rates use a different denominator and remain outside this review."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "The runtime recognizes electrical relevance and applies downstream contact gates, but no dedicated TX Electrical Contractor adapter exists. The Florida contractor profile incorrectly states that DBPR extract rows include a phone although flDbprRecord has no phone column, and its ordered aliases make equivalent Florida electrical phrasing route differently.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-industries.ts",
+      "src/lib/lead-engine-registers.ts"
+    ]
+  },
+  "nextMeasurement": "With synthetic rows, verify that Texas mirrored owner telephone fields collapse to one phone candidate and cannot yield an owner label; verify that Florida electrical wording resolves independent of word order and that FL DBPR rows without a separate published business phone enter a hold branch. Then run an authorized outcome pilot measuring line type, DNC, reachability, and owner confirmation separately."
+}

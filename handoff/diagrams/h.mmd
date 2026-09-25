@@ -1,0 +1,8 @@
+flowchart TD
+    R[State childcare licensing datasets: PA, NY, TX, CO, DE, WA, with provider name, phone and often email in the same row] --> T{Home or center}
+    T -- home provider --> S[The licensee is the owner and the register phone is her cell or home line]
+    T -- center, preschool, studio, school --> C[The director may not be the owner: SOS officer, reviews, Google Maps]
+    C --> P[Cell append by name and address]
+    S --> V[Telnyx line type, FTC DNC plus state lists, litigator scrub, ledger. California small family homes excluded by statute]
+    P --> V
+    V --> O[Verified owner cells at 7 to 11 cents for homes, about 20 cents for centers]

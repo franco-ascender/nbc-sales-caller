@@ -1,0 +1,318 @@
+{
+ "source": "ny_childcare",
+ "fetchedAt": "2026-09-21",
+ "url": "https://data.ny.gov/resource/cb42-qumz.json?$where=program_type='GFDC'&$limit=8 (+ phone_number_omitted='Y' rows, + FDC rows)",
+ "rows": [
+  {
+   "facility_id": "38611",
+   "program_type": "GFDC",
+   "region_code": "BRO",
+   "county": "Erie",
+   "facility_status": "License",
+   "facility_name": "Washington, Doris",
+   "facility_opened_date": "2001-05-15T00:00:00.000",
+   "license_issue_date": "2023-05-01T00:00:00.000",
+   "license_expiration_date": "2027-04-30T00:00:00.000",
+   "address_omitted": "Y",
+   "city": "Buffalo",
+   "state": "NY",
+   "zip_code": "14214",
+   "phone_number": "(716)906-2767",
+   "provider_name": "Doris H. Washington",
+   "school_district_name": "Buffalo",
+   "capacity_description": "8 children, ages 6 weeks to 12 years",
+   "infant_capacity": "0",
+   "toddler_capacity": "0",
+   "preschool_capacity": "0",
+   "school_age_capacity": "0",
+   "total_capacity": "8",
+   "additional_information": {
+    "url": "https://hs.ocfs.ny.gov/dcfs/Profile/Index/38611"
+   }
+  },
+  {
+   "facility_id": "444975",
+   "program_type": "GFDC",
+   "region_code": "NYCDOH",
+   "county": "Brooklyn",
+   "facility_status": "License",
+   "facility_name": "Mini Minders Day Care, LLC",
+   "facility_opened_date": "2010-11-19T00:00:00.000",
+   "license_issue_date": "2024-11-19T00:00:00.000",
+   "license_expiration_date": "2028-11-18T00:00:00.000",
+   "street_number": "249",
+   "street_name": "6th Avenue",
+   "floor": "Ground Fl.",
+   "city": "Brookyn",
+   "state": "NY",
+   "zip_code": "11215",
+   "phone_number": "(917)768-6240",
+   "provider_name": "Tatiana  Karatchayeva",
+   "school_district_name": "Brooklyn 13",
+   "capacity_description": "12 children, ages 6 weeks to 12 years AND 4 additional school-aged children",
+   "infant_capacity": "0",
+   "toddler_capacity": "0",
+   "preschool_capacity": "0",
+   "school_age_capacity": "4",
+   "total_capacity": "16",
+   "additional_information": {
+    "url": "https://hs.ocfs.ny.gov/dcfs/Profile/Index/444975"
+   },
+   "latitude": "40.67378",
+   "longitude": "-73.97893",
+   "georeference": {
+    "type": "Point",
+    "coordinates": [
+     -73.97893,
+     40.67378
+    ]
+   }
+  },
+  {
+   "facility_id": "108195",
+   "program_type": "GFDC",
+   "region_code": "NYCDOH",
+   "county": "Bronx",
+   "facility_status": "License",
+   "facility_name": "LIL STARS GROUP FAMILY DAY CARE",
+   "facility_opened_date": "2003-06-30T00:00:00.000",
+   "license_issue_date": "2024-06-30T00:00:00.000",
+   "license_expiration_date": "2028-06-29T00:00:00.000",
+   "street_number": "1978",
+   "street_name": "UNIVERSITY AVENUE",
+   "floor": "2nd",
+   "apartment": "2-S",
+   "city": "Bronx",
+   "state": "NY",
+   "zip_code": "10453",
+   "phone_number": "(718)716-9334",
+   "provider_name": "Kim R. Sanders",
+   "school_district_name": "Bronx 10",
+   "capacity_description": "12 children, ages 6 weeks to 12 years AND 4 additional school-aged children",
+   "infant_capacity": "0",
+   "toddler_capacity": "0",
+   "preschool_capacity": "0",
+   "school_age_capacity": "4",
+   "total_capacity": "16",
+   "additional_information": {
+    "url": "https://hs.ocfs.ny.gov/dcfs/Profile/Index/108195"
+   },
+   "latitude": "40.85439",
+   "longitude": "-73.911523",
+   "georeference": {
+    "type": "Point",
+    "coordinates": [
+     -73.911523,
+     40.85439
+    ]
+   }
+  },
+  {
+   "facility_id": "557416",
+   "program_type": "GFDC",
+   "region_code": "NYCDOH",
+   "county": "Bronx",
+   "facility_status": "License",
+   "facility_name": "Little Future Stars Childcare Corp.",
+   "facility_opened_date": "2011-12-29T00:00:00.000",
+   "license_issue_date": "2025-12-29T00:00:00.000",
+   "license_expiration_date": "2029-12-28T00:00:00.000",
+   "street_number": "279",
+   "street_name": "EAST 203 STREET",
+   "floor": "2",
+   "apartment": "2A",
+   "city": "Bronx",
+   "state": "NY",
+   "zip_code": "10458",
+   "phone_number": "(347)833-0337",
+   "provider_name": "Jacqueline O. Bourdier Galicia",
+   "school_district_name": "Bronx 10",
+   "capacity_description": "12 children, ages 6 weeks to 12 years AND 4 additional school-aged children",
+   "infant_capacity": "0",
+   "toddler_capacity": "0",
+   "preschool_capacity": "0",
+   "school_age_capacity": "4",
+   "total_capacity": "16",
+   "additional_information": {
+    "url": "https://hs.ocfs.ny.gov/dcfs/Profile/Index/557416"
+   },
+   "latitude": "40.873416",
+   "longitude": "-73.883974",
+   "georeference": {
+    "type": "Point",
+    "coordinates": [
+     -73.883974,
+     40.873416
+    ]
+   }
+  },
+  {
+   "facility_id": "865950",
+   "program_type": "GFDC",
+   "region_code": "ARO",
+   "county": "Clinton",
+   "facility_status": "License",
+   "facility_name": "Wilkins, Mary",
+   "facility_opened_date": "2020-11-24T00:00:00.000",
+   "license_issue_date": "2024-11-24T00:00:00.000",
+   "license_expiration_date": "2028-11-23T00:00:00.000",
+   "street_number": "36",
+   "street_name": "Washington Street",
+   "city": "Peru",
+   "state": "NY",
+   "zip_code": "12972",
+   "phone_number": "(518)569-5831",
+   "provider_name": "Mary J. Wilkins",
+   "school_district_name": "Peru",
+   "capacity_description": "12 children, ages 6 weeks to 12 years AND 4 additional school-aged children",
+   "infant_capacity": "0",
+   "toddler_capacity": "0",
+   "preschool_capacity": "0",
+   "school_age_capacity": "4",
+   "total_capacity": "16",
+   "additional_information": {
+    "url": "https://hs.ocfs.ny.gov/dcfs/Profile/Index/865950"
+   },
+   "latitude": "44.584456",
+   "longitude": "-73.543836",
+   "georeference": {
+    "type": "Point",
+    "coordinates": [
+     -73.543836,
+     44.584456
+    ]
+   }
+  },
+  {
+   "facility_id": "809695",
+   "program_type": "GFDC",
+   "region_code": "NYCDOH",
+   "county": "Brooklyn",
+   "facility_status": "License",
+   "facility_name": "Lil Cookies Daycare, Inc.",
+   "facility_opened_date": "2018-02-02T00:00:00.000",
+   "license_issue_date": "2024-02-02T00:00:00.000",
+   "license_expiration_date": "2028-02-01T00:00:00.000",
+   "street_number": "1233",
+   "street_name": "Remsen Avenue",
+   "floor": "1",
+   "city": "Brooklyn",
+   "state": "NY",
+   "zip_code": "11236",
+   "phone_number_omitted": "Y",
+   "provider_name": "Sara F. Lake Idehen",
+   "school_district_name": "Brooklyn 18",
+   "capacity_description": "12 children, ages 6 weeks to 12 years AND 4 additional school-aged children",
+   "infant_capacity": "0",
+   "toddler_capacity": "0",
+   "preschool_capacity": "0",
+   "school_age_capacity": "4",
+   "total_capacity": "16",
+   "additional_information": {
+    "url": "https://hs.ocfs.ny.gov/dcfs/Profile/Index/809695"
+   },
+   "latitude": "40.639757",
+   "longitude": "-73.905121",
+   "georeference": {
+    "type": "Point",
+    "coordinates": [
+     -73.905121,
+     40.639757
+    ]
+   }
+  },
+  {
+   "facility_id": "809596",
+   "program_type": "GFDC",
+   "region_code": "NYCDOH",
+   "county": "Bronx",
+   "facility_status": "License",
+   "facility_name": "RAINBOW STARS DAYCARE",
+   "facility_opened_date": "2018-06-19T00:00:00.000",
+   "license_issue_date": "2024-06-19T00:00:00.000",
+   "license_expiration_date": "2028-06-18T00:00:00.000",
+   "street_number": "401",
+   "street_name": "Bronx River Avenue",
+   "floor": "6",
+   "apartment": "609",
+   "city": "Bronx",
+   "state": "NY",
+   "zip_code": "10473",
+   "phone_number_omitted": "Y",
+   "provider_name": "Ninoska S. Valverde Vasquez",
+   "school_district_name": "Bronx 8",
+   "capacity_description": "12 children, ages 6 weeks to 12 years AND 4 additional school-aged children",
+   "infant_capacity": "0",
+   "toddler_capacity": "0",
+   "preschool_capacity": "0",
+   "school_age_capacity": "4",
+   "total_capacity": "16",
+   "additional_information": {
+    "url": "https://hs.ocfs.ny.gov/dcfs/Profile/Index/809596"
+   },
+   "latitude": "40.815047",
+   "longitude": "-73.8679",
+   "georeference": {
+    "type": "Point",
+    "coordinates": [
+     -73.8679,
+     40.815047
+    ]
+   }
+  },
+  {
+   "facility_id": "851125",
+   "program_type": "FDC",
+   "region_code": "ARO",
+   "county": "Clinton",
+   "facility_status": "Registration",
+   "facility_name": "Big Heart Little Hands",
+   "facility_opened_date": "2019-10-28T00:00:00.000",
+   "license_issue_date": "2023-10-28T00:00:00.000",
+   "license_expiration_date": "2027-10-27T00:00:00.000",
+   "address_omitted": "Y",
+   "city": "Plattsburgh",
+   "state": "NY",
+   "zip_code": "12901",
+   "phone_number": "(518)572-8499",
+   "provider_name": "Amanda M. King",
+   "school_district_name": "Peru",
+   "capacity_description": "6 children, ages 6 weeks to 12 years AND 2 additional school-aged children",
+   "infant_capacity": "0",
+   "toddler_capacity": "0",
+   "preschool_capacity": "0",
+   "school_age_capacity": "2",
+   "total_capacity": "8",
+   "additional_information": {
+    "url": "https://hs.ocfs.ny.gov/dcfs/Profile/Index/851125"
+   }
+  },
+  {
+   "facility_id": "431699",
+   "program_type": "FDC",
+   "region_code": "SRO",
+   "county": "Jefferson",
+   "facility_status": "Registration",
+   "facility_name": "Miller, Faith",
+   "facility_opened_date": "2010-05-27T00:00:00.000",
+   "license_issue_date": "2024-05-27T00:00:00.000",
+   "license_expiration_date": "2028-05-26T00:00:00.000",
+   "address_omitted": "Y",
+   "city": "Clayton",
+   "state": "NY",
+   "zip_code": "13624",
+   "phone_number": "(315)686-4681",
+   "provider_name": "Faith  Miller",
+   "school_district_name": "Thousand Island",
+   "capacity_description": "6 children, ages 6 weeks to 12 years AND 2 additional school-aged children",
+   "infant_capacity": "0",
+   "toddler_capacity": "0",
+   "preschool_capacity": "0",
+   "school_age_capacity": "2",
+   "total_capacity": "8",
+   "additional_information": {
+    "url": "https://hs.ocfs.ny.gov/dcfs/Profile/Index/431699"
+   }
+  }
+ ]
+}

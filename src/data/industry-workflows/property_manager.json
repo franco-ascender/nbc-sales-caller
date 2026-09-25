@@ -1,0 +1,73 @@
+{
+  "industry": "property_manager",
+  "title": "Florida property-manager identity review",
+  "hypothesis": "An active Florida broker record can support a property-management identity candidate only when the management signal belongs to an independently operating broker. It cannot establish ownership of the management business, ownership of a phone, or permission to use a residence or private-phone lookup.",
+  "ownerSource": "The implemented FL DBPR real-estate adapter exposes active BK Broker rows. Its current property-management filter uses employer text only, so it identifies an employed broker candidate rather than an owner-confirming property-manager source.",
+  "phoneSource": "The Florida register contains no phone field. The current recipe-B route carries a licensee street into parcel/skip-trace processing; that residential/private-contact path is outside this review's permitted scope and must remain held.",
+  "workflow": [
+    { "id": "register", "label": "Active Florida broker record", "detail": "Read a Current, Active, Florida BK Broker record from the public DBPR extract; it supplies identity facts, not a phone.", "kind": "source" },
+    { "id": "scope", "label": "Property-management business signal?", "detail": "Assess management vocabulary on the broker's DBA or employer. Employer-only evidence can describe a worker rather than an owner candidate.", "kind": "decision" },
+    { "id": "holdscope", "label": "Hold generic real-estate broker", "detail": "Do not relabel a generic broker as a property manager without a property-management, rental, leasing, or management business signal.", "kind": "hold" },
+    { "id": "independent", "label": "Independent operating signal?", "detail": "A sole broker with a matching DBA is a stronger identity candidate. An employer-backed broker remains employee/role evidence until independently corroborated.", "kind": "decision" },
+    { "id": "holdrole", "label": "Hold employee or unresolved role", "detail": "Do not call an employed broker the owner of the employer's property-management business.", "kind": "hold" },
+    { "id": "contact", "label": "Published business contact available?", "detail": "Use only a separately lawful, explicitly published business contact in a future approved route; do not derive a person contact from the licensee address.", "kind": "decision" },
+    { "id": "holdprivate", "label": "Hold residential or private-contact path", "detail": "The register has no phone. Do not send its residential-style address to parcel, skip trace, phone append, or property search for this industry review.", "kind": "hold" },
+    { "id": "verify", "label": "Business-contact and compliance gates", "detail": "A future approved published-business-contact route must record line type, reachability, DNC/TCPA, suppression, freshness, and independent owner evidence separately.", "kind": "verify" },
+    { "id": "holdverify", "label": "Hold failed contact or owner evidence", "detail": "Keep office, non-mobile, unreachable, suppressed, or candidate-only cases out of owner-confirmed delivery.", "kind": "hold" },
+    { "id": "deliver", "label": "Deliver supported classification", "detail": "Only recorded, independent current ownership and handset evidence plus all contact gates can support an owner-confirmed classification.", "kind": "deliver" }
+  ],
+  "edges": [
+    { "from": "register", "to": "scope", "label": "active BK Broker" },
+    { "from": "scope", "to": "independent", "label": "management signal" },
+    { "from": "scope", "to": "holdscope", "label": "generic or absent signal" },
+    { "from": "independent", "to": "contact", "label": "independent candidate" },
+    { "from": "independent", "to": "holdrole", "label": "employer-backed or unresolved role" },
+    { "from": "contact", "to": "verify", "label": "future approved published business contact" },
+    { "from": "contact", "to": "holdprivate", "label": "only register address or private lookup path" },
+    { "from": "verify", "to": "deliver", "label": "all owner and contact gates pass" },
+    { "from": "verify", "to": "holdverify", "label": "contact or owner evidence fails" }
+  ],
+  "failures": [
+    { "risk": "The live filter selects an employer-backed broker at a property-management firm while missing a sole broker whose DBA identifies property management.", "mitigation": "In flReRecord, calculate the management signal from DBA and employer, but emit a property-manager filter value only for a sole broker with the matching DBA; hold employer-backed rows as unresolved role evidence.", "status": "proposed" },
+    { "risk": "The adapter reads only regions 1 through 7 although the verified catalog identifies FL DBPR regional files 1 through 14.", "mitigation": "Expand FL_RE_FILES to all fourteen documented regions and retain the same positional parser and active-BK gates; add fixture coverage for a later-region request.", "status": "proposed" },
+    { "risk": "A broker license, DBA, or property-management employer is described as proof that a named person owns the management company.", "mitigation": "Preserve all qualifying people as identity candidates until separate current ownership evidence is recorded.", "status": "implemented" },
+    { "risk": "The recipe-B runner uses the broker street to reach parcel and skip-trace processing despite no register phone field.", "mitigation": "For property_manager, hold this residential/private-contact path. Do not use parcel, property search, skip trace, or phone append as a correction for this workflow.", "status": "blocked" },
+    { "risk": "A property manager is sourced from prohibited DMV, South Carolina, or Utah license-list routes.", "mitigation": "Use none of those sources; the reviewed source is Florida DBPR real estate only and any future source needs an explicit legal/source review.", "status": "implemented" }
+  ],
+  "sources": [
+    { "label": "Florida DBPR real-estate regional CSVs", "scope": "Public active BK Broker identity rows; DBA, employer, status, and address fields; no phone field", "evidence": "VERIFIED", "reference": "handoff/04_SOURCE_CATALOG.md real-estate row; handoff/07_RESEARCH_BUILD_SPEC.md §4a", "status": "implemented" },
+    { "label": "FL real-estate adapter", "scope": "Current/Active Florida BK Broker parser and property-management business-type marker", "evidence": "VERIFIED", "reference": "src/lib/lead-engine-registers.ts FL_RE_FILES, FL_PM_PATTERN, flReRecord", "status": "implemented" },
+    { "label": "Property-manager brain route", "scope": "Florida recipe-B map with fl_re:property_management filter", "evidence": "VERIFIED", "reference": "src/data/lead-engine-brain.json industries.property_manager; src/lib/lead-engine-brain.ts registerSourceFor and splitRegisterSource; src/services/lead-engine-jobs.service.ts pullNames", "status": "implemented" },
+    { "label": "Published-business-contact route", "scope": "A lawful property-manager business contact with separate owner evidence", "evidence": "UNKNOWN", "reference": "No property-manager-specific public business-contact adapter is implemented in src/lib/lead-engine-registers.ts", "status": "blocked" },
+    { "label": "Residential parcel and skip-trace path", "scope": "Recipe-B address processing for FL real-estate names", "evidence": "VERIFIED", "reference": "src/lib/lead-engine-parcel.ts homeStreetSource/registerCarriesHomeStreet; src/services/lead-engine-jobs.service.ts pullNames and traceStep", "status": "blocked" }
+  ],
+  "iterations": [
+    { "hypothesis": "The live Florida property-manager route selects independently operating property-management brokers from the broker file.", "test": "Five-case synthetic code audit on 2026-09-24 using flReRecord, splitRegisterSource, registerSourceFor, and route; no network, phone, address lookup, paid call, secret, or personal contact data. Cases: active BK broker with property-management employer; sole BK broker with property-management DBA; rental employer; leasing employer; generic sole broker.", "observed": "The route maps Florida property management to recipe B and fl_re:property_management. The employer, rental, and leasing cases were marked Broker: Property Management and selected; the sole broker with a property-management DBA and the generic sole broker were both marked Broker and not selected. This confirms the filter follows employer text, not the advertised DBA/business-name rule, and admits an employment role. The adapter request stops after region 7. This audit measures parser/routing behavior only, not business coverage, ownership, phone outcome, reachability, DNC, or delivery.", "change": "Treat the route as partial. Make the property-management marker dependent on a sole broker's matching DBA, retain employer-backed brokers as unresolved, and expand the adapter from seven to fourteen catalogued regions before any future source-coverage measurement. Keep all residential/private-contact processing held." }
+  ],
+  "measurement": {
+    "kind": "fixture",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Five synthetic parser/routing cases: property-management employer selected; property-management DBA on a sole broker not selected; rental employer selected; leasing employer selected; generic sole broker not selected. flRe requests regions 1-7 only. Code audit only: no live rows, phone values, addresses, ownership checks, reachability, DNC, or delivery measurements.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Offline fixture/code audit only; no paid discovery, private lookup, append, or phone verification was invoked.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean delivered owner contact was measured. The historical property_manager Anas figures use a different denominator and are not a per-clean cost for this workflow."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "The brain routes Florida property managers through a real-estate broker adapter and a business_type filter. The parser has current/active/BK guards but derives the management marker only from employer text, then recipe B sends selected identity rows toward address-based tracing. No property-manager-specific published-business-contact or owner-confirming adapter is implemented; the residential/private-contact branch is outside the permitted workflow scope.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-registers.ts",
+      "src/lib/lead-engine-parcel.ts",
+      "src/lib/lead-engine-jobs.ts",
+      "src/services/lead-engine-jobs.service.ts"
+    ]
+  },
+  "nextMeasurement": "After the parser correction, run the same five synthetic rows plus a region-8 request fixture: only a sole broker with matching property-management/rental/leasing DBA should enter the candidate branch; employer-backed, generic, inactive, and non-Florida rows should hold. Before any contact experiment, obtain explicit approval for a lawful published-business-contact source and measure business fit, current ownership, line type, DNC/TCPA, reachability, and delivery under separate denominators without residential/private-phone enrichment."
+}

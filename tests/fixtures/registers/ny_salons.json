@@ -1,0 +1,76 @@
+{
+ "_about": "y3u4-jbgh 2026-09-21",
+ "rows": [
+  {
+   "license_number": "AEB-25-01577",
+   "license_type": "DOSAEBUSINESS",
+   "license_holder_name": "YOO JAE KOO",
+   "licensed_state": "NY",
+   "license_issue_date": "06/12/2025",
+   "license_cur_effective_term": "2025-06-12T00:00:00.000",
+   "license_expiration_date": "2029-06-12T00:00:00.000",
+   "business_name": "JAE KOO YOO",
+   "business_address_1": "62 Garth Rd",
+   "business_city": "Scarsdale",
+   "business_state": "NY",
+   "business_zip": "10583"
+  },
+  {
+   "license_number": "AEB-23-00632",
+   "license_type": "DOSAEBUSINESS",
+   "license_holder_name": "haskell ashley",
+   "licensed_state": "NY",
+   "license_issue_date": "04/03/2023",
+   "license_cur_effective_term": "2023-04-03T00:00:00.000",
+   "license_expiration_date": "2027-04-03T00:00:00.000",
+   "business_name": "Practically Magic LLC",
+   "business_address_1": "65 Main St",
+   "business_city": "South Glens Falls",
+   "business_state": "NY",
+   "business_zip": "12803"
+  },
+  {
+   "license_number": "AEB-17-00172",
+   "license_type": "DOSAEBUSINESS",
+   "license_holder_name": "Zinaty Fadia",
+   "licensed_state": "NY",
+   "license_issue_date": "01/30/2017",
+   "license_cur_effective_term": "2025-01-30T00:00:00.000",
+   "license_expiration_date": "2029-01-30T00:00:00.000",
+   "business_name": "Swan Unisex Salon",
+   "business_address_1": "2720 Eggert Rd",
+   "business_city": "Tonawanda",
+   "business_state": "NY",
+   "business_zip": "14150"
+  },
+  {
+   "license_number": "AEB-20-01557",
+   "license_type": "DOSAEBUSINESS",
+   "license_holder_name": "figueroa fiona",
+   "licensed_state": "NY",
+   "license_issue_date": "08/27/2020",
+   "license_cur_effective_term": "2024-08-27T00:00:00.000",
+   "license_expiration_date": "2028-08-27T00:00:00.000",
+   "business_name": "Elite Textures NYC",
+   "business_address_1": "8709 86th St",
+   "business_city": "Woodhaven",
+   "business_state": "NY",
+   "business_zip": "11421"
+  },
+  {
+   "license_number": "AEB-23-00477",
+   "license_type": "DOSAEBUSINESS",
+   "license_holder_name": "LIQUET APRIL",
+   "licensed_state": "NY",
+   "license_issue_date": "03/10/2023",
+   "license_cur_effective_term": "2023-03-10T00:00:00.000",
+   "license_expiration_date": "2027-03-10T00:00:00.000",
+   "business_name": "NAILS BY APRIL LLC",
+   "business_address_1": "208 Airport Plaza Blvd Ste 20",
+   "business_address_2": "Ste-20",
+   "business_city": "Farmingdale",
+   "business_state": "NY",
+   "business_zip": "11735"
+  }
+ ]
+}

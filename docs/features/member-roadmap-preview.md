@@ -1,0 +1,5 @@
+# I09 — Mock on the actual Your Roadmap page
+
+2026-09-15. Correction from screenshot: user is at /members → Your Roadmap, not Overview widget. Replace the completed-onboarding Roadmap charging placeholder with a full-page, clearly labeled sample roadmap. Same5 phases as Overview example, two completed and third current. Phase selection updates sample objectives and coaching focus without any write or pretending coach assignment. Preserve real onboarding when incomplete, staff member selection and coach assignment. No APIs/DB/auth changes. Test direct /members route in completed and incomplete states, phase selection, mobile/dark, no write requests; publish authorized preview on latest verified L01-R7 snapshot preserving all other lanes. Existing Overview example remains.
+
+Implementation:3 runtime files, full-page demo replaces only completed-onboarding placeholder. Build and4 viewport browser fixtures pass, including selection, light/dark, incomplete form and zero writes. Desktop/mobile captures visually reviewed. Deployment and real HTTPS result in I09 report.

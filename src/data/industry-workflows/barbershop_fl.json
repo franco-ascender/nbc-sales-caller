@@ -1,0 +1,51 @@
+{
+  "industry": "barbershop_fl",
+  "title": "Florida barbershops: BS owner candidates held without a public contact source",
+  "hypothesis": "A current Florida DBPR BS establishment row whose address line 1 parses as a person can supply a named barbershop-owner candidate, but the extract has no phone or email. BB and BR rows identify practitioners with residence-format streets and must not enter the shop-owner or contact path.",
+  "ownerSource": "Verified free weekly Florida DBPR lic03bb.csv: only BS barbershop rows with a parseable person in address line 1 are owner candidates. BB and BR are barber-practitioner records, not barbershop ownership evidence.",
+  "phoneSource": "None is currently verified and implemented for this route. The DBPR extract expressly has no phone or email; do not append, trace, or infer a private or direct-owner number from its names or streets.",
+  "workflow": [
+    {"id":"dbpr","label":"Florida DBPR barbers extract","detail":"Read only the verified free lic03bb.csv route; it supplies licence facts and no phone/email field.","kind":"source"},
+    {"id":"active","label":"Current Florida licence and class?","detail":"Require current primary status, permitted secondary status, future expiry, and Florida state; only BS can continue to the owner-candidate decision.","kind":"decision"},
+    {"id":"holdstatus","label":"Hold invalid licence","detail":"Reject inactive, expired, out-of-state, or non-BS rows from this workflow.","kind":"hold"},
+    {"id":"owner","label":"BS owner named in address line 1?","detail":"Accept only a parseable person as barbershop-owner candidate evidence; a street or business string is not a person.","kind":"decision"},
+    {"id":"holdowner","label":"Hold missing owner evidence","detail":"Reject BS rows without a parseable person in address line 1.","kind":"hold"},
+    {"id":"practitioner","label":"BB or BR practitioner row","detail":"Reject barber and restricted-barber rows from the shop-owner path; their record street may be residential and does not establish shop ownership.","kind":"hold"},
+    {"id":"contact","label":"Verified public business-contact source?","detail":"No source is mapped today. Do not use the owner candidate, shop address, practitioner name, or residential street for append or trace processing.","kind":"decision"},
+    {"id":"holdcontact","label":"Hold without contact source","detail":"Keep BS identity evidence separate and do not create a contact candidate while no verified public business-contact source exists.","kind":"hold"},
+    {"id":"verify","label":"Business-contact and ownership gates","detail":"If a permitted source is later mapped, require public business-contact provenance plus independent owner/handset evidence and normal line, DNC, suppression, and dedupe gates.","kind":"verify"},
+    {"id":"holdverify","label":"Hold unsupported contact","detail":"Hold shared, private, unverified, non-compliant, or ownership-unsupported contacts.","kind":"hold"},
+    {"id":"deliver","label":"Deliver supported classification","detail":"Deliver only after a future public business-contact source and every required contact and owner-evidence gate pass.","kind":"deliver"}
+  ],
+  "edges": [
+    {"from":"dbpr","to":"active","label":"licence row"},
+    {"from":"active","to":"owner","label":"current BS row"},
+    {"from":"active","to":"practitioner","label":"BB or BR row"},
+    {"from":"active","to":"holdstatus","label":"other class, inactive, expired, or out of state"},
+    {"from":"owner","to":"contact","label":"person parsed from address line 1"},
+    {"from":"owner","to":"holdowner","label":"street, business, or missing person"},
+    {"from":"contact","to":"verify","label":"future permitted public business-contact source"},
+    {"from":"contact","to":"holdcontact","label":"no verified source today"},
+    {"from":"verify","to":"deliver","label":"all contact and owner-evidence gates pass"},
+    {"from":"verify","to":"holdverify","label":"line, compliance, handset, or ownership evidence fails"}
+  ],
+  "failures": [
+    {"risk":"BB or BR practitioner identity is presented as a barbershop owner.","mitigation":"Exclude BB/BR from barbershop_fl and retain no practitioner ownership inference.","status":"proposed"},
+    {"risk":"A BB/BR residence-format street advances into parcel or trace work.","mitigation":"Do not persist the street for this workflow and fail closed before recipe-B trace processing.","status":"proposed"},
+    {"risk":"A BS owner candidate is treated as a direct phone or handset owner.","mitigation":"The DBPR extract has no phone/email; hold the candidate until separately sourced public contact and independent evidence exist.","status":"implemented"},
+    {"risk":"A street in BS address line 1 is parsed as an owner.","mitigation":"Keep the parser's owner_not_named rejection.","status":"implemented"},
+    {"risk":"A published business line is relabeled as an owner line.","mitigation":"Require separately recorded public-contact provenance, line/compliance gates, and independent owner/handset evidence.","status":"blocked"}
+  ],
+  "sources": [
+    {"label":"FL DBPR barbers extract","scope":"Free weekly lic03bb.csv: BS owner-name placement and BB/BR practitioner-street distinction; no phone or email.","evidence":"VERIFIED","reference":"handoff/04_SOURCE_CATALOG.md Group E row 201; handoff/07_RESEARCH_BUILD_SPEC.md Group E summary; src/lib/lead-engine-registers.ts flBarberRecord","status":"implemented"},
+    {"label":"Live barbershop_fl brain route","scope":"Florida recipe B mapping to fl_dbpr_barbers; the name source describes BS ownership evidence.","evidence":"VERIFIED","reference":"src/data/lead-engine-brain.json industries.barbershop_fl; src/lib/lead-engine-brain.ts route and registerSourceFor","status":"implemented"},
+    {"label":"Recipe-B home-street path","scope":"BB/BR are marked register-street sources and BS can enter the parcel branch, despite no public business-contact source in this extract.","evidence":"VERIFIED","reference":"src/lib/lead-engine-parcel.ts homeStreetSource; src/services/lead-engine-jobs.service.ts pullNames","status":"blocked"}
+  ],
+  "iterations": [
+    {"hypothesis":"All current BS, BB, and BR records can be treated as owner-name candidates for recipe B.","test":"Five-case audit selected from the existing eight-row fl_dbpr_barbers fixture and its actual parser/parcel tests on 2026-09-24: named BS, unnamed BS, BB residence, BR unit residence, and BR ordinary residence. No source request or provider call.","observed":"Named BS becomes Owner/Barbershop with no street; unnamed BS is owner_not_named; BB and BR become Barber records with their record streets. homeStreetSource explicitly marks the Barber rows register-origin.","change":"Restrict the proposed owner-shop intake to named BS rows, exclude BB/BR practitioners, and hold the job before any contact append or trace route."}
+  ],
+  "measurement": {"kind":"fixture","sampleSize":5,"observedAt":"2026-09-24","result":"Five bounded local parser/runtime branches were audited using the existing fixture; the actual targeted parser and parcel tests passed. This is code/fixture evidence only: no source-field coverage, phone value, mobile status, reachability, DNC result, ownership confirmation, or delivery outcome was measured.","verifiedPhones":0},
+  "cost": {"basis":"Local fixture and runtime audit only; no paid discovery, append, trace, or phone verification was invoked.","perInputUsd":0,"perCleanUsd":null,"note":"No clean delivered owner contact was measured. Historical brain expectations use another unverified denominator and are not a per-clean cost for this review."},
+  "implementation": {"status":"blocked","summary":"The adapter correctly distinguishes named BS owners from BB/BR practitioners, but the live recipe-B path admits practitioner residence streets and can progress to trace processing even though the source has no public business-contact field. A fail-closed source guard and BB/BR exclusion are required before this route can produce contact candidates.","runtimeFiles":["src/data/lead-engine-brain.json","src/lib/lead-engine-registers.ts","src/lib/lead-engine-parcel.ts","src/services/lead-engine-jobs.service.ts"]},
+  "nextMeasurement":"Only after a legally eligible, verified public business-contact source is mapped, run a 5–20-record aggregate coverage audit with separate counts for current BS rows, parseable owner candidates, published business-contact fields, independently supported owners, authorized contact-gate passes, and deliveries. Exclude BB/BR and do not retain residential or private-contact data."
+}

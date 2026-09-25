@@ -1,0 +1,6 @@
+.heading { margin-bottom: 28px; }
+.eyebrow { color: var(--brand-blue); font-size: 11px; font-weight: 750; letter-spacing: .16em; text-transform: uppercase; margin: 0 0 12px; }
+.heading h1 { color: var(--brand-navy); font-size: clamp(27px, 3vw, 38px); letter-spacing: -.045em; font-weight: 650; margin: 0 0 12px; }
+.heading p:not(.eyebrow) { color: var(--muted); line-height: 1.7; max-width: 720px; margin: 0; font-size: 14px; }
+.notice { display: flex; gap: 16px; align-items: center; justify-content: space-between; padding: 14px 18px; background: var(--sage); color: var(--brand-navy); border: 1px solid var(--line); border-radius: 12px; margin: 16px 0; font-size: 13px; }
+.notice button { background: transparent; border: 0; padding: 4px; display: grid; cursor: pointer; color: inherit; }

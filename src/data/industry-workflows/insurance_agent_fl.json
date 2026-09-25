@@ -1,0 +1,54 @@
+{
+  "industry": "insurance_agent_fl",
+  "title": "Florida insurance agents: licensee, agency-owner, and business-phone evidence kept separate",
+  "hypothesis": "The FL DFS individual file proves a current individual insurance license and may contain a published business phone. It does not prove agency ownership, independent status, direct line, or mobile status. An owner label requires an independently sourced, explicit agency role for the same person.",
+  "ownerSource": "No implemented owner source exists for Florida insurance agencies. The FL DFS Business and active-appointment downloads are listed in the catalog, but the needed owner, agent-in-charge, or DRLP columns are UNKNOWN and no runtime adapter ingests them. Individual license, name match, appointment/carrier count, address, or phone is not owner proof.",
+  "phoneSource": "FL DFS AllValidLicensesIndividual.csv is parsed as a published Business Phone on a VALID individual-license row. It is business-contact evidence only; frequency over three rows or equality with a credible agency/Maps phone is agency-line evidence, never a direct licensee mobile.",
+  "workflow": [
+    {"id":"gate","label":"Public-source eligibility gate","detail":"Use only the documented FL DFS individual-license download. Do not use residential, paid, private, or prohibited sources.","kind":"decision"},
+    {"id":"lic","label":"VALID individual DFS license","detail":"Parse a person row only when License Status is VALID; retain title and provenance as FL DFS licensee.","kind":"source"},
+    {"id":"holdlic","label":"Hold invalid, entity, or out-of-cohort row","detail":"Reject non-VALID or non-person rows and hold license types outside an explicit approved producer cohort.","kind":"hold"},
+    {"id":"role","label":"Separate licensee from agency owner","detail":"A license proves licensure only. Do not infer owner, principal, independent agent, or captive owner-operator from appointment/carrier count, name, address, or phone.","kind":"decision"},
+    {"id":"phone","label":"Published business-phone contrast","detail":"Use recipe-D phone frequency and credible agency/Maps comparison before verification; retain the register value as business-contact evidence.","kind":"verify"},
+    {"id":"holdphone","label":"Hold shared or office business line","detail":"Park repeated, equal-to-agency/Maps, absent, or weakly matched numbers without assigning them to the licensee.","kind":"hold"},
+    {"id":"owner","label":"Independent explicit agency role","detail":"Require a separately ingested, schema-validated agency row explicitly naming the same person as owner, principal, agent in charge, or DRLP.","kind":"decision"},
+    {"id":"holdowner","label":"Hold licensee without owner evidence","detail":"No current Florida adapter supplies an explicit agency-owner edge; do not promote the licensee.","kind":"hold"},
+    {"id":"contact","label":"Normal contact gates","detail":"Apply mobile line type, live, DNC, suppression, and dedupe checks after ownership evidence. A business phone remains unconfirmed until these pass.","kind":"verify"},
+    {"id":"holdcontact","label":"Hold failed contact evidence","detail":"Park non-mobile, unreachable, suppressed, shared, or otherwise failed contacts.","kind":"hold"},
+    {"id":"deliver","label":"Deliver supported owner classification","detail":"Deliver only after independent owner-role evidence and every contact/compliance gate pass.","kind":"deliver"}
+  ],
+  "edges": [
+    {"from":"gate","to":"lic","label":"eligible DFS individual source"},
+    {"from":"gate","to":"holdlic","label":"source unavailable or ineligible"},
+    {"from":"lic","to":"role","label":"VALID person licensee"},
+    {"from":"lic","to":"holdlic","label":"invalid, entity, or unsupported cohort"},
+    {"from":"role","to":"phone","label":"licensee retained without owner promotion"},
+    {"from":"phone","to":"owner","label":"unique credible business-contact candidate"},
+    {"from":"phone","to":"holdphone","label":"shared, office, absent, or weakly matched line"},
+    {"from":"owner","to":"contact","label":"explicit independent agency role matched"},
+    {"from":"owner","to":"holdowner","label":"no explicit agency-owner role"},
+    {"from":"contact","to":"deliver","label":"all gates pass"},
+    {"from":"contact","to":"holdcontact","label":"contact or compliance gate fails"}
+  ],
+  "failures": [
+    {"risk":"The brain selects recipe C although the adapter and catalog identify this register as recipe D, bypassing the shared business-phone comparison.","mitigation":"Change insurance_agent_fl to recipe D and add a synthetic quote/bucket regression before any provider-enabled run.","status":"proposed"},
+    {"risk":"A VALID individual licensee is labeled an independent agency owner from an appointment/carrier count that the runtime never ingests.","mitigation":"Remove the unimplemented owner-filter claim and persist only FL DFS licensee provenance until a separate explicit agency-role source is validated and ingested.","status":"proposed"},
+    {"risk":"A shared agency office phone is presented as the individual licensee's direct mobile.","mitigation":"Use phone frequency and credible agency/Maps contrast first; hold shared/equal business lines and apply normal contact gates only afterward.","status":"proposed"},
+    {"risk":"All VALID license types, including adjusters, enter an insurance-agent pipeline.","mitigation":"Add an explicit producer-license allowlist or hold non-producer types; current flDfsRecord accepts Adjuster - All Lines.","status":"proposed"},
+    {"risk":"Business-file or appointment columns are assumed to prove ownership without a verified schema or matched role.","mitigation":"Keep the owner branch blocked until the public Business file is schema-checked and an explicit person-to-agency role is implemented.","status":"blocked"}
+  ],
+  "sources": [
+    {"label":"FL DFS individual licensee bulk CSV","scope":"Florida VALID individual insurance license, title, published business phone/email/address, and licensee identity; no agency-owner relationship.","evidence":"VERIFIED","reference":"handoff/04_SOURCE_CATALOG.md Group F FL DFS Licensee Search bulk downloads; src/lib/lead-engine-registers.ts flDfsRecord and flDfsIndividual","status":"implemented"},
+    {"label":"FL DFS Business and active-appointment bulk files","scope":"Listed public files; business owner, agent-in-charge, and DRLP columns are not verified, and no current adapter ingests them.","evidence":"UNKNOWN","reference":"handoff/04_SOURCE_CATALOG.md Group F FL DFS row; handoff/07_RESEARCH_BUILD_SPEC.md open question 1","status":"blocked"},
+    {"label":"Recipe-D bucket comparison","scope":"Phone-frequency and Maps contrast for a register phone before verification.","evidence":"VERIFIED","reference":"src/lib/lead-engine-buckets.ts; flDfsIndividual declares recipe D in src/lib/lead-engine-registers.ts","status":"implemented"},
+    {"label":"Live insurance_agent_fl brain entry","scope":"Maps FL to fl_dfs_individual but selects recipe C and claims an appointment-count owner filter that is not implemented.","evidence":"VERIFIED","reference":"src/data/lead-engine-brain.json industries.insurance_agent_fl","status":"proposed"}
+  ],
+  "iterations": [
+    {"hypothesis":"A VALID FL DFS individual license row identifies an independent agency owner and a direct owner phone.","test":"Five-case local flDfsRecord and dedupeNames fixture/code audit on 2026-09-24: General Lines, Adjuster - All Lines, non-VALID, entity-shaped name, and a second license class with the same person/phone. No network or provider call.","observed":"The parser keeps VALID General Lines, Adjuster, and second-class person rows with a published business phone; it skips non-VALID and entity-shaped rows. Deduplication collapses repeated licensee IDs but does not model agency ownership, appointment count, phone frequency, agency relation, mobile status, or owner evidence.","change":"Describe the source as licensee plus business-contact evidence only. Hold owner classification pending an independently ingested explicit agency role and route phone handling through recipe D."},
+    {"hypothesis":"The brain's three-plus-carrier and single-captive appointment rules are current runtime filters.","test":"Static audit of insurance_agent_fl brain metadata, REGISTER_ADAPTERS, flDfsRecord, and the mapped register source.","observed":"Only fl_dfs_individual is mapped and it parses no appointment or Business-file fields. The brain selects C while its adapter declares D; the catalog also hints D for shared-phone contrast.","change":"Correct the shared metadata and recipe before enabling an insurance-agent owner workflow; do not report carrier count as independence or ownership evidence."}
+  ],
+  "measurement": {"kind":"fixture","sampleSize":5,"observedAt":"2026-09-24","result":"Five local parser/code cases only. VALID person licensees retain a published business phone; a VALID Adjuster also passes; invalid and entity rows are rejected; duplicate license classes dedupe by licensee ID. No external source, contact value, mobile status, live result, DNC result, owner relationship, or delivery was measured.","verifiedPhones":0},
+  "cost": {"basis":"Fixture/code audit only; no provider or paid verification call","perInputUsd":0,"perCleanUsd":null,"note":"No clean delivered owner contact was observed. Historical brain estimates have a different unverified denominator and do not establish a per-clean cost."},
+  "implementation": {"status":"blocked","summary":"The individual-license adapter is implemented, but its C-configured route bypasses the documented D phone contrast and has no implemented independent agency-owner evidence. The metadata's appointment/carrier owner filter is not backed by a mapped source or runtime parser.","runtimeFiles":["src/data/lead-engine-brain.json","src/lib/lead-engine-registers.ts","src/lib/lead-engine-buckets.ts","src/services/lead-engine-jobs.service.ts"]},
+  "nextMeasurement":"After root corrects the shared route, run five synthetic recipe-D/job cases: unique credible business phone, repeated agency phone, register phone equal to Maps phone, valid adjuster, and a separately ingested explicit agency-owner role. Assert that only the last can carry owner-candidate provenance; all contacts still require mobile/live/DNC/suppression/dedupe gates. Then run an authorized aggregate public-source study with separate licensee, producer-eligible, unique-phone, shared-phone, explicit-role, and delivery denominators."
+}

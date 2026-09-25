@@ -1,0 +1,8 @@
+flowchart TD
+    G[Google Maps discovery: 4 to 5 trades across 4 to 6 metros, franchise and lead aggregator listings removed] --> T{Line type of the Maps phone, Telnyx}
+    T -- mobile, 55 to 70 percent --> M1[The Maps phone is the owner cell candidate: confirm the name from reviews, the website about page, or the SOS agent]
+    T -- landline or VoIP --> I[Resolve identity: SOS registered agent, FMCSA carrier census, city business licenses, DBA filings, owner name extracted from reviews]
+    I --> P[Cell append by name and address, DataZapp then BatchData]
+    M1 --> V[FTC DNC, litigator scrub, compliance ledger]
+    P --> V
+    V --> O[Verified owner cells at 9 to 13 cents each]

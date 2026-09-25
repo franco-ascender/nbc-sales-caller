@@ -1,0 +1,108 @@
+{
+  "_about": "Routing brain for the Owner Cell app. The app loads this and follows it; engine.py executes the steps. Edit numbers here as new runs measure them. Yields are per record entering the paid step. clean = mobile AND not DNC AND not litigator. Measured Sept 2026.",
+  "version": "2026-09-19",
+  "unit_costs_usd": {"scrape_per_business": 0.0037, "verify_per_number": 0.007, "trace_per_person": 0.07},
+  "credit_value_usd": 0.10,
+  "spend_cap_ratio": 0.6,
+  "rescrub_days": 31,
+  "sample": {"target_cells": 20, "abort_if_clean_rate_below_fraction_of_expected": 0.5, "default_cities": ["Tampa, FL", "Dallas, TX", "Phoenix, AZ", "Charlotte, NC", "Columbus, OH"]},
+
+  "recipes": {
+    "A": {
+      "name": "Scrape",
+      "when": "The owner answers the business phone. Works in every US city.",
+      "steps": [
+        {"step": "scrape",  "engine": "scrape",  "paid": true,  "cost": "scrape_per_business", "input": "keyword + cities", "output": "businesses with phone, maps link, rating, reviews"},
+        {"step": "filter",  "engine": "scrape",  "paid": false, "rules": ["drop no phone", "drop toll-free", "drop duplicates", "drop business_status != OPERATIONAL", "drop chains", "keep only rows matching allowlist on category/subtypes/name"]},
+        {"step": "verify",  "engine": "verify",  "paid": true,  "cost": "verify_per_number", "keep": "type == Mobile AND dnc == false AND tcpa == false (flag mode: keep dnc rows marked)"},
+        {"step": "deliver", "engine": "deliver", "paid": false}
+      ],
+      "scale_rule": "More cells = more cities. Never trace a Lane A record.",
+      "credits_per_clean_cell": 2
+    },
+    "B": {
+      "name": "Name → home → trace",
+      "when": "A receptionist answers, or there is no storefront. Needs a state with a name source AND an address source (see states).",
+      "steps": [
+        {"step": "names",   "engine": "names",   "paid": false, "input": "name_source for the industry + state/county", "output": "owner first/last (+ street if the licence file has it)"},
+        {"step": "parcel",  "engine": "parcel",  "paid": false, "skip_if": "names already carry a home street (fl_re, fl_cpa)", "rules": ["match owner string LAST FIRST% or FIRST LAST", "exactly one owner → keep; two different owners → skip", "prefer owner-occupied / single-family", "street must have number + name + suffix; no suite/PO box"]},
+        {"step": "trace",   "engine": "trace",   "paid": true,  "cost": "trace_per_person", "keep": "highest-score Mobile with dnc == false AND tcpa == false; keep email"},
+        {"step": "deliver", "engine": "deliver", "paid": false}
+      ],
+      "scale_rule": "More cells = more names. ~25% of names resolve to a home; ~45% of traces come back clean. 1,000 clean ≈ 2,200 traces ≈ 9,000 names.",
+      "credits_per_clean_cell": 5
+    },
+    "C": {
+      "name": "Registry (phone already on file)",
+      "when": "The state prints the licensee's own phone. Always check for this first — 10x cheaper.",
+      "steps": [
+        {"step": "names",   "engine": "names",   "paid": false, "input": "registry with phone field"},
+        {"step": "verify",  "engine": "trace",   "paid": true,  "cost": "verify_per_number", "note": "engine.trace verifies any record that already has a phone instead of tracing it"},
+        {"step": "deliver", "engine": "deliver", "paid": false}
+      ],
+      "credits_per_clean_cell": 2
+    }
+  },
+
+  "industries": {
+    "car_detailing":      {"aliases": ["auto detailing", "detailing", "ceramic coating", "ppf", "tint"], "recipe": "A", "keyword": "car detailing",        "allow": "detail|ceramic|coating|tint|wrap", "expected_clean": 0.45, "expected_any": 0.59, "n": 44},
+    "hvac":               {"aliases": ["ac repair", "air conditioning", "heating"],                     "recipe": "A", "keyword": "hvac contractor",      "allow": "hvac|air condition|heating|cooling", "expected_clean": 0.20, "expected_any": 0.35, "n": 500},
+    "roofing":            {"aliases": ["roofer", "roofers"],                                            "recipe": "A", "keyword": "roofing contractor",   "allow": "roof", "expected_clean": 0.20, "expected_any": 0.35, "n": 500},
+    "plumbing":           {"aliases": ["plumber", "plumbers"],                                          "recipe": "A", "keyword": "plumber",              "allow": "plumb", "expected_clean": 0.20, "expected_any": 0.35, "n": 200},
+    "electrical":         {"aliases": ["electrician", "electricians"],                                  "recipe": "A", "keyword": "electrician",          "allow": "electric", "expected_clean": 0.20, "expected_any": 0.35, "n": 200},
+    "remodeling":         {"aliases": ["remodeler", "kitchen and bath", "kitchen remodel", "bathroom remodel", "general contractor"], "recipe": "A", "keyword": "kitchen remodeling", "allow": "remodel|renovat|kitchen|bath|contractor", "expected_clean": 0.20, "expected_any": 0.35, "n": 1000, "registry_states": ["WA", "OR", "CA"]},
+    "pool":               {"aliases": ["pool builder", "pool contractor", "pool service"],               "recipe": "A", "keyword": "pool builder",         "allow": "pool", "expected_clean": 0.18, "expected_any": 0.35, "n": 200},
+    "landscaping":        {"aliases": ["landscaper", "lawn care", "hardscape", "outdoor living"],        "recipe": "A", "keyword": "landscaping company",  "allow": "landscap|lawn|hardscap|outdoor", "expected_clean": 0.18, "expected_any": 0.35, "n": 500},
+    "painting":           {"aliases": ["painter", "painters"],                                          "recipe": "A", "keyword": "painting contractor",  "allow": "paint", "expected_clean": 0.20, "expected_any": 0.35, "n": 100},
+    "fencing":            {"aliases": ["fence", "fence company"],                                       "recipe": "A", "keyword": "fence contractor",     "allow": "fenc", "expected_clean": 0.20, "expected_any": 0.35, "n": 100},
+    "concrete":           {"aliases": ["concrete contractor", "paving", "driveway"],                    "recipe": "A", "keyword": "concrete contractor",  "allow": "concrete|paving|driveway", "expected_clean": 0.20, "expected_any": 0.35, "n": 100},
+    "auto_repair":        {"aliases": ["mechanic", "car repair", "auto shop"],                          "recipe": "A", "keyword": "auto repair shop",     "allow": "auto|car|repair|mechanic", "expected_clean": 0.19, "expected_any": 0.26, "n": 42},
+    "auto_body":          {"aliases": ["body shop", "collision"],                                       "recipe": "A", "keyword": "auto body shop",       "allow": "body|collision|auto", "expected_clean": 0.16, "expected_any": 0.20, "n": 45},
+    "jewelers":           {"aliases": ["jewelry store", "jeweler"],                                     "recipe": "A", "keyword": "jewelry store",         "allow": "jewel", "expected_clean": 0.23, "expected_any": 0.40, "n": 300},
+    "exotic_car_dealers": {"aliases": ["exotic cars", "luxury car dealer", "classic cars"],              "recipe": "A", "keyword": "exotic car dealer",    "allow": "exotic|luxury|classic|car dealer", "expected_clean": 0.21, "expected_any": 0.40, "n": 300},
+
+    "cpa":                {"aliases": ["accountant", "accountants", "accounting firm", "bookkeeper"],    "recipe": "B", "name_source": {"FL": "fl_cpa", "IL": "il_idfpr", "PA": "pa_pals"}, "expected_clean": 0.46, "expected_any": 0.96, "n": 90, "notes": "FL file carries the home street — skip parcel. TX/AZ/GA/WA/TN have no CPA file with a name+address path."},
+    "realtor":            {"aliases": ["real estate agent", "realtors", "broker", "brokerage"],          "recipe": "B", "name_source": {"FL": "fl_re", "TX": "tx_trec", "AZ": "az_adre", "IL": "il_idfpr", "PA": "pa_pals"}, "expected_clean": 0.35, "expected_any": 0.90, "n": 135, "by_state_clean": {"FL": 0.28, "TX": 0.56, "AZ": 0.44, "IL": 0.35}},
+    "property_manager":   {"aliases": ["property management", "rental management"],                     "recipe": "B", "name_source": {"FL": "fl_re --pm"}, "expected_clean": 0.38, "expected_any": 0.90, "n": 40, "notes": "PMs hold a broker licence; filter the broker file by business name (property mgmt / rental / leasing)."},
+    "dentist":            {"aliases": ["dental", "dentists", "orthodontist"],                            "recipe": "B", "name_source": {"*": "nppes --taxonomy Dentist"}, "expected_clean": 0.38, "expected_any": 0.48, "n": 40, "notes": "NPPES is national; parcel step needs a state in states.parcel."},
+    "chiropractor":       {"aliases": ["chiro", "chiropractic"],                                        "recipe": "B", "name_source": {"*": "nppes --taxonomy Chiropractor"}, "expected_clean": 0.35, "expected_any": 0.48, "n": 0, "notes": "Assumed = dentists. Measure on first run."},
+    "med_spa":            {"aliases": ["medspa", "aesthetics", "botox", "plastic surgeon", "cosmetic"],   "recipe": "B", "name_source": {"*": "nppes --industry medspa"}, "expected_clean": 0.26, "expected_any": 0.56, "n": 39},
+    "attorney":           {"aliases": ["lawyer", "law firm", "personal injury", "pi attorney"],           "recipe": "B", "name_source": {"*": "scrape 'personal injury attorney' → names --source firms"}, "expected_clean": 0.37, "expected_any": 0.63, "n": 19, "notes": "Only ~13% of firms yield a traceable partner name. Never deliver from the Google scrape itself (2% mobile). Quote higher credits."},
+    "real_estate_investor": {"aliases": ["investor", "landlord", "fix and flip", "wholesaler"],          "recipe": "B", "name_source": {"NC": "investors --min 3 --max 8"}, "expected_clean": 0.35, "expected_any": 0.80, "n": 40, "notes": "Other states: pull the county owner file, group by owner, keep individuals with 3-8 parcels."},
+    "developer":          {"aliases": ["real estate developer", "builder-developer"],                    "recipe": "B", "name_source": {"NC": "investors --min 6 --max 30"}, "expected_clean": 0.30, "expected_any": 0.80, "n": 40},
+
+    "contractor_registry": {"aliases": ["contractors WA", "contractors OR", "contractors CA"],           "recipe": "C", "name_source": {"WA": "data.wa.gov/resource/m8qx-ubtq.json", "OR": "data.oregon.gov/resource/g77e-6bhs.json", "CA": "CSLB download"}, "expected_clean": 0.63, "expected_any": 0.85, "n": 754, "notes": "Sort newest licence first (85% mobile on 2020s licences vs 18% on 2000s)."},
+    "pa_licensee":         {"aliases": ["pennsylvania realtor", "pennsylvania cpa"],                      "recipe": "C", "name_source": {"PA": "pa_pals"}, "expected_clean": 0.50, "expected_any": 1.00, "n": 4, "notes": "PALS phone field = the person's own mobile 4/4. ~28% of rows carry one; the rest go through recipe B via Philadelphia OPA."}
+  },
+
+  "states": {
+    "_rule": "Recipe A works in every state. Recipe B needs name_sources[industry] AND a parcel entry (or a licence file with a home street). Recipe C needs a registry with phone.",
+    "FL": {"parcel": "statewide (times out some days — licence files carry the street anyway)", "licence_files_with_home_street": ["fl_re", "fl_cpa"], "registry_phone": [], "notes": "Best state. Direct trace from licence file."},
+    "NC": {"parcel": "statewide NC OneMap", "licence_files_with_home_street": [], "registry_phone": [], "notes": "NPPES + parcel proven for dentists, med spas, attorneys; investors grouping coded."},
+    "TX": {"parcel": "Harris (HCAD bulk), Dallas (mirror), Travis (StratMap; per-county files exist for all TX)", "licence_files_with_home_street": [], "names": ["tx_trec"], "registry_phone": [], "notes": "TREC names + HCAD owner-occupied = 56% clean. No CPA file."},
+    "AZ": {"parcel": "Maricopa (Assessor ArcGIS), Pima", "names": ["az_adre"], "registry_phone": [], "notes": "44% clean realtors. No CPA file."},
+    "IL": {"parcel": "Cook (Assessor Socrata, slow ~4s/query — thread it)", "names": ["il_idfpr"], "registry_phone": [], "notes": "CPAs 50%, brokers 35%."},
+    "PA": {"parcel": "Philadelphia OPA (Carto)", "names": ["pa_pals"], "registry_phone": ["pa_pals (~28% of rows)"], "notes": "Allegheny hides owner names. PALS is per-surname search, not bulk — iterate common surnames."},
+    "GA": {"parcel": "Fulton (2026); DeKalb (2018, stale)", "names": [], "registry_phone": [], "notes": "No free realtor/CPA file (GREC sells one). Recipe A and investors only."},
+    "TN": {"parcel": "Nashville/Davidson", "names": [], "registry_phone": [], "notes": "No licence downloads. Recipe A and investors only."},
+    "WA": {"parcel": "Snohomish only (King/Pierce hide owners)", "names": [], "registry_phone": ["L&I contractors m8qx-ubtq"], "notes": "Contractors = recipe C. Professionals: no path."},
+    "OR": {"parcel": "unchecked", "names": [], "registry_phone": ["CCB g77e-6bhs"], "notes": "Contractors = recipe C."},
+    "CA": {"parcel": "none — no owner names in any public product", "names": [], "registry_phone": ["CSLB"], "notes": "Contractors = recipe C. Professionals: no path."},
+    "CO": {"parcel": "unchecked", "names": ["7s5z-vewr (CPA, RE) — name + city only, no street"], "registry_phone": [], "notes": "Needs a parcel source to be useful."},
+    "NY": {"parcel": "unchecked", "names": ["yg7h-zjbf real estate — business address only"], "registry_phone": [], "notes": "Unvalidated."},
+    "_other": "Run free discovery first (Socrata catalog: api.us.socrata.com/api/catalog/v1?q=license&domains=<portal>; ArcGIS: arcgis.com/sharing/rest/search?q=parcels owner <state>). Add a row here when a path is verified. Until then: recipe A only."
+  },
+
+  "guardrails": [
+    "Check job credit cap BEFORE every paid call; on cap → deliver what exists, settle, stop.",
+    "Any HTTP error or unexpected body → stop the job, log the body, mark needs_attention. Never retry with another vendor.",
+    "Auto-sample ~20 cells first; if clean rate < 50% of expected → stop and refund the hold.",
+    "Recipe B: print/log 3 full addresses before the trace fires; drop any without number + street + suffix.",
+    "Never call BatchData property search. Never scrape Google for attorneys/CPAs/med spas as the deliverable.",
+    "Dedupe against delivered (per user) and suppression (global) before delivery. Re-scrub after 31 days.",
+    "Never emit landline/VoIP. Litigator (tcpa) rows are dropped in every mode.",
+    "No SMS export path."
+  ],
+
+  "output_columns": ["#", "Cell Phone", "Company", "Google Maps Link", "Rating", "Reviews", "City", "State", "Time Zone", "Owner Name", "Email", "Status", "Called", "Outcome", "Notes"]
+}

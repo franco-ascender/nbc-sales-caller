@@ -1,0 +1,60 @@
+{
+  "industry": "contractor_registry",
+  "title": "Contractor registers: WA, OR, and CA candidate routes",
+  "hypothesis": "An active contractor register can establish a named license-role candidate and a published business-contact candidate, but neither proves ownership or a direct owner mobile. State role semantics, global phone reuse, Maps contrast, independent owner evidence, and contact/compliance gates must all pass before delivery.",
+  "ownerSource": "WA L&I active Individual primary principals; OR CCB RMI with sole-proprietor distinction; and CA CSLB CLEAR, unexpired Personnel titles joined to Master data. Each names a candidate role, not an owner-confirmed person.",
+  "phoneSource": "WA L&I phonenumber, OR CCB phone_number, and CA CSLB Master BusinessPhone, contrasted with a matched Maps business number. All remain published business-contact candidates until exclusivity and the existing verification and owner-evidence gates pass.",
+  "workflow": [
+    {"id":"state","label":"Legal and source-state gate","detail":"Choose only a WA, OR, or CA public-register route whose source conditions remain eligible; hold unavailable or restricted routes.","kind":"decision"},
+    {"id":"wa","label":"WA L&I active contractor","detail":"Read active L&I rows. Only an Individual row currently persists primaryprincipalname as a named Principal candidate; LLC and Corp rows remain business-only.","kind":"source"},
+    {"id":"or","label":"OR CCB active contractor","detail":"Read unexpired CCB rows with rmi_name and full_name. Equality marks a Sole Proprietor candidate; otherwise RMI remains a non-owner-confirmed role.","kind":"source"},
+    {"id":"ca","label":"CA CSLB CLEAR Master and Personnel","detail":"Use CLEAR, unexpired Master rows and active Personnel rows. Master BusinessPhone is joined by license number and stays business-contact evidence.","kind":"source"},
+    {"id":"holdsource","label":"Hold unavailable or ineligible source","detail":"Do not ingest a portal-rejected, restricted, stale, inactive, or unconfirmed-terms source route.","kind":"hold"},
+    {"id":"role","label":"Role-candidate assessment","detail":"Retain WA Individual, OR sole proprietor/RMI, and CA Sole Owner, Partner, Member, or supported officer as candidates. Do not treat a role as owner confirmation.","kind":"decision"},
+    {"id":"holdrole","label":"Hold unsupported ownership role","detail":"Hold CA RME, unsupported RMO/officer, corporate WA business-only, and uncorroborated OR RMI cases from owner labeling.","kind":"hold"},
+    {"id":"contrast","label":"Maps business contrast","detail":"Match the active contractor business and preserve equal or different phone result as contrast evidence only.","kind":"filter"},
+    {"id":"reuse","label":"Global phone-reuse gate","detail":"Hold a phone shared across distinct businesses or people across registers, Maps, and permits. The current runtime only counts within one register source, so this gate is proposed.","kind":"decision"},
+    {"id":"holdphone","label":"Hold shared, absent, or business-only contact","detail":"Do not infer a private number or call a shared/office line a direct owner contact.","kind":"hold"},
+    {"id":"verify","label":"Contact and owner-evidence gates","detail":"Require existing mobile line-type, live, DNC, suppression/dedupe, and independent owner-evidence checks.","kind":"verify"},
+    {"id":"holdverify","label":"Hold failed evidence","detail":"Park non-mobile, unreachable, suppressed, or unsupported-owner cases.","kind":"hold"},
+    {"id":"deliver","label":"Deliver supported classification","detail":"Deliver only after every contact and owner-evidence gate passes; a register candidate is never owner-confirmed by itself.","kind":"deliver"}
+  ],
+  "edges": [
+    {"from":"state","to":"wa","label":"eligible WA route"},
+    {"from":"state","to":"or","label":"eligible OR route"},
+    {"from":"state","to":"ca","label":"eligible CA route"},
+    {"from":"state","to":"holdsource","label":"ineligible, restricted, or unavailable"},
+    {"from":"wa","to":"role","label":"active L&I row"},
+    {"from":"or","to":"role","label":"unexpired CCB row"},
+    {"from":"ca","to":"role","label":"CLEAR Master and active Personnel row"},
+    {"from":"role","to":"contrast","label":"candidate role retained"},
+    {"from":"role","to":"holdrole","label":"unsupported or business-only role"},
+    {"from":"contrast","to":"reuse","label":"matched active business contrast"},
+    {"from":"contrast","to":"holdphone","label":"no reliable business match"},
+    {"from":"reuse","to":"verify","label":"exclusive contact candidate"},
+    {"from":"reuse","to":"holdphone","label":"shared, missing, or business-only contact"},
+    {"from":"verify","to":"deliver","label":"all gates pass"},
+    {"from":"verify","to":"holdverify","label":"contact or owner evidence fails"}
+  ],
+  "failures": [
+    {"risk":"A principal, RMI, RMO, officer, or qualifier is labelled as owner.","mitigation":"Persist role provenance; hold CA RME and unsupported roles, and require independent owner evidence before an owner label.","status":"partial"},
+    {"risk":"CA BusinessPhone, OR phone_number, or a WA register phone is labelled a direct owner mobile.","mitigation":"Use it only as a business-contact candidate; require Maps contrast, global exclusivity, mobile/live/DNC/dedupe, and owner evidence.","status":"partial"},
+    {"risk":"A shared answering-service, franchise, or office line appears once in each source and bypasses the per-source reuse filter.","mitigation":"Calculate a global distinct-business/person frequency across register, Maps, and permit contacts before verification; hold numbers above threshold.","status":"blocked"},
+    {"risk":"An inactive or stale license appears active enough to route.","mitigation":"Keep WA active status, OR future expiration, and CA CLEAR plus future expiration filters; require activity contrast.","status":"implemented"},
+    {"risk":"CSLB portal rejection or unresolved terms is silently replaced by a paid or unverified source.","mitigation":"Park the CA source route and retain the documented portal/terms limitation until it is independently resolved.","status":"implemented"}
+  ],
+  "sources": [
+    {"label":"WA L&I Contractor License Data General","scope":"WA active contractor identity and contact candidates","evidence":"VERIFIED","reference":"handoff/04_SOURCE_CATALOG.md row 17; handoff/07_RESEARCH_BUILD_SPEC.md sections 4 and 5; src/lib/lead-engine-registers.ts waLni","status":"implemented"},
+    {"label":"OR CCB Active Licenses","scope":"OR unexpired contractor RMI and business-contact candidates","evidence":"VERIFIED","reference":"handoff/04_SOURCE_CATALOG.md row 18; handoff/07_RESEARCH_BUILD_SPEC.md sections 4 and 5; src/lib/lead-engine-registers.ts orCcb","status":"implemented"},
+    {"label":"CA CSLB License Master plus Personnel","scope":"CA CLEAR contractor personnel roles with Master BusinessPhone","evidence":"VERIFIED","reference":"handoff/04_SOURCE_CATALOG.md row 15; handoff/07_RESEARCH_BUILD_SPEC.md sections 4 and 5; src/lib/lead-engine-registers.ts cslb","status":"blocked"},
+    {"label":"Existing Maps contrast route","scope":"Matched public contractor business listing and published business phone","evidence":"VERIFIED","reference":"src/services/lead-engine-jobs.service.ts; src/lib/lead-engine-buckets.ts","status":"implemented"}
+  ],
+  "iterations": [
+    {"hypothesis":"A named register person and printed phone can be treated as an owner direct line.","test":"Five-case fixture/code audit across WA Individual and LLC, OR sole-proprietor and RMI, and CA RME Personnel paths on 2026-09-24.","observed":"The adapters preserve materially different roles. CA explicitly joins Master BusinessPhone to Personnel rows, and OR stores a business-level phone beside RMI. The audit establishes parser behavior only.","change":"Use role candidates and business-contact candidates; require contrast, global exclusivity, and independent owner evidence before delivery."},
+    {"hypothesis":"The configured reuse filter rejects all shared contractor numbers.","test":"Code audit of selectRegisterNames and lead_engine_names_reuse(p_source).","observed":"The selection tests reuse_count, but the SQL frequency is scoped to p_source. It cannot see one phone reused across WA, OR, CA, Maps, or permits.","change":"Propose a global distinct-business/person phone-frequency gate before bucket/verification; hold cross-source shared contacts."}
+  ],
+  "measurement": {"kind":"fixture","sampleSize":5,"observedAt":"2026-09-24","result":"Five synthetic adapter cases: WA Individual named Principal; WA LLC business-only; OR full_name=rmi_name Sole Proprietor; OR distinct-company RMI; CA CLEAR Personnel RME inheriting Master BusinessPhone. Code audit only, with no provider calls or phone values retained. It does not measure mobile status, reachability, DNC/TCPA, source terms, owner confirmation, or delivery.","verifiedPhones":0},
+  "cost": {"basis":"Fixture/code audit only; no provider or paid verification call","perInputUsd":0,"perCleanUsd":null,"note":"No clean delivered owner contact was measured. Historical contractor_registry brain rates remain separate and are not a per-clean cost for this workflow."},
+  "implementation": {"status":"partial","summary":"WA, OR, and CA register adapters and Maps bucketing exist. State role semantics are present but cannot prove ownership. The material gap is cross-source phone reuse: the current reuse count is per register source, not global across register, Maps, and permit contacts.","runtimeFiles":["src/lib/lead-engine-registers.ts","src/services/lead-engine-registers.service.ts","src/lib/lead-engine-jobs.ts","src/services/lead-engine-jobs.service.ts","supabase/migrations/202609210250_lead_engine_registers.sql"]},
+  "nextMeasurement":"After source-term authorization, run aggregate field-coverage checks for each state, then separately measure named-role candidates, globally exclusive phones, Maps buckets, mobile/live/DNC-cleared contacts, reached people, independently confirmed owners, and deliveries. Add synthetic cross-source reuse fixtures before changing the shared gate."
+}

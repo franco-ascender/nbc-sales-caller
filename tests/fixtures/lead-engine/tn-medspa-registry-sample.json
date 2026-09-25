@@ -1,0 +1,430 @@
+{
+ "_about": "Tennessee Medical Spa Registry (Approved_Med_Spa.pdf, https://www.tn.gov/content/dam/tn/health/documents/Approved_Med_Spa.pdf, T.C.A. 63-6-105 public record) fetched 2026-09-21; text extracted with pypdf and parsed by regex (Name, MD|DO). Medical directors are supervising physicians, never owners: a director on 3 or more facilities is director_only_contact.",
+ "rows": [
+  {
+   "registration": 1,
+   "registered": "12/29/2015",
+   "expires": "3/28/2017",
+   "facility": "Skin Cancer & Cosmetic Dermatology",
+   "address": "425 Old Riceville Rd.,  Athens, TN  37303",
+   "directors": [
+    "John Chung"
+   ]
+  },
+  {
+   "registration": 2,
+   "registered": "1/1/2016",
+   "expires": "3/28/2017",
+   "facility": "About Face Bristol",
+   "address": "615 Volunteer Parkway, Bristol, TN  37620",
+   "directors": [
+    "Nick Rohit Patel"
+   ]
+  },
+  {
+   "registration": 3,
+   "registered": "1/1/2016",
+   "expires": "3/31/2017",
+   "facility": "Stacey B Carlton, MD, PC",
+   "address": "1645 South Main St., Ste 101, Crossville, TN  38555",
+   "directors": [
+    "Stacey B Carlton",
+    "Stacy B Carlton"
+   ]
+  },
+  {
+   "registration": 4,
+   "registered": "1/1/2016",
+   "expires": "3/31/2017",
+   "facility": "Elite Skin & Laser Center",
+   "address": "6408 Papermill Dr., Ste 110, Knoxville, TN  37919",
+   "directors": [
+    "Christopher W Pollock"
+   ]
+  },
+  {
+   "registration": 5,
+   "registered": "1/1/2016",
+   "expires": "3/31/2017",
+   "facility": "Renewal Skin Solutions",
+   "address": "453 Vista Dr., Sparta, TN  38583",
+   "directors": [
+    "Ty T Webb",
+    "Stephen Clark"
+   ]
+  },
+  {
+   "registration": 6,
+   "registered": "1/1/2016",
+   "expires": "3/31/2017",
+   "facility": "Salon J & Day Spa",
+   "address": "315 Deaderick St., Nashville, TN  37238",
+   "directors": [
+    "James J Wendel"
+   ]
+  },
+  {
+   "registration": 7,
+   "registered": "1/1/2016",
+   "expires": "3/31/2017",
+   "facility": "Skin MB",
+   "address": "2225 Bandywood Dr., Nashville, TN  37215",
+   "directors": [
+    "James J Wendel"
+   ]
+  },
+  {
+   "registration": 8,
+   "registered": "1/1/2016",
+   "expires": "3/31/2017",
+   "facility": "The Skin Spa, LLC",
+   "address": "6006 Walden Dr., Knoxville, TN  37919",
+   "directors": [
+    "Alan Louis Gorrell"
+   ]
+  },
+  {
+   "registration": 9,
+   "registered": "1/1/2016",
+   "expires": "3/31/2017",
+   "facility": "Acacia Dermatology",
+   "address": "2131 North Locust Ave., Lawrenceburg, TN  38464",
+   "directors": [
+    "Robert L Chen"
+   ]
+  },
+  {
+   "registration": 10,
+   "registered": "1/1/2016",
+   "expires": "3/31/2017",
+   "facility": "Eden Spa and Laser",
+   "address": "1044 Brookfield Rd., Memphis, TN  38119",
+   "directors": [
+    "Neumon T Goshorn"
+   ]
+  },
+  {
+   "registration": 11,
+   "registered": "1/1/2016",
+   "expires": "3/31/2017",
+   "facility": "Family Health Center",
+   "address": "11217 West Point Dr., Ste 2, Knoxville, TN  37934",
+   "directors": [
+    "Raye-Anne Ayo"
+   ]
+  },
+  {
+   "registration": 12,
+   "registered": "1/1/2016",
+   "expires": "3/31/2017",
+   "facility": "Klinner Medical Center",
+   "address": "9203 Lee Hwy, Ste 9, Ooltewah, TN  37363",
+   "directors": [
+    "Thomas Klinner Jr."
+   ]
+  },
+  {
+   "registration": 13,
+   "registered": "1/1/2016",
+   "expires": "3/31/2017",
+   "facility": "New Age Skin Care Spa & Salon",
+   "address": "62 Hospital Dr., McKenzie, TN  38201",
+   "directors": [
+    "Volker G Winkler",
+    "Bryan Hale Merrick",
+    "Terry Andrew Colotta"
+   ]
+  },
+  {
+   "registration": 14,
+   "registered": "1/1/2016",
+   "expires": "3/31/2017",
+   "facility": "reNurture",
+   "address": "6005 Park Ave., Suite 700, Memphis, TN  38119",
+   "directors": [
+    "Nicholas G Economides"
+   ]
+  },
+  {
+   "registration": 15,
+   "registered": "1/1/2016",
+   "expires": "3/31/2017",
+   "facility": "Women's Health Specialists, PLLC",
+   "address": "7800 Wolf Trail Cove, Germantown, TN  38138",
+   "directors": [
+    "Thomas G Stovall"
+   ]
+  },
+  {
+   "registration": 16,
+   "registered": "1/1/2016",
+   "expires": "3/31/2017",
+   "facility": "Advanced Surgical Concepts",
+   "address": "7446 Shallowford Road #205, Chattanooga, TN  37421",
+   "directors": [
+    "James E White"
+   ]
+  },
+  {
+   "registration": 17,
+   "registered": "1/1/2016",
+   "expires": "3/31/2017",
+   "facility": "Center for Pelvic Health",
+   "address": "100 Covey Dr., Ste 205, Franklin, TN  37067",
+   "directors": [
+    "Barry K Jarnagin"
+   ]
+  },
+  {
+   "registration": 18,
+   "registered": "1/1/2016",
+   "expires": "3/31/2017",
+   "facility": "Langsdon Clinic",
+   "address": "7499 Poplar Pike, Germantown, TN  38138",
+   "directors": [
+    "Phillip R Langsdon"
+   ]
+  },
+  {
+   "registration": 19,
+   "registered": "1/1/2016",
+   "expires": "3/31/2017",
+   "facility": "Plastic Surgery Group of Memphis, PC",
+   "address": "80 Humphreys Center Dr., Ste 100, Memphis, TN   38120",
+   "directors": [
+    "Robert L Adams",
+    "H Hughes",
+    "Beth Cooper"
+   ]
+  },
+  {
+   "registration": 20,
+   "registered": "1/1/2016",
+   "expires": "3/31/2017",
+   "facility": "Wellness Essentials, LLC",
+   "address": "4322 Harding Pk., Ste 329, Nashville, TN  37215",
+   "directors": [
+    "Grayson Woods"
+   ]
+  },
+  {
+   "registration": 21,
+   "registered": "1/1/2016",
+   "expires": "4/5/2017",
+   "facility": "C Rodney Susong MD, PC",
+   "address": "2051 Hamill Rd., Ste 301, Hixson, TN  37343",
+   "directors": [
+    "Charles R Susong"
+   ]
+  },
+  {
+   "registration": 22,
+   "registered": "1/1/2016",
+   "expires": "4/5/2017",
+   "facility": "Center MedSpa",
+   "address": "320 East Main St., Chattanooga, TN  37408",
+   "directors": [
+    "Jeffrey S Jump"
+   ]
+  },
+  {
+   "registration": 23,
+   "registered": "1/1/2016",
+   "expires": "4/5/2017",
+   "facility": "Hyde Salon, Inc",
+   "address": "4317 Harding Rd., Nashville, TN  37205",
+   "directors": [
+    "Grayson Woods"
+   ]
+  },
+  {
+   "registration": 24,
+   "registered": "1/1/2016",
+   "expires": "4/5/2017",
+   "facility": "Memphis Obstetrics & Gynecological",
+   "address": "7705 Poplar Ave, Ste 210 Bldg B, Germantown, TN  38138",
+   "directors": [
+    "Cory R Tinker"
+   ]
+  },
+  {
+   "registration": 25,
+   "registered": "1/1/2016",
+   "expires": "4/5/2017",
+   "facility": "Morristown Aesthetic Center",
+   "address": "534 W 5th North St., Morristown, TN  37814",
+   "directors": [
+    "Scott Matson"
+   ]
+  },
+  {
+   "registration": 26,
+   "registered": "1/1/2016",
+   "expires": "4/5/2017",
+   "facility": "Nashville Vascular & Vein Institute,",
+   "address": "330 23rd Ave North, Ste 100, Nashville, TN  37203",
+   "directors": [
+    "Patrick C Ryan"
+   ]
+  },
+  {
+   "registration": 27,
+   "registered": "1/1/2016",
+   "expires": "4/6/2017",
+   "facility": "The Plastic Surgery Group, P.C.",
+   "address": "979 E Third St, Ste C-920, Chattanooga, TN  37403",
+   "directors": [
+    "Larry Sargent",
+    "Mark Brzezienski",
+    "Kennedy",
+    "Rehm",
+    "Waldrop",
+    "Griner"
+   ]
+  },
+  {
+   "registration": 28,
+   "registered": "1/2/2016",
+   "expires": "4/6/2017",
+   "facility": "Aesthetic Cosmetic Surgery Center",
+   "address": "3065 E Corporate Edge Dr, Ste 102, Germantown, TN  38138",
+   "directors": [
+    "Robin M Stevenson"
+   ]
+  },
+  {
+   "registration": 29,
+   "registered": "1/2/2016",
+   "expires": "4/6/2017",
+   "facility": "Deborah D Sherman, MD",
+   "address": "4306 Harding Pike, Ste 106, Nashville, TN  37205",
+   "directors": [
+    "Deborah D Sherman",
+    "Deborah D Sherman"
+   ]
+  },
+  {
+   "registration": 30,
+   "registered": "1/2/2016",
+   "expires": "4/6/2017",
+   "facility": "James E Turner, MD PhD PC",
+   "address": "6570 Stage Rd., #140, Bartlett, TN  38134",
+   "directors": [
+    "James E Turner",
+    "James E Turner",
+    "Malika Tuli"
+   ]
+  },
+  {
+   "registration": 31,
+   "registered": "1/2/2016",
+   "expires": "4/6/2017",
+   "facility": "McDonald Murrmann Skin and Laser",
+   "address": "7205 Wolf River Blvd, Ste 155, Germantown, TN  38138",
+   "directors": [
+    "Susan Murrmann"
+   ]
+  },
+  {
+   "registration": 32,
+   "registered": "1/2/2016",
+   "expires": "4/6/2017",
+   "facility": "Women's Care Center of Memphis,",
+   "address": "301 6215 Humphreys Blvd, Ste 301, Memphis, TN  38120",
+   "directors": [
+    "Lea C Tonkin",
+    "Truman King",
+    "Mary Keegan",
+    "Regina Healy",
+    "Judith Williams",
+    "Benjamin Todd Chappell",
+    "Miriah Denbo",
+    "Sharon Butcher"
+   ]
+  },
+  {
+   "registration": 33,
+   "registered": "1/2/2016",
+   "expires": "4/6/2017",
+   "facility": "Dermatology Assoc of Knoxville Skin",
+   "address": "7557 Dannaher Way, Ste G20, Powell, TN  37849",
+   "directors": [
+    "Edward Primka",
+    "Drew Miller",
+    "Fowler"
+   ]
+  },
+  {
+   "registration": 34,
+   "registered": "1/2/2016",
+   "expires": "4/6/2017",
+   "facility": "Dermatology Assoc of Knoxville Skin",
+   "address": "11416 Grigsby Chapel Rd, Ste 101, Knoxville, TN  37934",
+   "directors": [
+    "Edward Primka",
+    "Drew Miller",
+    "Carley Fowler"
+   ]
+  },
+  {
+   "registration": 35,
+   "registered": "1/4/2016",
+   "expires": "4/6/2017",
+   "facility": "Atlas Men's Health",
+   "address": "14 N. McLenn, Memphis, TN  38104",
+   "directors": [
+    "Michael J Washington"
+   ]
+  },
+  {
+   "registration": 36,
+   "registered": "1/4/2016",
+   "expires": "4/6/2017",
+   "facility": "Axis Medical, Inc",
+   "address": "128 Raymond Hirsch Pkwy, White House, TN 37188",
+   "directors": [
+    "Paul S Yim"
+   ]
+  },
+  {
+   "registration": 37,
+   "registered": "1/4/2016",
+   "expires": "4/6/2017",
+   "facility": "Medi-Spa @ Knoxville Dermatology,",
+   "address": "123 Fox Road, Ste 200, Knoxville, TN  37922",
+   "directors": [
+    "George C Keough"
+   ]
+  },
+  {
+   "registration": 38,
+   "registered": "1/4/2016",
+   "expires": "4/6/2017",
+   "facility": "Skin Cancer & Cosmetic Dermatology",
+   "address": "2358 Lifestyle Way, Ste 212, Chattanooga, TN 37421",
+   "directors": [
+    "John Chung"
+   ]
+  },
+  {
+   "registration": 39,
+   "registered": "1/4/2016",
+   "expires": "4/6/2017",
+   "facility": "Skin Cancer & Cosmetic Dermatology",
+   "address": "2253 Chambliss Ave NW, Ste 300, Cleveland, TN  37311",
+   "directors": [
+    "John Chung"
+   ]
+  },
+  {
+   "registration": 40,
+   "registered": "1/4/2016",
+   "expires": "4/6/2017",
+   "facility": "Skin Cancer & Cosmetic Dermatology",
+   "address": "4513 Hixson Pike, Ste 101, Hixson, TN  37343",
+   "directors": [
+    "John Chung"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,242 @@
+{
+  "industry": "exotic_car_dealers",
+  "title": "Exotic-car dealers: narrow published-business-contact workflow",
+  "hypothesis": "The live Maps-first route can identify a published business contact for a genuinely exotic, luxury, or classic-car dealer, but its current broad allowlist also admits ordinary dealers. A listing, published dealership line, dealer-license record, or person named in a filing does not establish an owner-confirmed mobile; delivery requires the implemented contact/compliance gates and independent ownership and handset evidence.",
+  "ownerSource": "No dealer-specific owner-confirming adapter is implemented. The catalog's NY DMV dealer (DLU) rows are a possible future licensee-candidate source, but this review did not fetch DMV data and the implemented ny_repair_shops adapter explicitly keeps only RS and RSB repair-shop rows.",
+  "phoneSource": "The implemented recipe-A route begins with the published Maps business number for the exotic-car-dealer keyword. It is a business-contact candidate only until line type, reachability, DNC/TCPA, suppression, duplicate, ownership, and handset evidence are separately satisfied.",
+  "workflow": [
+    {
+      "id": "maps",
+      "label": "Discover published dealer listing",
+      "detail": "Use the live recipe-A Maps query. A listing and advertised number are dealership evidence only.",
+      "kind": "source"
+    },
+    {
+      "id": "fit",
+      "label": "Exotic-dealer fit?",
+      "detail": "Require exotic, luxury, or classic-car-dealer evidence. Ordinary used, OEM, rental, repair, parts, detailing, and generic car-dealer results are not sufficient.",
+      "kind": "filter"
+    },
+    {
+      "id": "holdfit",
+      "label": "Hold broad or adjacent dealer",
+      "detail": "Hold a generic dealer or adjacent automotive listing; do not call it exotic solely because the current allowlist matches car dealer.",
+      "kind": "hold"
+    },
+    {
+      "id": "independent",
+      "label": "Independent dealership candidate?",
+      "detail": "Hold OEM, franchise, group, and multi-location operators from the owner-candidate branch pending separately reviewed ownership evidence.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdbrand",
+      "label": "Hold OEM, franchise, or group",
+      "detail": "A dealership brand or group can retain a business-contact classification but is not owner-confirmed from the listing.",
+      "kind": "hold"
+    },
+    {
+      "id": "phone",
+      "label": "Published business number present?",
+      "detail": "The advertised dealership number is not a person number. Do not use a dealer, filing, or business address to discover a private number.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdphone",
+      "label": "Hold missing contact",
+      "detail": "Keep the business identity only when no published business contact exists.",
+      "kind": "hold"
+    },
+    {
+      "id": "verify",
+      "label": "Business-contact gates",
+      "detail": "Apply the implemented mobile-line, reachable, DNC/TCPA, suppression, duplicate, and freshness checks. Passing them does not prove ownership.",
+      "kind": "verify"
+    },
+    {
+      "id": "holdverify",
+      "label": "Hold failed contact gate",
+      "detail": "Hold non-mobile, unreachable, DNC/TCPA, suppressed, duplicate, or otherwise unsupported rows.",
+      "kind": "hold"
+    },
+    {
+      "id": "owner",
+      "label": "Independent owner and handset evidence?",
+      "detail": "A dealer-license licensee, public filing role, published dealership line, or mobile result alone is insufficient; retain each only as candidate evidence.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdowner",
+      "label": "Hold as business contact",
+      "detail": "Do not label or deliver an owner-confirmed mobile without independently recorded ownership and handset evidence.",
+      "kind": "hold"
+    },
+    {
+      "id": "deliver",
+      "label": "Deliver supported contact",
+      "detail": "Only a future workflow that records independent ownership and handset evidence plus every contact/compliance gate may use an owner-confirmed classification.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    {
+      "from": "maps",
+      "to": "fit",
+      "label": "listing"
+    },
+    {
+      "from": "fit",
+      "to": "independent",
+      "label": "specific exotic/luxury/classic evidence"
+    },
+    {
+      "from": "fit",
+      "to": "holdfit",
+      "label": "generic, adjacent, or no fit"
+    },
+    {
+      "from": "independent",
+      "to": "phone",
+      "label": "independent candidate"
+    },
+    {
+      "from": "independent",
+      "to": "holdbrand",
+      "label": "OEM, franchise, group, or multi-location"
+    },
+    {
+      "from": "phone",
+      "to": "verify",
+      "label": "published business number"
+    },
+    {
+      "from": "phone",
+      "to": "holdphone",
+      "label": "no published number"
+    },
+    {
+      "from": "verify",
+      "to": "owner",
+      "label": "all contact gates pass"
+    },
+    {
+      "from": "verify",
+      "to": "holdverify",
+      "label": "a contact gate fails"
+    },
+    {
+      "from": "owner",
+      "to": "deliver",
+      "label": "independent ownership and handset evidence"
+    },
+    {
+      "from": "owner",
+      "to": "holdowner",
+      "label": "candidate-only evidence"
+    }
+  ],
+  "failures": [
+    {
+      "risk": "Ordinary used and OEM dealer listings pass the exotic-car-dealer allowlist because its final alternative is car dealer.",
+      "mitigation": "Remove the generic car dealer alternative and retain only specific exotic/luxury/classic dealer terms; add a five-case regression that rejects used and OEM dealer fixtures.",
+      "status": "blocked"
+    },
+    {
+      "risk": "A published dealership switchboard or mobile line is called a direct owner mobile.",
+      "mitigation": "Treat it as a published business contact and require mobile, live, DNC/TCPA, suppression, dedupe, independent ownership, and handset evidence before an owner-confirmed label.",
+      "status": "implemented"
+    },
+    {
+      "risk": "A dealer licensee or public filing officer is represented as the current owner, or a business address is used for personal-phone enrichment.",
+      "mitigation": "Keep license and filing roles as identity-candidate evidence only; prohibit personal-phone and address enrichment, and require independent ownership and handset evidence.",
+      "status": "proposed"
+    },
+    {
+      "risk": "OEM franchises, dealer groups, and multi-location luxury operators are treated as one-owner independent dealers.",
+      "mitigation": "Hold brand, franchise, group, and multi-location signals before forming an owner hypothesis.",
+      "status": "proposed"
+    },
+    {
+      "risk": "The NY repair-shop adapter is mistaken for a dealer register because the catalog's DMV dataset also has DLU dealer rows.",
+      "mitigation": "Do not map exotic dealers to ny_repair_shops: its parser filters to RS and RSB. Build and test a dealer-specific DLU adapter only after a separately approved source review.",
+      "status": "implemented"
+    }
+  ],
+  "sources": [
+    {
+      "label": "Live exotic-car-dealer recipe-A route",
+      "scope": "National Maps-first published-business-contact discovery using keyword exotic car dealer and allow pattern exotic|luxury|classic|car dealer",
+      "evidence": "VERIFIED",
+      "reference": "src/data/lead-engine-brain.json industries.exotic_car_dealers; src/lib/lead-engine-brain.ts route; src/services/lead-engine-jobs.service.ts ingestRows",
+      "status": "implemented"
+    },
+    {
+      "label": "NY DMV Facilities Licensed by the DMV",
+      "scope": "Catalog documents dealer DLU rows and owner_name field, but this review did not query DMV and the current adapter does not ingest DLU.",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group G Automotive NY DMV row; handoff/07_RESEARCH_BUILD_SPEC.md Group G sections G1-G4",
+      "status": "proposed"
+    },
+    {
+      "label": "Implemented NY repair-shop adapter",
+      "scope": "Current RS and RSB repair-shop-only parser; it excludes DLU and cannot corroborate dealer candidates.",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-registers.ts nyRepairShopRow and nyRepairShops",
+      "status": "implemented"
+    },
+    {
+      "label": "Washington DOL transportation-industry dealer file",
+      "scope": "Catalog records active motor-vehicle-dealer business names and published business phone field, but no adapter or exotic-dealer mapping is implemented.",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group G Automotive WA DOL row; handoff/07_RESEARCH_BUILD_SPEC.md section G3",
+      "status": "proposed"
+    },
+    {
+      "label": "Delivery contact gates",
+      "scope": "Mobile, reachable, DNC/TCPA-clear, suppression, dedupe, and freshness checks on a contact candidate.",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-quality.ts evaluateVerifiedBusiness; src/lib/lead-engine-gates.ts evaluateJobGates; src/services/lead-engine-jobs.service.ts settleVerified",
+      "status": "implemented"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "The live exotic-car-dealer allowlist distinguishes exotic, luxury, and classic dealers from generic dealership results.",
+      "test": "Five-case code audit on 2026-09-24 using the exact RegExp constructed from lead-engine-brain.json industries.exotic_car_dealers.allow in ingestRows: Prestige Exotic Motors — Exotic Car Dealer; Luxury Auto Gallery — Luxury Car Dealer; Heritage Classics — Classic Car Dealer; Value Lane — Used Car Dealer; Metro Ford — Car Dealer. The audit also called route('luxury car dealer', 'NY'). No network, DMV, paid, secret, or contact-data call was made.",
+      "observed": "All five strings matched. The first three demonstrate intended inclusion; Value Lane and Metro Ford demonstrate false inclusion caused by the generic car dealer alternative. route('luxury car dealer', 'NY') selected exotic_car_dealers recipe A. This audit measures code behavior only, not listing coverage, line type, reachability, DNC, ownership, handset evidence, or delivery.",
+      "change": "Treat generic car dealer as a concrete allowlist defect. Replace the generic alternative with specific exotic/luxury/classic dealer phrases and add the same five fixtures as a regression test; retain used and OEM dealer rows on the hold branch until a reviewed workflow covers them."
+    },
+    {
+      "hypothesis": "Root integration regression check, 2026-09-24",
+      "test": "Focused synthetic regression checks in tests/lead-engine-industry-corrections.test.ts, lead-engine-reviews.test.ts, lead-engine-gates-jobs.test.ts and lead-engine-jobs.test.ts. No paid provider call.",
+      "observed": "A dedicated profile requires exotic/luxury/classic automotive context. Generic used/OEM dealers and luxury-spa counterexamples fail before verification even though the historical broad brain allow field remains unchanged.",
+      "change": "Shared runtime correction integrated. Original source samples are retained with their original denominators; no phone-yield improvement is claimed."
+    }
+  ],
+  "measurement": {
+    "kind": "code_audit",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Exact live allowlist audit: exotic, luxury, classic, used, and OEM dealer strings all matched because the pattern ends in car dealer. The NY luxury-car-dealer route selected recipe A. Code audit only; no live source, DMV, phone, identity, ownership, handset, compliance, or delivery measurement.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Five-case code audit only",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean delivered owner contact was measured. The historical Anas brain rate has a different denominator and is not a per-clean cost for this workflow."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "A dedicated profile requires exotic/luxury/classic automotive context. Generic used/OEM dealers and luxury-spa counterexamples fail before verification even though the historical broad brain allow field remains unchanged. Original review: The industry is recognized and runs the recipe-A Maps route with existing business-contact and delivery gates. It has no dealer-specific owner-confirming adapter, and its current allowlist overadmits ordinary dealers. The NY repair adapter does not cover DLU dealer rows.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/services/lead-engine-jobs.service.ts",
+      "src/lib/lead-engine-registers.ts",
+      "src/lib/lead-engine-quality.ts",
+      "src/lib/lead-engine-gates.ts"
+    ]
+  },
+  "nextMeasurement": "After the allowlist correction, run the same five synthetic discovery fixtures through ingestRows and verify that specific exotic/luxury/classic dealer cases proceed while generic used and OEM dealer cases are filtered. A later authorized outcome pilot must separately measure published-contact line type, DNC/TCPA, reachability, reached owner, independent ownership evidence, handset evidence, and delivery; do not query DMV or use business addresses for personal-phone discovery."
+}

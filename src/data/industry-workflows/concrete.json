@@ -1,0 +1,79 @@
+{
+  "industry": "concrete",
+  "title": "Concrete: specialty-scoped contractor identity with paving and materials exclusions",
+  "hypothesis": "An active, concrete-scoped contractor record can establish business and principal or license-role candidate evidence, but its published phone is only a business-contact candidate. An owner-confirmed mobile requires independent owner evidence plus mobile, live, DNC, suppression, and delivery-dedupe gates.",
+  "ownerSource": "Legally eligible contractor registers with an explicit concrete classification: WA L&I active CONCRET specialty rows and CA CSLB C-8 master/personnel records. A WA primary principal or CSLB personnel title is candidate-role evidence, not ownership confirmation.",
+  "phoneSource": "A published register business phone, contrasted with a current Maps business listing where permitted. It remains a business or candidate contact until exclusivity, mobile, live, DNC, global suppression/dedupe, and independent owner-evidence gates pass.",
+  "workflow": [
+    { "id": "legal", "label": "State legal gate", "detail": "Allow only a legally eligible public contractor-register route; retain WA's PDDL/RCW caution and hold prohibited or restricted list routes.", "kind": "decision" },
+    { "id": "register", "label": "Active concrete-specialty register", "detail": "Require an active explicit concrete classification such as WA CONCRET or CA C-8; generic construction registration is not concrete evidence.", "kind": "source" },
+    { "id": "maps", "label": "Permitted concrete listing fallback", "detail": "Use the live Maps concrete-contractor route only where the register route is unavailable or not yet implemented and the fallback is permitted.", "kind": "source" },
+    { "id": "holdlegal", "label": "Hold restricted source", "detail": "Do not ingest prohibited or commercially restricted list sources.", "kind": "hold" },
+    { "id": "fit", "label": "Concrete and operator-fit filter", "detail": "Require concrete installation, repair, flatwork, foundations, slabs, or driveway evidence; hold ready-mix suppliers, cement/material retail, aggregate/hauling, pure asphalt/pavers, excavation-only, structural-commercial, franchise, stale, and multi-location matches.", "kind": "filter" },
+    { "id": "holdfit", "label": "Hold off-segment candidate", "detail": "Do not convert an adjacent trade, supplier, or industrial operator into an independent concrete-owner candidate.", "kind": "hold" },
+    { "id": "role", "label": "Owner-role assessment", "detail": "Retain an Individual entity, Sole Owner, partner, or member as stronger candidate evidence; principal, qualifier, RMO, RME, officer, or corporate role needs independent owner evidence.", "kind": "decision" },
+    { "id": "holdrole", "label": "Hold unsupported role", "detail": "Do not label a qualifier, employee, corporate officer, or unsupported principal as the business owner.", "kind": "hold" },
+    { "id": "phone", "label": "Candidate contact contrast", "detail": "Compare published register and Maps numbers where both exist; missing, shared, duplicate, or office-only numbers do not become direct owner contacts.", "kind": "decision" },
+    { "id": "holdphone", "label": "Hold unsupported contact", "detail": "Do not infer a private mobile or call a public business line an owner handset.", "kind": "hold" },
+    { "id": "verify", "label": "Contact and compliance gates", "detail": "Apply mobile line type, live status, DNC, global suppression/dedupe, and independent owner-evidence checks.", "kind": "verify" },
+    { "id": "holdverify", "label": "Hold failed verification", "detail": "Park non-mobile, unreachable, suppressed, shared, or ownership-unsupported cases.", "kind": "hold" },
+    { "id": "deliver", "label": "Deliver supported classification", "detail": "Deliver only after every required gate passes; owner-confirmed mobile requires independent owner evidence.", "kind": "deliver" }
+  ],
+  "edges": [
+    { "from": "legal", "to": "register", "label": "eligible specialty register" },
+    { "from": "legal", "to": "maps", "label": "register unavailable; permitted fallback" },
+    { "from": "legal", "to": "holdlegal", "label": "restricted or prohibited source" },
+    { "from": "register", "to": "fit", "label": "active CONCRET/C-8 candidate" },
+    { "from": "register", "to": "holdfit", "label": "inactive, generic, or wrong class" },
+    { "from": "maps", "to": "fit", "label": "concrete-contractor candidate" },
+    { "from": "fit", "to": "role", "label": "independent concrete fit" },
+    { "from": "fit", "to": "holdfit", "label": "supplier, adjacent, brand, industrial, or stale" },
+    { "from": "role", "to": "phone", "label": "candidate role retained" },
+    { "from": "role", "to": "holdrole", "label": "unsupported ownership role" },
+    { "from": "phone", "to": "verify", "label": "candidate contact retained" },
+    { "from": "phone", "to": "holdphone", "label": "missing, shared, duplicate, or office-only" },
+    { "from": "verify", "to": "deliver", "label": "all contact and owner-evidence gates pass" },
+    { "from": "verify", "to": "holdverify", "label": "line, compliance, dedupe, or owner-evidence failure" }
+  ],
+  "failures": [
+    { "risk": "The live Maps-first concrete-contractor route begins with an advertised business line rather than trade-scoped identity.", "mitigation": "Use a legally eligible CONCRET/C-8 record as trade and candidate-role evidence, then use Maps as contrast or permitted fallback.", "status": "proposed" },
+    { "risk": "WA CONCRET and CA C-8 classifications cannot be selected from ingested rows because adapters do not persist specialty/classification into the field consumed by register-source filters.", "mitigation": "Persist normalized classifications in a filterable trade field, or implement source-specific class filtering before adding concrete register mappings.", "status": "blocked" },
+    { "risk": "Ready-mix, cement and aggregate suppliers, hauling, asphalt/pavers, excavation-only work, and industrial structural contractors enter the independent concrete route.", "mitigation": "Require explicit concrete contractor/flatwork/foundation/driveway activity and hold adjacent, supplier, industrial, franchise, and multi-location cases.", "status": "partial" },
+    { "risk": "A principal, qualifier, or public office line is represented as an owner-confirmed mobile.", "mitigation": "Preserve source role and phone provenance; require contact, compliance, and independent owner-evidence gates.", "status": "partial" },
+    { "risk": "Texas and North Carolina are treated as statewide concrete-license routes although the research marks concrete unlicensed statewide there.", "mitigation": "Do not fabricate a statewide concrete-register path; use only a permitted business-listing fallback or separately reviewed local route.", "status": "proposed" }
+  ],
+  "sources": [
+    { "label": "WA L&I Contractor License Data General", "scope": "Washington active CONCRET-specialty contractor candidates with principal and published-phone fields", "evidence": "VERIFIED", "reference": "handoff/04_SOURCE_CATALOG.md Group A WA L&I row; handoff/07_RESEARCH_BUILD_SPEC.md WA state row; https://data.wa.gov/resource/m8qx-ubtq.json; src/lib/lead-engine-registers.ts waLni", "status": "implemented" },
+    { "label": "CA CSLB License Master plus Personnel", "scope": "California C-8 concrete business and personnel-role candidates", "evidence": "VERIFIED", "reference": "handoff/07_RESEARCH_BUILD_SPEC.md CA state row; src/lib/lead-engine-registers.ts cslb", "status": "implemented" },
+    { "label": "Live concrete recipe-A route", "scope": "Published concrete-contractor business discovery", "evidence": "VERIFIED", "reference": "src/data/lead-engine-brain.json industries.concrete; src/lib/lead-engine-brain.ts route; src/lib/lead-engine-industries.ts concrete profile", "status": "implemented" },
+    { "label": "Texas and North Carolina statewide licensing scope", "scope": "Negative route constraint for concrete", "evidence": "VERIFIED", "reference": "handoff/07_RESEARCH_BUILD_SPEC.md TX and NC state rows", "status": "proposed" }
+  ],
+  "iterations": [
+    { "hypothesis": "A free, active concrete-specialty register can contribute trade and candidate-contact coverage before any owner classification.", "test": "Aggregate-only live query of 20 WA L&I rows on 2026-09-24 where statuscode was A and specialtycode1desc contained CONCRET.", "observed": "20/20 rows were active and had specialty, primary principal, and published-phone fields; 3/20 were Individual business entities. The observation establishes field coverage only, not owner role, handset ownership, mobile status, reachability, DNC, or delivery.", "change": "Use an explicit specialty branch and role/contact holds. Do not treat the principal or published phone as owner-confirmed; first repair class persistence so the current runtime can select concrete rows." }
+  ],
+  "measurement": {
+    "kind": "free_source_sample",
+    "sampleSize": 20,
+    "observedAt": "2026-09-24",
+    "result": "WA L&I m8qx-ubtq active rows whose specialtycode1desc contained CONCRET: 20/20 active, 20/20 specialty present, 20/20 primaryprincipalname present, 20/20 phonenumber present, and 3/20 businesstypecodedesc = Individual. Aggregate-only observation; no names, phones, addresses, license numbers, or business names retained. It does not measure mobile status, reachability, DNC, ownership confirmation, handset ownership, or delivery.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Free public-source field-coverage observation only",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean delivered owner contact was measured. Historical concrete brain rates use a different denominator and are not a per-clean cost for this workflow."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "The live recipe-A concrete discovery and generic relevance classifier exist, and WA/CA contractor adapters are present. Concrete has no register-source mapping, and the adapters do not retain CONCRET/C-8 classification in the field used by pullNames filtering, so no specialty-scoped concrete register route can run today.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-registers.ts",
+      "src/services/lead-engine-jobs.service.ts",
+      "src/lib/lead-engine-industries.ts"
+    ]
+  },
+  "nextMeasurement": "Add synthetic WA CONCRET and non-CONCRET rows plus CA C-8 and non-C-8 master/personnel rows. Verify a concrete job selects only the explicit concrete class, preserves principal/personnel as candidate-role evidence, holds supplier/paving/asphalt/excavation/industrial/adjacent listings, and cannot deliver an owner-confirmed contact without independent evidence. After authorization, measure mobile, live, DNC-cleared, reached-owner, and delivered outcomes with separate denominators."
+}

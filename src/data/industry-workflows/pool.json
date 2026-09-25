@@ -1,0 +1,268 @@
+{
+  "industry": "pool",
+  "title": "Pool: separate construction, service, retail, and hot-tub routes",
+  "hypothesis": "Pool builders, pool-service operators, pool or hot-tub retailers, and wellness spas are distinct populations. A builder license or published business number provides candidate evidence only; no contact is owner-confirmed until the relevant role, line, compliance, and independent owner-evidence gates pass.",
+  "ownerSource": "For pool construction only, legally eligible active contractor records with an explicit pool class, such as CA CSLB C-53 or FL DBPR CPC, provide a licensee or qualifier candidate. Pool service has no implemented owner register route; retail and hot-tub branches are out of scope for owner-service delivery.",
+  "phoneSource": "The public Maps business number for a retained pool-service or construction listing, or a published register phone when the source actually supplies one. It remains a business or candidate contact until mobile, live, DNC, suppression/dedupe, and independent owner-evidence gates pass.",
+  "workflow": [
+    {
+      "id": "start",
+      "label": "Pool listing or register candidate",
+      "detail": "Start with a candidate from the live Maps route or a future explicit pool-construction register mapping.",
+      "kind": "source"
+    },
+    {
+      "id": "segment",
+      "label": "Pool subvertical classification",
+      "detail": "Classify as construction/builder, pool service, retail/hot tub, or unrelated wellness spa before contact processing.",
+      "kind": "decision"
+    },
+    {
+      "id": "builder",
+      "label": "Active pool-construction record",
+      "detail": "Require an explicit, legally eligible pool class such as CA C-53 or FL CPC; preserve licensee/qualifier role as candidate evidence.",
+      "kind": "source"
+    },
+    {
+      "id": "service",
+      "label": "Core pool-service listing",
+      "detail": "Require a service-specific fit and reject builder-only, retailer-only, unrelated spa, brand, lead-generation, and stale matches.",
+      "kind": "filter"
+    },
+    {
+      "id": "holdretail",
+      "label": "Hold retail or hot-tub store",
+      "detail": "Pool supply, equipment, patio, and hot-tub retail are not evidence of a pool-service or construction operator.",
+      "kind": "hold"
+    },
+    {
+      "id": "holdspa",
+      "label": "Reject wellness spa",
+      "detail": "A day spa or wellness listing is outside the pool industry.",
+      "kind": "hold"
+    },
+    {
+      "id": "role",
+      "label": "Owner-role assessment",
+      "detail": "Treat a construction licensee or qualifier as a candidate; do not equate qualifier role with company ownership.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdrole",
+      "label": "Hold unsupported ownership role",
+      "detail": "Do not deliver a corporate, franchise, employee, or unsupported qualifier case as an owner contact.",
+      "kind": "hold"
+    },
+    {
+      "id": "contact",
+      "label": "Business contact contrast",
+      "detail": "Dedupe and compare published register and Maps business numbers when both exist; a public business line is not a direct owner mobile.",
+      "kind": "filter"
+    },
+    {
+      "id": "verify",
+      "label": "Contact and compliance gates",
+      "detail": "Apply mobile line type, live status, DNC, suppression/dedupe, and independent owner-evidence requirements.",
+      "kind": "verify"
+    },
+    {
+      "id": "holdverify",
+      "label": "Hold unsupported contact",
+      "detail": "Park non-mobile, unreachable, suppressed, shared, retail, or unsupported-owner cases.",
+      "kind": "hold"
+    },
+    {
+      "id": "deliver",
+      "label": "Deliver supported classification",
+      "detail": "Deliver only after every applicable gate passes; owner-confirmed mobile requires independent owner evidence.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    {
+      "from": "start",
+      "to": "segment",
+      "label": "candidate received"
+    },
+    {
+      "from": "segment",
+      "to": "builder",
+      "label": "pool construction/builder"
+    },
+    {
+      "from": "segment",
+      "to": "service",
+      "label": "pool service"
+    },
+    {
+      "from": "segment",
+      "to": "holdretail",
+      "label": "retail or hot-tub"
+    },
+    {
+      "from": "segment",
+      "to": "holdspa",
+      "label": "wellness spa or off-industry"
+    },
+    {
+      "from": "builder",
+      "to": "role",
+      "label": "active explicit pool class"
+    },
+    {
+      "from": "builder",
+      "to": "holdrole",
+      "label": "inactive, unlicensed, or unsupported class/role"
+    },
+    {
+      "from": "service",
+      "to": "contact",
+      "label": "independent service fit"
+    },
+    {
+      "from": "service",
+      "to": "holdretail",
+      "label": "retail, brand, or franchise segment"
+    },
+    {
+      "from": "service",
+      "to": "holdspa",
+      "label": "spa-only listing"
+    },
+    {
+      "from": "role",
+      "to": "contact",
+      "label": "candidate role retained"
+    },
+    {
+      "from": "role",
+      "to": "holdrole",
+      "label": "owner evidence unsupported"
+    },
+    {
+      "from": "contact",
+      "to": "verify",
+      "label": "candidate business contact retained"
+    },
+    {
+      "from": "contact",
+      "to": "holdverify",
+      "label": "missing, shared, duplicate, or unsupported contact"
+    },
+    {
+      "from": "verify",
+      "to": "deliver",
+      "label": "all gates and owner evidence pass"
+    },
+    {
+      "from": "verify",
+      "to": "holdverify",
+      "label": "contact, compliance, or owner-evidence gate fails"
+    }
+  ],
+  "failures": [
+    {
+      "risk": "One recipe-A keyword, pool builder, omits an explicit pool-service route and blends subverticals.",
+      "mitigation": "Classify builder, service, retail/hot-tub, and wellness-spa branches before routing.",
+      "status": "blocked"
+    },
+    {
+      "risk": "Bare spa is a core pool-service relevance term, allowing unrelated wellness spas.",
+      "mitigation": "Remove bare spa from pool core terms and require pool context for spa-related services.",
+      "status": "blocked"
+    },
+    {
+      "risk": "Pool retailers and hot-tub stores enter service/construction processing.",
+      "mitigation": "Hold or reject retail/hot-tub branches unless a separate approved retail workflow exists.",
+      "status": "blocked"
+    },
+    {
+      "risk": "A qualifier or public business phone is represented as an owner-confirmed mobile.",
+      "mitigation": "Preserve role and line provenance; require contact, compliance, and independent owner-evidence gates.",
+      "status": "partial"
+    },
+    {
+      "risk": "Pool franchise coverage differs between the relevance helper and the shared chain data.",
+      "mitigation": "Use the shared isChain result consistently or maintain one authoritative pool brand set; segment a franchise rather than treating it as owner proof.",
+      "status": "partial"
+    }
+  ],
+  "sources": [
+    {
+      "label": "Live pool brain route",
+      "scope": "All current pool requests",
+      "evidence": "VERIFIED",
+      "reference": "src/data/lead-engine-brain.json industries.pool; src/lib/lead-engine-brain.ts route",
+      "status": "implemented"
+    },
+    {
+      "label": "Pool relevance and franchise logic",
+      "scope": "Maps candidate classification Adapter components exist; industry-specific integration remains proposed.",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-industries.ts; src/lib/lead-engine-brands.ts; src/data/lead-engine-brands.json",
+      "status": "proposed"
+    },
+    {
+      "label": "CA CSLB License Master plus Personnel",
+      "scope": "California C-53 pool-construction identities Adapter components exist; industry-specific integration remains proposed.",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group A CSLB row; handoff/07_RESEARCH_BUILD_SPEC.md state table; src/lib/lead-engine-registers.ts cslb",
+      "status": "proposed"
+    },
+    {
+      "label": "FL DBPR contractor extracts",
+      "scope": "Florida CPC pool-construction qualifier identities Adapter components exist; industry-specific integration remains proposed.",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group A FL DBPR row; handoff/07_RESEARCH_BUILD_SPEC.md state table; src/lib/lead-engine-registers.ts flDbprConstruction",
+      "status": "proposed"
+    },
+    {
+      "label": "Pool franchise list",
+      "scope": "Pool Scouts, ASP, Pinch A Penny, and Poolwerx patterns",
+      "evidence": "REPORTED",
+      "reference": "handoff/07_RESEARCH_BUILD_SPEC.md section 6 attack 4",
+      "status": "proposed"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "The Maps-first pool profile can represent pool construction and service without a separate classifier.",
+      "test": "Five-label synthetic code audit of classifyRelevance and franchiseBrand on 2026-09-24: builder, service, retailer, hot-tub store, and wellness-spa labels.",
+      "observed": "Builder and service classified core, but retailer and wellness spa also classified core; hot-tub retail classified adjacent; the retailer brand was not returned by franchiseBrand. This is code evidence only, not a contact or outcome sample.",
+      "change": "Introduce explicit subvertical branches; remove bare spa from core relevance; hold retail/hot-tub and wellness-spa labels; use class-scoped construction identity only after adapter support exists."
+    },
+    {
+      "hypothesis": "Root integration regression check, 2026-09-24",
+      "test": "Focused synthetic regression checks in tests/lead-engine-industry-corrections.test.ts, lead-engine-reviews.test.ts, lead-engine-gates-jobs.test.ts and lead-engine-jobs.test.ts. No paid provider call.",
+      "observed": "Bare spa was removed from pool relevance. Wellness-only examples now fail while actual pool maintenance/construction still pass. Separate builder/service routing is still proposed.",
+      "change": "Shared runtime correction integrated. Original source samples are retained with their original denominators; no phone-yield improvement is claimed."
+    }
+  ],
+  "measurement": {
+    "kind": "code_audit",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Synthetic label audit only: Acme Pool Builders and Acme Pool Service were core; Pinch A Penny Pool Patio Spa and Acme Day Spa Wellness were also core; Acme Hot Tub Store was adjacent. franchiseBrand returned null for every audit label. No live businesses, names, phones, or addresses were collected. The audit measures classifier behavior only, not mobile status, reachability, DNC, owner confirmation, or delivery.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Local code audit only",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean delivered owner contact was measured. The historical pool brain rates remain in the live brain and use an undisclosed historical denominator; they are not a per-clean cost for this review."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "Bare spa was removed from pool relevance. Wellness-only examples now fail while actual pool maintenance/construction still pass. Separate builder/service routing is still proposed. Original review: The Maps route, generic relevance classifier, chain filter, and CA/FL construction adapters exist. Pool remains one recipe-A pool-builder route, has no pool-class register mapping, and does not separate builder, service, retail/hot-tub, and wellness-spa candidates before contact processing.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-industries.ts",
+      "src/lib/lead-engine-brands.ts",
+      "src/data/lead-engine-brands.json",
+      "src/lib/lead-engine-registers.ts",
+      "src/services/lead-engine-jobs.service.ts"
+    ]
+  },
+  "nextMeasurement": "Add synthetic construction, service, retail/hot-tub, franchise, and wellness-spa fixtures. Verify only construction/service branches continue, a CPC/C-53 qualifier stays an owner candidate, and no owner-confirmed contact can be delivered without independent evidence. A later authorized outcome study must report mobile, live, DNC-cleared, reached-owner, and delivered denominators separately."
+}

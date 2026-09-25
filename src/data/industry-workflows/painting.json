@@ -1,0 +1,256 @@
+{
+  "industry": "painting",
+  "title": "Independent painting contractors",
+  "hypothesis": "A person-form Colorado registered agent on a painting-positive entity is an identity candidate only. Contractor fit, explicit independent ownership evidence, and a separately verified published business contact are required before delivery; neither the agent record nor a business number establishes an owner mobile.",
+  "ownerSource": "Colorado SOS entity record (4ykn-tg5h) for role-labeled registered-agent candidates, followed by independent public ownership evidence. No owner-confirming painting adapter is implemented.",
+  "phoneSource": "The live recipe-A route starts with a published Maps business number. It is a business-contact candidate only and was not phone-tested in this free review.",
+  "workflow": [
+    {
+      "id": "start",
+      "label": "Colorado painting entity",
+      "detail": "Start with a Good Standing Colorado entity record whose name is painting-positive; retain the registered-agent role, never an owner label.",
+      "kind": "source"
+    },
+    {
+      "id": "fit",
+      "label": "Painting contractor fit",
+      "detail": "Require contractor-oriented painting evidence; paint stores, art/studio, manufacturing, generic contractor, and adjacent-only results do not pass.",
+      "kind": "filter"
+    },
+    {
+      "id": "offfit",
+      "label": "Non-contractor or ambiguous",
+      "detail": "Hold or reject records without painting-contractor evidence.",
+      "kind": "hold"
+    },
+    {
+      "id": "brand",
+      "label": "Independent brand check",
+      "detail": "Route CertaPro, Five Star Painting, WOW 1 DAY, Fresh Coat, and 360 Painting matches to franchise review.",
+      "kind": "decision"
+    },
+    {
+      "id": "franchise",
+      "label": "Franchise review",
+      "detail": "Hold the brand match; a franchisee may be local but is not owner-confirmed by the brand pattern.",
+      "kind": "hold"
+    },
+    {
+      "id": "agent",
+      "label": "Registered-agent form",
+      "detail": "Separate a person-form agent from an organization agent. Either is a registry role, not ownership evidence.",
+      "kind": "decision"
+    },
+    {
+      "id": "orgagent",
+      "label": "Organization agent",
+      "detail": "Hold organization-agent records; do not infer an owner from a filing service or organization name.",
+      "kind": "hold"
+    },
+    {
+      "id": "candidate",
+      "label": "Person agent candidate",
+      "detail": "Keep the named person as an owner candidate with the registered-agent role attached.",
+      "kind": "hold"
+    },
+    {
+      "id": "ownerproof",
+      "label": "Independent ownership proof",
+      "detail": "Seek explicit public evidence that the person owns the same painting contractor; a registry role, review mention, or staff listing alone does not pass.",
+      "kind": "verify"
+    },
+    {
+      "id": "unproven",
+      "label": "Ownership unproven",
+      "detail": "Keep only a business-contact candidate; do not create an owner lead.",
+      "kind": "hold"
+    },
+    {
+      "id": "owner",
+      "label": "Owner-confirmed business",
+      "detail": "Record the independently supported ownership evidence separately from the phone.",
+      "kind": "verify"
+    },
+    {
+      "id": "phone",
+      "label": "Published business contact",
+      "detail": "Associate a published business number with the confirmed business; it is still not evidence of a direct owner handset.",
+      "kind": "source"
+    },
+    {
+      "id": "gates",
+      "label": "Phone and compliance gates",
+      "detail": "Require mobile classification, reachability, DNC/TCPA clearance, suppression and duplicate checks, while preserving ownership evidence as a separate gate.",
+      "kind": "verify"
+    },
+    {
+      "id": "deliver",
+      "label": "Deliver confirmed contact",
+      "detail": "Deliver only when owner confirmation and every required contact/compliance gate pass.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    {
+      "from": "start",
+      "to": "fit",
+      "label": "classify entity"
+    },
+    {
+      "from": "fit",
+      "to": "offfit",
+      "label": "not contractor-positive"
+    },
+    {
+      "from": "fit",
+      "to": "brand",
+      "label": "contractor-positive"
+    },
+    {
+      "from": "brand",
+      "to": "franchise",
+      "label": "brand match"
+    },
+    {
+      "from": "brand",
+      "to": "agent",
+      "label": "independent candidate"
+    },
+    {
+      "from": "agent",
+      "to": "orgagent",
+      "label": "organization agent"
+    },
+    {
+      "from": "agent",
+      "to": "candidate",
+      "label": "person agent"
+    },
+    {
+      "from": "candidate",
+      "to": "ownerproof",
+      "label": "seek corroboration"
+    },
+    {
+      "from": "ownerproof",
+      "to": "unproven",
+      "label": "missing or ambiguous"
+    },
+    {
+      "from": "ownerproof",
+      "to": "owner",
+      "label": "explicit independent proof"
+    },
+    {
+      "from": "owner",
+      "to": "phone",
+      "label": "associate published number"
+    },
+    {
+      "from": "phone",
+      "to": "gates",
+      "label": "verify line and compliance"
+    },
+    {
+      "from": "gates",
+      "to": "deliver",
+      "label": "all gates pass"
+    }
+  ],
+  "failures": [
+    {
+      "risk": "A registered agent is represented as the painting-business owner.",
+      "mitigation": "Persist the registered-agent role as owner-candidate evidence and require explicit, independent ownership proof.",
+      "status": "proposed"
+    },
+    {
+      "risk": "Paint retail, art/studio, coatings manufacturer, or adjacent-only businesses are treated as painting contractors.",
+      "mitigation": "Require contractor-oriented painting evidence and hold non-contractor or ambiguous records.",
+      "status": "proposed"
+    },
+    {
+      "risk": "A franchise brand is treated as an independent owner-operator.",
+      "mitigation": "Route known painting brands to franchise review without claiming franchisee ownership.",
+      "status": "proposed"
+    },
+    {
+      "risk": "A published business, tracking, or VoIP number is called a direct owner mobile.",
+      "mitigation": "Keep phone identity separate from owner evidence and require the existing line, reachability, DNC, suppression, and duplicate gates.",
+      "status": "implemented"
+    },
+    {
+      "risk": "Owner extraction begins before line type is known.",
+      "mitigation": "Select line_type in nameOwners and make extractOwnersForRows accept only explicit Mobile rows before free website or paid reviews work.",
+      "status": "blocked"
+    }
+  ],
+  "sources": [
+    {
+      "label": "Colorado SOS Business Entities",
+      "scope": "Colorado Good Standing painting-name entity records and registered-agent fields; no phone field",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group B; https://data.colorado.gov/resource/4ykn-tg5h.json",
+      "status": "proposed"
+    },
+    {
+      "label": "Live painting recipe and classifier",
+      "scope": "National painting Maps-first discovery plus core/adjacent terms",
+      "evidence": "VERIFIED",
+      "reference": "src/data/lead-engine-brain.json; src/lib/lead-engine-industries.ts",
+      "status": "implemented"
+    },
+    {
+      "label": "Painting franchise patterns and contact-risk treatment",
+      "scope": "Painting franchise segmentation, tracking/VoIP, duplicates, and language-routing boundaries",
+      "evidence": "REPORTED",
+      "reference": "handoff/07_RESEARCH_BUILD_SPEC.md, Group B attacks 1-11",
+      "status": "proposed"
+    },
+    {
+      "label": "Delivery phone gates",
+      "scope": "Mobile, reachability, DNC/TCPA, suppression, duplicate, and delivery checks",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-gates.ts",
+      "status": "implemented"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "A person-form Colorado registered agent can be used as a painting owner candidate after a contractor-fit filter.",
+      "test": "Free public 20-row Socrata sample, Good Standing entity names containing PAINT, retaining aggregate agent-form counts only on 2026-09-24.",
+      "observed": "17/20 sampled rows had a person-form agent and 3/20 had an organization agent. This measures field availability only; it does not verify contractor fit, ownership, a phone, mobile status, reachability, DNC, or delivery.",
+      "change": "Use a role-labeled candidate branch with organization-agent hold and independent ownership proof. Do not use addresses or claim a phone relationship from the entity record."
+    },
+    {
+      "hypothesis": "Root integration regression check, 2026-09-24",
+      "test": "Focused synthetic regression checks in tests/lead-engine-industry-corrections.test.ts, lead-engine-reviews.test.ts, lead-engine-gates-jobs.test.ts and lead-engine-jobs.test.ts. No paid provider call.",
+      "observed": "Owner-name extraction now requires explicit Mobile evidence; undefined/null/Landline/VoIP inputs trigger no website fetch, meter or provider call. The runner reads verification.lineType, not a nonexistent job-row line_type column. It already selects delivered rows; the old omission was a helper-evidence default, not proof that production called unverified phones.",
+      "change": "Shared runtime correction integrated. Original source samples are retained with their original denominators; no phone-yield improvement is claimed."
+    }
+  ],
+  "measurement": {
+    "kind": "free_source_sample",
+    "sampleSize": 20,
+    "observedAt": "2026-09-24",
+    "result": "Colorado public entity endpoint sample: 17/20 person-form registered agents; 3/20 organization agents. Identity-field coverage only; no contact values retained and no phones verified.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Free public Colorado endpoint sample only; no paid discovery, append, review scrape, or phone verification ran.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No owner-confirmed, clean contact outcome was measured; cost per clean contact is unknown."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "Owner-name extraction now requires explicit Mobile evidence; undefined/null/Landline/VoIP inputs trigger no website fetch, meter or provider call. The runner reads verification.lineType, not a nonexistent job-row line_type column. It already selects delivered rows; the old omission was a helper-evidence default, not proof that production called unverified phones. Original review: Painting is implemented only as the generic recipe-A discovery profile and relevance classifier. Colorado registry candidate ingestion, contractor/franchise filtering, independent owner confirmation, and an ownership delivery gate are proposed. Owner extraction currently defaults an unknown line type to Mobile.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-industries.ts",
+      "src/lib/lead-engine-gates.ts",
+      "src/services/lead-engine-jobs.service.ts",
+      "src/services/lead-engine-reviews.service.ts"
+    ]
+  },
+  "nextMeasurement": "After a lawful contractor/franchise classifier is implemented, run a free 5-20 row aggregate Colorado painting review with separate source, contractor-qualified, person-agent, independently owner-confirmed, published-business-contact, and authorized-line denominators. Do not use registry or residential addresses to discover personal phones."
+}

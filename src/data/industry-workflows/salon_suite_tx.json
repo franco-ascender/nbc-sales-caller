@@ -1,0 +1,56 @@
+{
+  "industry": "salon_suite_tx",
+  "title": "Texas salon-suite Mini Establishment licensees",
+  "hypothesis": "A current Texas Mini Establishment record supplies a public salon-business and business-contact candidate, but its owner-name and owner-telephone fields mirror the business fields. A person-like licensee label is only an owner candidate, a tenant is not the suite operator, and a published business line is not an owner-confirmed mobile.",
+  "ownerSource": "Texas TDLR Mini Establishment licensee/business label. A person-like business_name may be retained only as a licensee candidate; owner_name mirrors business_name and does not independently identify or confirm an owner.",
+  "phoneSource": "The public business_telephone field is the sole business-contact candidate. owner_telephone mirrors it in the audited fixture and must never be handled as a second or owner-specific number. Mailing-address fields must be removed from the runtime payload and are excluded from this review's contact workflow.",
+  "workflow": [
+    {"id":"start","label":"Current Mini Establishment row","detail":"Start with a current Texas TDLR Mini Establishment license row and its public business fields.","kind":"source"},
+    {"id":"current","label":"Current-license filter","detail":"Hold expired or incomplete license records before identity or contact work.","kind":"filter"},
+    {"id":"expired","label":"Hold expired record","detail":"Do not use a lapsed license as a current salon-business or contact claim.","kind":"hold"},
+    {"id":"tenant","label":"Tenant versus operator decision","detail":"Treat the Mini Establishment as a licensed tenant/business candidate. A shared address or suite cluster does not identify the salon-suite operator.","kind":"decision"},
+    {"id":"operator_hold","label":"Hold operator ambiguity","detail":"Do not attribute a tenant licensee or a shared building number to the suite operator, or vice versa, without independent business evidence.","kind":"hold"},
+    {"id":"licensee","label":"Licensee-label decision","detail":"owner_name mirrors business_name; a person-like business_name is only a licensee candidate and an entity-style label is business-only evidence.","kind":"decision"},
+    {"id":"identity_hold","label":"Hold unsupported ownership","detail":"Do not call a licensee label an owner without independent ownership evidence.","kind":"hold"},
+    {"id":"phone","label":"Published business telephone","detail":"Use business_telephone once as a public business-contact candidate; owner_telephone is a mirror flag, not another line.","kind":"source"},
+    {"id":"phone_hold","label":"Hold missing or mirrored-phone claim","detail":"Hold missing or malformed business numbers and reject any claim that the duplicate owner_telephone proves a direct owner line.","kind":"hold"},
+    {"id":"residential_remove","label":"Remove mailing fields","detail":"Exclude mailing_address fields and business_mailing from persistence and contact work; do not conduct reverse-address lookup or append.","kind":"filter"},
+    {"id":"contact_gate","label":"Contact and compliance hold","detail":"A published business number still needs authorized line-type, suppression, DNC, reachability, and independent owner-evidence checks.","kind":"verify"},
+    {"id":"deliver","label":"Deliver eligible business contact","detail":"Deliver only after all authorized contact/compliance gates and independent ownership evidence pass; no owner-confirmed mobile result is measured here.","kind":"deliver"}
+  ],
+  "edges": [
+    {"from":"start","to":"current","label":"validate license"},
+    {"from":"current","to":"expired","label":"expired or incomplete"},
+    {"from":"current","to":"tenant","label":"current record"},
+    {"from":"tenant","to":"operator_hold","label":"operator or shared-address ambiguity"},
+    {"from":"tenant","to":"licensee","label":"licensed tenant/business candidate"},
+    {"from":"licensee","to":"identity_hold","label":"entity label or unsupported owner claim"},
+    {"from":"licensee","to":"phone","label":"candidate licensee evidence"},
+    {"from":"phone","to":"phone_hold","label":"missing, malformed, or duplicate-owner-line claim"},
+    {"from":"phone","to":"residential_remove","label":"valid published business phone"},
+    {"from":"residential_remove","to":"contact_gate","label":"non-residential business-contact record"},
+    {"from":"contact_gate","to":"phone_hold","label":"contact/compliance gate fails"},
+    {"from":"contact_gate","to":"deliver","label":"authorized gates and independent owner evidence pass"}
+  ],
+  "failures": [
+    {"risk":"owner_name duplicates business_name and is represented as a human owner.","mitigation":"Keep it as a licensee/business label; require independent ownership evidence before any owner claim.","status":"implemented"},
+    {"risk":"owner_telephone duplicates business_telephone and is treated as a second or owner-specific phone.","mitigation":"Store the public business line once and retain the duplicate only as a mirror flag; never promote it to direct-owner evidence.","status":"implemented"},
+    {"risk":"A suite tenant is confused with a salon-suite operator, or an operator's shared line is attributed to a tenant.","mitigation":"Make tenant/operator ambiguity an explicit hold; do not infer either role from a Mini Establishment row or shared address alone.","status":"proposed"},
+    {"risk":"Raw payload preserves a mailing street that may be the licensee's home address.","mitigation":"Whitelist non-residential provenance fields and remove mailing_address fields and business_mailing before persistence; do not reverse-lookup or append the mailing address.","status":"proposed"},
+    {"risk":"A published business phone is called a mobile, reachable owner handset, or a delivered contact.","mitigation":"Keep it behind authorized line-type, suppression, DNC, reachability, and independent ownership gates.","status":"implemented"}
+  ],
+  "sources": [
+    {"label":"Texas TDLR All Licenses dataset 7358-krk7","scope":"Texas Mini Establishment license rows, public business telephone, mirrored owner fields, and mailing fields.","evidence":"VERIFIED","reference":"handoff/04_SOURCE_CATALOG.md Texas TDLR cosmetology and barber entry; handoff/07_RESEARCH_BUILD_SPEC.md section 5.5 Group E","status":"implemented"},
+    {"label":"TX TDLR Mini Establishment adapter","scope":"Current-license filtering, business-phone extraction, and owner-field mirror flags.","evidence":"VERIFIED","reference":"src/lib/lead-engine-registers.ts txTdlrSalonRow and txTdlrSalons","status":"implemented"},
+    {"label":"TX Mini Establishment fixture/code audit","scope":"Five-row aggregate audit of mirror fields, business-phone presence, address uniqueness, and mailing-street difference.","evidence":"VERIFIED","reference":"tests/fixtures/registers/tx_tdlr_salons.json; tests/lead-engine-registers.test.ts tx_tdlr_salons trap","status":"implemented"},
+    {"label":"Tenant versus suite-operator resolver","scope":"Independent proof that distinguishes a licensed tenant from a salon-suite building operator.","evidence":"UNKNOWN","reference":"No implemented runtime resolver; handoff/07_RESEARCH_BUILD_SPEC.md section 5.5 Group E requires segment/address-cluster handling","status":"blocked"}
+  ],
+  "iterations": [
+    {"hypothesis":"The implemented adapter treats the apparent owner fields as duplicates rather than a person and a second phone.","test":"Fixture/code audit on 2026-09-24: aggregate comparisons over the first five Mini Establishment fixture rows and review of txTdlrSalonRow.","observed":"5/5 had business_telephone; 5/5 had owner_name equal to business_name; 5/5 had owner_telephone equal to business_telephone. The adapter flags both mirrors and persists only business_telephone as name.phone10.","change":"Keep the duplicate fields as provenance flags only; do not assert owner identity or a second/direct owner number."},
+    {"hypothesis":"The source's mailing fields must not be used as a private-contact route.","test":"The same five-row fixture audit compared only field presence and equality, without retaining values.","observed":"2/5 rows had a nonempty mailing street different from the business street. The adapter currently preserves raw mailing fields because payload omits only business_mailing.","change":"Propose a shared payload whitelist that removes all mailing-address fields; this review does not authorize reverse-address lookup or append."}
+  ],
+  "measurement": {"kind":"fixture","sampleSize":5,"observedAt":"2026-09-24","result":"Five-row TX Mini Establishment fixture/code audit: business_telephone present 5/5; owner_name equals business_name 5/5; owner_telephone equals business_telephone 5/5; business address and phone each distinct 5/5; mailing street differs from business street 2/5. No live query, contact values, owner confirmation, mobile status, reachability, DNC, or delivery outcome measured.","verifiedPhones":0},
+  "cost": {"basis":"Local fixture and code audit only; no paid discovery, append, lookup, or verification was invoked.","perInputUsd":0,"perCleanUsd":null,"note":"No clean owner-contact outcome was measured. Historical brain estimates have a different denominator and do not establish a clean-contact cost for this workflow."},
+  "implementation": {"status":"partial","summary":"The TX Mini Establishment adapter exists and truthfully flags mirrored owner fields while extracting only the public business telephone. It has no tenant-versus-suite-operator resolver and retains raw mailing-address fields in payload, which may preserve residential data. No implemented path establishes an owner-confirmed phone or delivery outcome.","runtimeFiles":["src/data/lead-engine-brain.json","src/lib/lead-engine-registers.ts","tests/lead-engine-registers.test.ts"]},
+  "nextMeasurement":"After mailing-field removal and an explicit tenant/operator hold, run a consented 5-20-row aggregate-only audit with separate denominators for current licenses, valid published business phones, tenant/operator/ambiguous classification, independently evidenced owner candidates, authorized contact-gate passes, and deliveries. Do not query or append residential mailing data."
+}

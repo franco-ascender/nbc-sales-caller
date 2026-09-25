@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "verifiedAt": "2026-09-16",
+  "defaults": {
+    "provider": "codex",
+    "maxAttempts": 2
+  },
+  "tiers": {
+    "routine": {
+      "codex": {
+        "model": "gpt-5.6-luna",
+        "effort": "low"
+      },
+      "claude": {
+        "model": "haiku",
+        "effort": "low"
+      }
+    },
+    "implementation": {
+      "codex": {
+        "model": "gpt-5.6-terra",
+        "effort": "medium"
+      },
+      "claude": {
+        "model": "sonnet",
+        "effort": "medium"
+      }
+    },
+    "critical": {
+      "codex": {
+        "model": "gpt-5.6-sol",
+        "effort": "high"
+      },
+      "claude": {
+        "model": "opus",
+        "effort": "high"
+      }
+    },
+    "exceptional": {
+      "codex": {
+        "model": "gpt-6-astra",
+        "effort": "high"
+      },
+      "claude": {
+        "model": "opus",
+        "effort": "high"
+      }
+    }
+  },
+  "taskTiers": {
+    "docs": "routine",
+    "inventory": "routine",
+    "small_fix": "routine",
+    "ui": "implementation",
+    "tests": "implementation",
+    "integration": "implementation",
+    "orchestration": "implementation",
+    "auth": "critical",
+    "billing": "critical",
+    "migration": "critical",
+    "architecture": "critical"
+  },
+  "escalation": [
+    "routine",
+    "implementation",
+    "critical",
+    "exceptional"
+  ],
+  "orchestrator": {
+    "provider": "codex",
+    "model": "gpt-6-astra",
+    "effort": "high"
+  }
+}

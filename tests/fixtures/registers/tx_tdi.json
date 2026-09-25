@@ -1,0 +1,114 @@
+{
+ "_about": "kvqi-vsrr Owner/DRLP rows 2026-09-21 plus kxv3-diwf individuals for the join",
+ "rows": [
+  {
+   "associated_licensee_name": "D&S BLACKLOCK FAMILY L.P.",
+   "associated_licensee_npn": "18760692",
+   "associated_licensee_ein": "201516298",
+   "association_type": "Owner",
+   "licensee_name": "6825 NORTH STREET PARTNERSHIP",
+   "licensee_npn": "20680386",
+   "licensee_ein": "881162393",
+   "association_begin_date": "2023-04-12T00:00:00.000"
+  },
+  {
+   "associated_licensee_name": "A HARDIN",
+   "associated_licensee_npn": "8107771",
+   "association_type": "Owner",
+   "licensee_name": "A HARDIN",
+   "licensee_npn": "8107771",
+   "association_begin_date": "2004-06-02T00:00:00.000"
+  },
+  {
+   "associated_licensee_name": "AAMIR CHANEY",
+   "associated_licensee_npn": "14395981",
+   "association_type": "Owner",
+   "licensee_name": "AAMIR CHANEY",
+   "licensee_npn": "14395981",
+   "association_begin_date": "2009-07-14T00:00:00.000"
+  },
+  {
+   "associated_licensee_name": "AARON BENNIE JACKSON III",
+   "associated_licensee_npn": "8761012",
+   "association_type": "Owner",
+   "licensee_name": "AARON BENNIE JACKSON III",
+   "licensee_npn": "8761012",
+   "association_begin_date": "2006-04-06T00:00:00.000"
+  },
+  {
+   "associated_licensee_name": "AARON BERKOWITZ",
+   "associated_licensee_npn": "16337737",
+   "association_type": "Owner",
+   "licensee_name": "AARON BERKOWITZ",
+   "licensee_npn": "16337737",
+   "association_begin_date": "2011-08-09T00:00:00.000"
+  },
+  {
+   "associated_licensee_name": "M&T MANAGEMENT CORPORATION",
+   "associated_licensee_npn": "19472679",
+   "associated_licensee_ein": "844536061",
+   "association_type": "Owner",
+   "licensee_name": "1BROKER, L.P.",
+   "licensee_npn": "19436645",
+   "licensee_ein": "844548624",
+   "association_begin_date": "2020-04-24T00:00:00.000"
+  },
+  {
+   "associated_licensee_name": "TRU BRIDGE , INC.",
+   "associated_licensee_npn": "12780560",
+   "associated_licensee_ein": "260641675",
+   "association_type": "Owner",
+   "licensee_name": "2017 TRANZFER INSURANCE SOLUTIONS LLC",
+   "licensee_npn": "18611214",
+   "licensee_ein": "301009597",
+   "association_begin_date": "2018-01-03T00:00:00.000"
+  },
+  {
+   "associated_licensee_name": "NORTH RISK PARTNERS, LLC",
+   "associated_licensee_npn": "16862316",
+   "associated_licensee_ein": "461375576",
+   "association_type": "Desig-Resp-Lic-Person",
+   "licensee_name": "A J KRIST",
+   "licensee_npn": "16771287",
+   "association_begin_date": "2025-10-13T00:00:00.000"
+  }
+ ],
+ "individuals": [
+  {
+   "npn": "8107771",
+   "license_number": "1277218",
+   "name": "A HARDIN",
+   "license_type": "Adjuster",
+   "qualification": "Adjuster - P&C",
+   "license_issue_date": "2004-06-02T00:00:00.000",
+   "expiration_date": "2028-06-30T00:00:00.000",
+   "city": "JASPER",
+   "state": "TX",
+   "pstl_cd": "759512817"
+  },
+  {
+   "npn": "16771287",
+   "license_number": "1997392",
+   "name": "A J KRIST",
+   "license_type": "General Lines Agent",
+   "qualification": "Life, Accident, Health & HMO",
+   "license_issue_date": "2015-04-27T00:00:00.000",
+   "expiration_date": "2028-08-31T00:00:00.000",
+   "city": "WEST DES MOINES",
+   "state": "IA",
+   "pstl_cd": "502665841"
+  },
+  {
+   "npn": "16771287",
+   "license_number": "1997392",
+   "name": "A J KRIST",
+   "license_type": "General Lines Agent",
+   "qualification": "Property and Casualty",
+   "license_issue_date": "2015-04-27T00:00:00.000",
+   "expiration_date": "2028-08-31T00:00:00.000",
+   "city": "WEST DES MOINES",
+   "state": "IA",
+   "pstl_cd": "502665841"
+  }
+ ]
+}

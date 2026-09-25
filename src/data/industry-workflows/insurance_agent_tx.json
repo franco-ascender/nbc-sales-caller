@@ -1,0 +1,78 @@
+{
+  "industry": "insurance_agent_tx",
+  "title": "Texas TDI insurance agency Owner and DRLP relationships",
+  "hypothesis": "The implemented TX TDI relationship route can retain a person-form Owner as relationship-supported owner evidence and a person-form DRLP as a licensed-responsibility candidate. Neither relationship supplies an actual business phone, proves a DRLP owns the agency, or proves a person owns a handset.",
+  "ownerSource": "TDI kvqi-vsrr relates an agency licensee to an associated licensee. Person-form Owner rows are explicit relationship evidence; person-form Desig-Resp-Lic-Person rows are DRLP candidates requiring separate ownership evidence. Employee rows are staff evidence and are excluded from the adapter's fetched segments.",
+  "phoneSource": "No actual business phone is present in the implemented kvqi-vsrr relationship rows or kxv3-diwf individual join. City, state, and ZIP are identity context only; no residential, parcel, trace, or private-phone route is an eligible substitute.",
+  "workflow": [
+    { "id": "tdi", "label": "TDI Owner and DRLP relationship source", "detail": "Read only the implemented kvqi-vsrr Owner and Desig-Resp-Lic-Person segments and preserve association type, agency identity, associated NPN, and source provenance. Employee is intentionally not ingested as an ownership segment.", "kind": "source" },
+    { "id": "person", "label": "Associated licensee is a traceable person?", "detail": "Require associated NPN, agency NPN, and a parseable first and last name. Entity names and initial-only identities are not person candidates.", "kind": "filter" },
+    { "id": "identityhold", "label": "Hold entity or incomplete identity", "detail": "Hold corporate, partnership, trust, agency, initial-only, missing-NPN, and malformed associated-licensee rows; do not walk ownership chains or infer a person.", "kind": "hold" },
+    { "id": "role", "label": "Classify Owner versus DRLP", "detail": "A person-form Owner row is relationship-supported ownership evidence. A person-form DRLP is regulatory-responsibility evidence only and remains an owner candidate. Employee is staff evidence and never enters this branch.", "kind": "decision" },
+    { "id": "drlphold", "label": "Hold DRLP-only ownership claim", "detail": "Do not label a DRLP an owner without independent current ownership evidence for the same agency.", "kind": "hold" },
+    { "id": "join", "label": "TDI individual identity join", "detail": "The implemented kxv3-diwf join may add city, state, and ZIP for the associated NPN. It adds no street and no phone, so it cannot create a contact candidate.", "kind": "source" },
+    { "id": "contact", "label": "Explicit published business contact available?", "detail": "Only a separately implemented, legally eligible public business contact explicitly tied to the matched agency may proceed. Do not use parcel, residential, trace, private-phone, or inferred-contact routes.", "kind": "decision" },
+    { "id": "contacthold", "label": "Hold without actual business phone", "detail": "Keep relationship and identity provenance only when no explicit published business contact is available, or when the contact is shared, mismatched, absent, or unlinked to the agency.", "kind": "hold" },
+    { "id": "gates", "label": "Business-contact and compliance gates", "detail": "For a future eligible published business contact, require line type, reachability, DNC/TCPA, suppression, duplicate, freshness, and timezone checks. Passing a mobile gate does not prove direct person ownership.", "kind": "verify" },
+    { "id": "gatehold", "label": "Hold failed contact gate", "detail": "Hold non-mobile, unreachable, DNC/TCPA, suppressed, duplicate, stale, shared-office, or timezone-unresolved contacts.", "kind": "hold" },
+    { "id": "owner", "label": "Independent owner and direct-contact evidence", "detail": "Require current independent ownership support for the matched agency and explicit evidence that this same published business contact is direct to that supported Owner. An Owner row, DRLP role, or phone match alone fails.", "kind": "verify" },
+    { "id": "ownerhold", "label": "Hold unresolved owner contact", "detail": "Hold DRLP-only, Employee, entity, captive-staff, conflicting, shared-office, and unlinked-contact cases; do not infer handset ownership.", "kind": "hold" },
+    { "id": "deliver", "label": "Future supported owner contact", "detail": "Deliver only after the public business-contact, compliance, independent-owner, and direct-contact gates all pass.", "kind": "deliver" }
+  ],
+  "edges": [
+    { "from": "tdi", "to": "person", "label": "parse Owner or DRLP relationship" },
+    { "from": "person", "to": "identityhold", "label": "entity, initial-only, or malformed identity" },
+    { "from": "person", "to": "role", "label": "person-form associated licensee" },
+    { "from": "role", "to": "drlphold", "label": "DRLP relationship only" },
+    { "from": "role", "to": "join", "label": "Owner relationship evidence" },
+    { "from": "join", "to": "contact", "label": "identity context retained" },
+    { "from": "contact", "to": "contacthold", "label": "no explicit linked business contact" },
+    { "from": "contact", "to": "gates", "label": "eligible published business contact" },
+    { "from": "gates", "to": "gatehold", "label": "line or compliance gate fails" },
+    { "from": "gates", "to": "owner", "label": "contact gates pass" },
+    { "from": "owner", "to": "ownerhold", "label": "owner or direct-contact evidence missing or conflicting" },
+    { "from": "owner", "to": "deliver", "label": "independent evidence supported" }
+  ],
+  "failures": [
+    { "risk": "A DRLP is exported or labelled as the agency owner.", "mitigation": "Keep DRLP as regulatory-responsibility evidence and require independent current ownership evidence for the same agency.", "status": "blocked" },
+    { "risk": "An Employee relationship is silently treated as an owner candidate.", "mitigation": "Retain the adapter's Owner/DRLP-only query and preserve Employee as an explicit exclusion in any future expansion.", "status": "implemented" },
+    { "risk": "An entity-valued Owner or DRLP is converted into a person through an ownership-chain inference.", "mitigation": "Hold non-person and initial-only associated-licensee names as owner_is_entity; do not walk entity relationships in this workflow.", "status": "implemented" },
+    { "risk": "City and ZIP are used to find a residential address or private phone for a TDI relationship record.", "mitigation": "Hold rows without an explicit published business contact and bypass the shared recipe-B parcel and trace phases for insurance_agent_tx.", "status": "blocked" },
+    { "risk": "A mobile or agency listing number is called a direct owner handset.", "mitigation": "Keep business-contact, compliance, ownership, and direct-contact evidence separate; shared-office and unlinked contacts remain held.", "status": "blocked" }
+  ],
+  "sources": [
+    { "label": "TX TDI business relationships adapter", "scope": "Socrata kvqi-vsrr Owner and Desig-Resp-Lic-Person segments; person parsing, agency provenance, and association title are retained. Employee is outside the fetched segments.", "evidence": "VERIFIED", "reference": "src/lib/lead-engine-registers.ts txTdi, TX_TDI_TYPES, txTdiRow; tests/fixtures/registers/tx_tdi.json", "status": "implemented" },
+    { "label": "TX TDI individual join", "scope": "Socrata kxv3-diwf lookup by associated NPN adds city, state, and postal code only; saved fixture has no street or phone field.", "evidence": "VERIFIED", "reference": "src/services/lead-engine-registers.service.ts fillTdiAddresses; src/lib/lead-engine-registers.ts txTdiIndividualsUrl; tests/lead-engine-registers.test.ts tx_tdi", "status": "implemented" },
+    { "label": "TX TDI source catalog", "scope": "The public catalog documents kvqi-vsrr relationship types Owner, DRLP, and Employee and states the Texas datasets have no phone or email in the relationship route.", "evidence": "VERIFIED", "reference": "handoff/04_SOURCE_CATALOG.md TX TDI insurance datasets; handoff/07_RESEARCH_BUILD_SPEC.md section 2a", "status": "implemented" },
+    { "label": "Published agency business-contact route", "scope": "An actual public business phone tied to the agency is required before a contact branch can run. No such insurance_agent_tx source is implemented in the catalog/runtime audit.", "evidence": "UNKNOWN", "reference": "src/data/lead-engine-brain.json industries.insurance_agent_tx; src/lib/lead-engine-registers.ts REGISTER_ADAPTERS", "status": "blocked" },
+    { "label": "Recipe-B parcel and trace sequence", "scope": "The shared runner currently routes recipe-B rows to parcel and paid trace steps; this is unsuitable for TX TDI under the business-contact-only boundary.", "evidence": "VERIFIED", "reference": "src/services/lead-engine-jobs.service.ts pullNames, parcelStep, traceStep", "status": "blocked" }
+  ],
+  "iterations": [
+    { "hypothesis": "The implemented adapter preserves person-form Owner evidence while holding entity or incomplete person records and does not ingest Employee rows.", "test": "Five-case local fixture/code audit on 2026-09-24 over the first five saved kvqi-vsrr rows through txTdi, plus the existing focused tx_tdi register test. No network, secret, provider, contact-data export, residential/property lookup, trace, or paid call ran.", "observed": "3/5 person-form Owner rows were retained with title Owner; 2/5 entity or initial-only Owner rows were held as owner_is_entity. The focused test confirms the DRLP query segment and holds its saved corporate-associated DRLP fixture. The request contains only Owner and DRLP segments, excluding Employee upstream. No fixture row contains an actual business phone.", "change": "Classify Owner, DRLP, and Employee separately in the workflow; make contact availability an explicit hold and propose bypassing the shared residential parcel/trace path for this industry." }
+  ],
+  "measurement": {
+    "kind": "fixture",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Five saved TDI relationship fixtures: 3 person-form Owner rows retained and 2 entity or initial-only Owner rows held as owner_is_entity. Focused fixture/code audit only; no actual business phone, owner-contact, handset, mobile, reachability, compliance, or delivery measurement.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Local five-case fixture/code audit only; no source fetch, provider, residential lookup, trace, review, or phone-verification call ran.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean owner contact was measured. Historical brain estimates have different denominators and do not establish a business-contact or owner-contact cost."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "TDI Owner/DRLP parsing and city/state/ZIP enrichment are implemented, with Employee excluded from source segments. No actual business phone source or independent owner/direct-contact gate is implemented. The generic recipe-B runner currently advances these rows into residential parcel and paid trace steps, which must be bypassed for this industry.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-registers.ts",
+      "src/services/lead-engine-registers.service.ts",
+      "src/services/lead-engine-jobs.service.ts"
+    ]
+  },
+  "nextMeasurement": "After insurance_agent_tx is held before parcel/trace and a catalog-verified public agency business-contact endpoint is implemented, run only a lawful 5–20-row aggregate study. Separate Owner, DRLP, and Employee relation types; person parsing; agency match; explicit business contact; independent owner support; direct-contact support; mobile; reachable; DNC/TCPA-clear; suppression/duplicate-clear; and delivered. Do not use residential, property, private-phone, paid, or restricted-list sources."
+}

@@ -1,0 +1,242 @@
+{
+  "industry": "movers_tree_haulers",
+  "title": "Movers, tree services, and haulers business-contact review",
+  "hypothesis": "An active FMCSA carrier row can establish a published business contact and a role-labeled identity candidate for a narrowly matched mover, truck-equipped tree-service, junk-removal, or hauling business. It does not establish that a local business is FMCSA-covered, that Company Officer 1 is the current owner, that the published number belongs to that person, or that the number is mobile, live, DNC-cleared, or deliverable.",
+  "ownerSource": "FMCSA Company Officer 1 is an officer/identity candidate only. Legal name matching that person's name is a sole-proprietor signal only after entity-type consistency is checked; a corporate officer is never owner-confirmed from this register alone.",
+  "phoneSource": "FMCSA `cell_phone` when published, otherwise `phone`; both are published carrier/business-contact candidates until independent line-type, live, DNC, suppression, dedupe, and owner/handset evidence exists.",
+  "workflow": [
+    {
+      "id": "fmcsa",
+      "label": "Read active FMCSA carrier row",
+      "detail": "Use the implemented active-state segments from az4n-8mr2. The carrier census covers USDOT-reporting carriers, not every local mover, tree service, junk remover, or hauler.",
+      "kind": "source"
+    },
+    {
+      "id": "fit",
+      "label": "Specific service and carrier fit?",
+      "detail": "Require household-goods cargo for movers, or an explicit tree, junk, hauling, or equivalent service signal. Hold towing, machinery, freight, private-property, landscaping-only, and generic transport rows unless a separately scoped workflow admits them.",
+      "kind": "filter"
+    },
+    {
+      "id": "holdfit",
+      "label": "Hold adjacent or ambiguous carrier",
+      "detail": "Do not turn cargo flags, a truck, or a broad name match into a mover, tree-service, or hauling classification.",
+      "kind": "hold"
+    },
+    {
+      "id": "size",
+      "label": "Small-carrier segment?",
+      "detail": "For the current micro-business hypothesis, require a known power-unit count of three or fewer; missing or larger fleets remain business candidates outside this owner-candidate segment.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdsize",
+      "label": "Hold missing or larger fleet",
+      "detail": "Keep the row from the micro-owner branch; do not infer scale from a title or phone.",
+      "kind": "hold"
+    },
+    {
+      "id": "role",
+      "label": "Assess officer and entity evidence",
+      "detail": "Retain Company Officer 1 with its entity type and legal-name comparison. An Individual row with a matching person may be a stronger candidate; an officer, corporation, partnership, or blank entity type is not owner confirmation.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdrole",
+      "label": "Hold unsupported owner claim",
+      "detail": "Keep officer identity provenance but do not label the person an owner or use any address to discover a private number.",
+      "kind": "hold"
+    },
+    {
+      "id": "phone",
+      "label": "Published carrier phone present?",
+      "detail": "Use the published `cell_phone` preference or `phone` as business-contact evidence only; cell-field presence does not prove handset ownership.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdphone",
+      "label": "Hold without eligible contact",
+      "detail": "Do not infer, append, or derive a private contact from carrier, officer, or address fields.",
+      "kind": "hold"
+    },
+    {
+      "id": "verify",
+      "label": "Apply contact and compliance gates",
+      "detail": "Require the existing independent line-type, live, DNC, suppression, and global delivery-dedupe checks; preserve source and role provenance.",
+      "kind": "verify"
+    },
+    {
+      "id": "owner",
+      "label": "Independent owner and handset evidence?",
+      "detail": "An FMCSA officer, legal-name match, or a published carrier phone alone is insufficient for an owner-confirmed mobile.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdowner",
+      "label": "Hold as business contact or owner candidate",
+      "detail": "Retain only the classification supported by evidence; no owner-confirmed mobile is emitted.",
+      "kind": "hold"
+    },
+    {
+      "id": "deliver",
+      "label": "Deliver approved owner-confirmed contact",
+      "detail": "Only a future route with independently recorded owner and handset evidence plus all contact gates may deliver this classification.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    {
+      "from": "fmcsa",
+      "to": "fit",
+      "label": "active carrier row"
+    },
+    {
+      "from": "fit",
+      "to": "size",
+      "label": "specific service fit"
+    },
+    {
+      "from": "fit",
+      "to": "holdfit",
+      "label": "adjacent, ambiguous, or non-service row"
+    },
+    {
+      "from": "size",
+      "to": "role",
+      "label": "known 1–3 power units"
+    },
+    {
+      "from": "size",
+      "to": "holdsize",
+      "label": "missing or over 3 units"
+    },
+    {
+      "from": "role",
+      "to": "phone",
+      "label": "candidate-role evidence retained"
+    },
+    {
+      "from": "role",
+      "to": "holdrole",
+      "label": "owner claim unsupported"
+    },
+    {
+      "from": "phone",
+      "to": "verify",
+      "label": "published contact"
+    },
+    {
+      "from": "phone",
+      "to": "holdphone",
+      "label": "no eligible published contact"
+    },
+    {
+      "from": "verify",
+      "to": "owner",
+      "label": "contact gates passed"
+    },
+    {
+      "from": "verify",
+      "to": "holdphone",
+      "label": "line, live, DNC, suppression, or dedupe failed"
+    },
+    {
+      "from": "owner",
+      "to": "deliver",
+      "label": "independent owner and handset evidence"
+    },
+    {
+      "from": "owner",
+      "to": "holdowner",
+      "label": "candidate-only evidence"
+    }
+  ],
+  "failures": [
+    {
+      "risk": "A local business is excluded or represented as eligible merely because it is absent from or present in FMCSA.",
+      "mitigation": "Describe FMCSA as a USDOT-carrier source only; retain a separately reviewed business-listing or local-register path for non-covered businesses and never use census presence as a license or universal-coverage claim.",
+      "status": "implemented"
+    },
+    {
+      "risk": "A mover, tree service, or hauler route admits towing, freight, machinery, private-property, landscaping-only, or generic transport businesses.",
+      "mitigation": "Require an explicit service branch and hold adjacent/ambiguous rows before owner-candidate processing.",
+      "status": "partial"
+    },
+    {
+      "risk": "A Company Officer 1 name or legal-name equality is labeled as the owner or as a sole proprietor when the carrier is a corporation.",
+      "mitigation": "Persist entity type and role provenance; require `INDIVIDUAL` consistency before the sole-proprietor signal and independently corroborate ownership in every other case.",
+      "status": "partial"
+    },
+    {
+      "risk": "A published carrier phone, including `cell_phone`, is labeled as the officer's direct mobile.",
+      "mitigation": "Keep the line business-contact evidence until independent line-type, live, DNC, suppression, dedupe, owner, and handset-evidence gates pass.",
+      "status": "partial"
+    },
+    {
+      "risk": "Large fleets enter the one-to-three-power-unit micro-business hypothesis.",
+      "mitigation": "Apply the documented `power_units <= 3` branch before owner-candidate scoring and hold missing or larger values.",
+      "status": "partial"
+    }
+  ],
+  "sources": [
+    {
+      "label": "FMCSA Motor Carrier Census",
+      "scope": "Active USDOT carrier records with legal/DBA names, Company Officer 1, entity type, published phone/email, power units, and cargo fields",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md FMCSA Motor Carrier Census az4n-8mr2 row; handoff/07_RESEARCH_BUILD_SPEC.md Appendix B, Movers: FMCSA section; src/lib/lead-engine-registers.ts fmcsa",
+      "status": "implemented"
+    },
+    {
+      "label": "FMCSA fixture and focused adapter test",
+      "scope": "Five saved active rows and parser behavior only; no live carrier query or contact compilation",
+      "evidence": "VERIFIED",
+      "reference": "tests/fixtures/registers/fmcsa.json; tests/lead-engine-registers.test.ts fmcsa; src/lib/lead-engine-registers.ts fmcsaRow",
+      "status": "implemented"
+    },
+    {
+      "label": "Non-FMCSA local mover and service coverage",
+      "scope": "Businesses below applicable USDOT coverage or operating outside the census route",
+      "evidence": "UNKNOWN",
+      "reference": "handoff/07_RESEARCH_BUILD_SPEC.md Appendix B notes state household-goods mover registries as secondary/per-record or unresolved routes",
+      "status": "blocked"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "A legal-name equals Company Officer 1 match safely identifies a sole proprietor for the FMCSA owner-candidate branch.",
+      "test": "Five-case local fixture/code audit on 2026-09-24: parsed the first five saved active FMCSA rows through `fmcsa` with the same adapter cursor used by the focused test. Command: `node --experimental-strip-types --input-type=module -e ...`; no network, credential, paid call, contact export, private lookup, line verification, or delivery ran.",
+      "observed": "5/5 rows parsed to a person candidate; 4/5 retained a published non-toll-free phone; 5/5 were marked Sole Proprietor because legal name equaled officer name; 2/5 of those Sole Proprietor labels had `business_org_desc = CORPORATION`. This is fixture/parser behavior only, not ownership, handset, line-type, reachability, DNC, or delivery evidence.",
+      "change": "Do not use legal-name equality alone as sole-proprietor or owner proof. Root should require entity-type consistency for the Sole Proprietor label, retain Company Officer 1 as role evidence otherwise, and add the two corporate-match fixture cases as regressions."
+    },
+    {
+      "hypothesis": "Root integration regression check, 2026-09-24",
+      "test": "Focused synthetic regression checks in tests/lead-engine-industry-corrections.test.ts, lead-engine-reviews.test.ts, lead-engine-gates-jobs.test.ts and lead-engine-jobs.test.ts. No paid provider call.",
+      "observed": "FMCSA now requires business_org_desc=INDIVIDUAL as well as legal/officer-name equality before setting Sole Proprietor. Corporations, partnerships and missing entity types remain role candidates. Independent owner proof and service-specific fleet filtering are still pending.",
+      "change": "Shared runtime correction integrated. Original source samples are retained with their original denominators; no phone-yield improvement is claimed."
+    }
+  ],
+  "measurement": {
+    "kind": "fixture",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Five saved active FMCSA fixture rows: person candidate 5/5; non-toll-free published phone retained 4/5; parser Sole Proprietor label 5/5; corporation rows incorrectly carrying that label 2/5. Local fixture/code audit only. No live query, paid/provider call, ownership confirmation, mobile classification, reachability, DNC check, private lookup, or delivery occurred.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Local fixture/code audit; no paid or live verification",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean delivered owner contact was measured. The movers_tree_haulers brain estimates are not a per-clean cost and use no verified-phone sample."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "FMCSA now requires business_org_desc=INDIVIDUAL as well as legal/officer-name equality before setting Sole Proprietor. Corporations, partnerships and missing entity types remain role candidates. Independent owner proof and service-specific fleet filtering are still pending. Original review: The live brain maps this industry to FMCSA and the adapter uses active state-by-filter segments, preserves a Company Officer 1 candidate, prefers `cell_phone`, and drops toll-free numbers. The adapter does not enforce the brain's power-unit threshold or a narrow service classification, and it currently derives Sole Proprietor solely from legal/officer equality, including corporation rows.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-registers.ts",
+      "src/services/lead-engine-jobs.service.ts"
+    ]
+  },
+  "nextMeasurement": "After root corrects the FMCSA role classification, add synthetic Individual-match, Corporation-match, blank-entity, over-three-power-unit, towing/freight, and explicit mover/tree/hauling cases. Verify that only eligible service and small-carrier candidates reach contact gates, corporate officers remain candidate-only, and no owner-confirmed mobile is emitted without independent evidence. A separately authorized live study must measure coverage by subvertical, phone line type, DNC, reachability, reached owner, and delivery with separate denominators."
+}

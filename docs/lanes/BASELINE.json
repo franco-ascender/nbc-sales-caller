@@ -1,0 +1,8 @@
+{
+  "archive": "artifacts/releases/20260914-154226/nbc-sales-reviewed-baseline.tar.gz",
+  "sha256": "bfec999cee4d87329b42e45ed54fcbe1fcea0deefbc0deb24fa28cc131489283",
+  "createdAt": "2026-09-14T15:42:26.767926-04:00",
+  "files": 57,
+  "scope": "Runtime source snapshot only; excludes environment values, artifacts, docs and database exports.",
+  "validation": "Previous integrated delivery: build/TypeScript, 27 unit tests, 10 E2E. Infrastructure must validate its isolated deployment copy again."
+}

@@ -1,0 +1,54 @@
+{
+  "industry": "childcare_center",
+  "title": "Childcare centers and education studios: business-contact fallback with owner-role separation",
+  "hypothesis": "The current fallback can discover an independent childcare center or education studio and a published business contact, but no implemented center register or directory role establishes ownership or an owner-confirmed mobile. Director, administrator, company, and owner evidence must remain distinct.",
+  "ownerSource": "No center owner source is implemented. A PA/NY/TX center directory may name a company or director/administrator, but those are business or role candidates only. Independent explicit public ownership evidence for the same company is required before an owner label.",
+  "phoneSource": "The current effective path is recipe-A discovery after the recipe-B center route finds no register mapping. Its published listing number is a business-contact candidate only, never proof of a director's or owner's handset, line type, reachability, or consent.",
+  "workflow": [
+    {"id":"start","label":"Center or studio discovery","detail":"Start with the effective recipe-A fallback for a child-care center, preschool, tutoring, dance, music, or swim-school business.","kind":"source"},
+    {"id":"fit","label":"Commercial center or studio fit","detail":"Require evidence for the requested center or education-studio cohort; home-provider records do not enter this workflow.","kind":"filter"},
+    {"id":"offfit","label":"Hold home or off-cohort record","detail":"Reject or hold home-directory, residential, generic education, or otherwise unsupported records.","kind":"hold"},
+    {"id":"chain","label":"Independent-business check","detail":"Apply the existing education_childcare franchise exclusion before phone verification.","kind":"filter"},
+    {"id":"chainhold","label":"Hold franchise candidate","detail":"A brand match does not prove a local owner; keep it out of the independent-center path.","kind":"hold"},
+    {"id":"phone","label":"Published business contact","detail":"Retain only a published business number for the matched business; it is not an owner or direct-mobile claim.","kind":"source"},
+    {"id":"nophone","label":"Hold no contact","detail":"Do not infer a phone from a company, center license, director, or administrator record.","kind":"hold"},
+    {"id":"contact","label":"Contact and compliance gates","detail":"Require line-type, live, DNC, suppression, time-zone, and duplicate checks before any delivery decision.","kind":"verify"},
+    {"id":"role","label":"Ownership evidence decision","detail":"A center company is not a person; a director or administrator is a role candidate. Require independent explicit ownership evidence for the same matched company.","kind":"decision"},
+    {"id":"ownerhold","label":"Hold business-only or role-only contact","detail":"Keep a contact as business-only when ownership is absent, ambiguous, or belongs only to a director or administrator role.","kind":"hold"},
+    {"id":"deliver","label":"Deliver supported contact","detail":"Deliver only after contact/compliance gates and independent owner evidence pass; owner-mobile status requires separate handset evidence.","kind":"deliver"}
+  ],
+  "edges": [
+    {"from":"start","to":"fit","label":"classify candidate"},
+    {"from":"fit","to":"offfit","label":"home, residential, or off-cohort"},
+    {"from":"fit","to":"chain","label":"center or studio evidence"},
+    {"from":"chain","to":"chainhold","label":"franchise match"},
+    {"from":"chain","to":"phone","label":"independent candidate"},
+    {"from":"phone","to":"nophone","label":"no published business contact"},
+    {"from":"phone","to":"contact","label":"published business contact"},
+    {"from":"contact","to":"nophone","label":"contact or compliance gate fails"},
+    {"from":"contact","to":"role","label":"contact gates pass"},
+    {"from":"role","to":"ownerhold","label":"company-only, director-only, admin-only, or unproven"},
+    {"from":"role","to":"deliver","label":"independent explicit owner evidence"}
+  ],
+  "failures": [
+    {"risk":"The configured recipe-B center route has PA/NY/TX name_source descriptions but no register_source mapping or implemented center adapter segment.","mitigation":"Keep the effective Maps fallback and mark the center-register path unavailable until a dedicated center-only adapter and mapping exist.","status":"implemented"},
+    {"risk":"A director, administrator, provider, company, and owner are represented as the same identity.","mitigation":"Preserve the stated role and company separately; require independent explicit ownership evidence matched to the company before an owner label.","status":"proposed"},
+    {"risk":"Home-directory rows contaminate a center cohort or expose residential location data.","mitigation":"Do not reuse PA/NY/TX home adapters: their seven configured segments are home-only. A future center adapter must exclude home rows and residential fields.","status":"implemented"},
+    {"risk":"A known childcare or education franchise is treated as an independent center or studio.","mitigation":"Apply the existing education_childcare brand group before paid verification.","status":"implemented"},
+    {"risk":"A published business number is labelled a director's, owner's, or owner-confirmed mobile.","mitigation":"Keep business-contact, handset, line-type, reachability, compliance, and ownership evidence as separate required gates.","status":"implemented"}
+  ],
+  "sources": [
+    {"label":"Live childcare_center brain route","scope":"Configured recipe-B center entry with PA/NY/TX directory descriptions; quote path falls back to Maps because no register source is mapped.","evidence":"VERIFIED","reference":"src/data/lead-engine-brain.json industries.childcare_center; src/lib/lead-engine-brain.ts route and registerSourceFor; src/lib/lead-engine-jobs.ts quoteJob","status":"implemented"},
+    {"label":"PA, NY, and TX public child-care directories","scope":"Catalogued center fields and roles; current runtime adapters request only home-operation segments, not PA centers, NY DCC/SACC, or TX Licensed Center.","evidence":"VERIFIED","reference":"handoff/04_SOURCE_CATALOG.md Group H; handoff/07_RESEARCH_BUILD_SPEC.md section 5.8; src/lib/lead-engine-registers.ts paChildcare, nyChildcare, txChildcare","status":"blocked"},
+    {"label":"Education and childcare franchise exclusion","scope":"Known education/childcare franchise names applied to Maps discovery candidates.","evidence":"VERIFIED","reference":"src/data/lead-engine-brands.json groups.education_childcare; src/lib/lead-engine-brands.ts chainGroupsFor and isChain","status":"implemented"},
+    {"label":"Independent owner evidence for a center company","scope":"Potential later public ownership source matched to the same company; no source or adapter is currently connected for this industry.","evidence":"UNKNOWN","reference":"handoff/07_RESEARCH_BUILD_SPEC.md section 5.8 center branch; no childcare_center register_source in src/data/lead-engine-brain.json","status":"blocked"}
+  ],
+  "iterations": [
+    {"hypothesis":"The five live-brain aliases for centers and education studios have a configured center-register route in their named states.","test":"Five-case local route/code audit on 2026-09-24 using child care center/PA, preschool/NY, dance studio/TX, music school/PA, and tutoring/NY through route, registerSourceFor, and quoteJob. Command used node --experimental-strip-types; no network, credential, provider, contact-data, or paid call ran.","observed":"All 5/5 resolve to childcare_center and its configured recipe B, but registerSourceFor returned null for every case. quoteJob safely selected recipe A with a No register for childcare center path note. This is routing behavior only, not a source, phone, owner, or delivery result.","change":"Record the effective Maps fallback and block the advertised center-register/owner path until a real center-only adapter and register_source mapping are implemented."},
+    {"hypothesis":"Existing childcare adapters include center segments suitable for the childcare_center path.","test":"Local adapter-request code audit on 2026-09-24 of paChildcare, nyChildcare, and txChildcare request cursors; no response body or network was read.","observed":"Three adapters exposed seven requested segments. All seven were home-only and none requested PA Child Care Center, NY DCC/SACC, or TX Licensed Center.","change":"Do not route centers through home adapters or use their address-bearing payloads. A later dedicated center adapter must preserve director/company roles without owner promotion."}
+  ],
+  "measurement": {"kind":"code_audit","sampleSize":5,"observedAt":"2026-09-24","result":"Five local route cases all resolved to childcare_center with no register_source and safely quoted recipe-A fallback. A separate no-network adapter audit found seven PA/NY/TX childcare request segments, all home-only. No names, phone values, addresses, owner evidence, mobile status, reachability, DNC outcome, or delivery was measured.","verifiedPhones":0},
+  "cost": {"basis":"Local fixture/code audit only; no paid discovery, append, verification, or provider request was invoked.","perInputUsd":0,"perCleanUsd":null,"note":"No clean delivered owner contact was measured. Historical brain estimates use a different, unverified denominator and are not a cost per clean center-owner contact."},
+  "implementation": {"status":"partial","summary":"The job quote safely falls back to recipe A for the five reviewed center/studio aliases because childcare_center has no register_source. The brain still describes recipe B and PA/NY/TX directory strings, while all implemented childcare adapters are home-only. Franchise exclusion is wired for childcare_center; no center owner-source or role-preserving center adapter is implemented.","runtimeFiles":["src/data/lead-engine-brain.json","src/lib/lead-engine-brain.ts","src/lib/lead-engine-jobs.ts","src/lib/lead-engine-registers.ts","src/lib/lead-engine-brands.ts","src/services/lead-engine-jobs.service.ts"]},
+  "nextMeasurement":"After a dedicated, eligible center-only adapter and ownership-evidence path exist, run a free aggregate-only 5-20 row audit with separate denominators for center rows, company records, director/admin roles, independently owner-confirmed company matches, published business contacts, contact-gate passes, and deliveries. Exclude home rows and residential fields."
+}

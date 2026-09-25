@@ -1,0 +1,186 @@
+{
+  "industry": "plumbing",
+  "title": "Independent plumbing contractors",
+  "hypothesis": "A public plumbing-specific source can improve trade and activity evidence, but a named licensee, permit contractor, or published dispatch number is only an owner/contact candidate until separate ownership, line, reachability, and DNC gates pass.",
+  "ownerSource": "Existing Maps-first discovery plus any lawfully usable state plumbing register or permit record that names a contractor; no current implemented plumbing register proves ownership.",
+  "phoneSource": "Published business numbers from Maps; Austin permits also expose contractor_phone in the exact adapter query. Neither is owner-confirmed or phone-verified by this review.",
+  "workflow": [
+    {
+      "id": "start",
+      "label": "Plumbing business input",
+      "detail": "Start with the live recipe-A Maps discovery query for plumber and retain a named business candidate.",
+      "kind": "source"
+    },
+    {
+      "id": "fit",
+      "label": "Plumbing relevance",
+      "detail": "Require plumbing or a core plumbing term; adjacent HVAC, septic, excavation, or water-heater-only results do not establish plumbing fit.",
+      "kind": "filter"
+    },
+    {
+      "id": "off_trade",
+      "label": "Off-trade or ambiguous result",
+      "detail": "Reject or hold an adjacent-only or generic contractor result for review.",
+      "kind": "hold"
+    },
+    {
+      "id": "identity",
+      "label": "License or permit candidate",
+      "detail": "Where a source is available and lawful, use an active plumbing record only to corroborate trade, business, and a named candidate role.",
+      "kind": "verify"
+    },
+    {
+      "id": "no_identity",
+      "label": "No corroborating identity",
+      "detail": "Keep the Maps business contact as a business lead; do not infer an owner from a missing register or permit match.",
+      "kind": "hold"
+    },
+    {
+      "id": "candidate",
+      "label": "Named plumbing candidate",
+      "detail": "Retain licensee or permit-contractor role as candidate evidence only; an employee, qualifier, or permit filer may not own the company.",
+      "kind": "hold"
+    },
+    {
+      "id": "contact",
+      "label": "Published business contact gate",
+      "detail": "Evaluate only a published business contact through the existing line-type, live, DNC, duplicate, and ownership-evidence gates.",
+      "kind": "verify"
+    },
+    {
+      "id": "deliver",
+      "label": "Deliver after all gates",
+      "detail": "Deliver only after independent owner evidence and authorized contact/compliance outcomes pass.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    {
+      "from": "start",
+      "to": "fit",
+      "label": "classify result"
+    },
+    {
+      "from": "fit",
+      "to": "off_trade",
+      "label": "adjacent-only or generic"
+    },
+    {
+      "from": "fit",
+      "to": "identity",
+      "label": "plumbing-positive"
+    },
+    {
+      "from": "identity",
+      "to": "no_identity",
+      "label": "no lawful matching record"
+    },
+    {
+      "from": "identity",
+      "to": "candidate",
+      "label": "matching candidate role"
+    },
+    {
+      "from": "candidate",
+      "to": "contact",
+      "label": "published business number"
+    },
+    {
+      "from": "no_identity",
+      "to": "contact",
+      "label": "business contact only"
+    },
+    {
+      "from": "contact",
+      "to": "deliver",
+      "label": "ownership and compliance pass"
+    }
+  ],
+  "failures": [
+    {
+      "risk": "A plumbing licensee, qualifier, or permit contractor is represented as the business owner.",
+      "mitigation": "Persist the source role as candidate evidence and require independent ownership evidence before owner labeling or delivery.",
+      "status": "proposed"
+    },
+    {
+      "risk": "A dispatch, shared office, or franchise number is represented as a direct owner mobile.",
+      "mitigation": "Keep published numbers as business contacts until normal line-type, DNC, dedupe, and ownership gates pass.",
+      "status": "implemented"
+    },
+    {
+      "risk": "Adjacent drain, septic, excavation, HVAC, or water-heater results contaminate a plumbing cohort.",
+      "mitigation": "Use the plumbing profile's core-term match; route adjacent-only and generic results to hold or reject.",
+      "status": "implemented"
+    },
+    {
+      "risk": "An unfiltered sparse sample is mistaken for a removed source schema.",
+      "mitigation": "Repeat the exact adapter select and where before disabling a source. Root reproduced HTTP 200 with all required fields on five rows.",
+      "status": "corrected review"
+    },
+    {
+      "risk": "Texas TSBPE is treated as a free bulk plumbing source.",
+      "mitigation": "Keep TSBPE bulk fields, price, and terms UNKNOWN; use only a separately verified lawful source before implementation.",
+      "status": "blocked"
+    }
+  ],
+  "sources": [
+    {
+      "label": "Live plumbing brain and relevance classifier",
+      "scope": "National Maps-first plumbing discovery and core/adjacent trade filter",
+      "evidence": "VERIFIED",
+      "reference": "src/data/lead-engine-brain.json; src/lib/lead-engine-industries.ts",
+      "status": "implemented"
+    },
+    {
+      "label": "Austin Issued Construction Permits",
+      "scope": "Austin, TX activity and contractor candidate route",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group A; handoff/07_RESEARCH_BUILD_SPEC.md section 2.3; src/lib/lead-engine-registers.ts",
+      "status": "proposed"
+    },
+    {
+      "label": "Texas State Board of Plumbing Examiners",
+      "scope": "Texas plumbing license search and possible list",
+      "evidence": "UNKNOWN",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group A; handoff/07_RESEARCH_BUILD_SPEC.md state-map TX detail",
+      "status": "blocked"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "The Austin open permit route supplies a current plumbing contractor name and published contractor phone as activity/contact-candidate evidence.",
+      "test": "Free live schema sample of 20 rows from data.austintexas.gov/resource/3syk-w9eu.json on 2026-09-24; retain aggregate field presence only.",
+      "observed": "Worker reported missing contractor fields in an unfiltered 20-row sample and a 400 response; the failure did not reproduce with the configured query. This observation does not establish schema removal.",
+      "change": "Do not disable the adapter from a sparse unfiltered sample. Reproduce its exact query first."
+    },
+    {
+      "hypothesis": "The exact configured Austin query remains usable.",
+      "test": "Root requested permit_number, contractor_trade, contractor_company_name, contractor_full_name, contractor_phone, contractor_zip, issue_date with issue_date after 2025-09-24 and contractor_phone IS NOT NULL; limit 5.",
+      "observed": "HTTP 200; 5 rows; all seven selected fields present across the response. No contact values retained.",
+      "change": "Keep the existing adapter. Plumbing-specific trade filtering and route integration remain proposed; no current phone-yield claim."
+    }
+  ],
+  "measurement": {
+    "kind": "free_source_sample",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Root reproduction: exact configured Austin query returned HTTP 200 and 5 rows with the seven selected fields represented. Earlier worker schema-failure inference was not reproduced. No phone, ownership, or compliance outcomes measured.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Free public endpoint schema sample only; no paid discovery, append, or verification was invoked.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean owner-contact outcome was measured, so cost per clean contact is unknown."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "Plumbing remains recipe A with relevance classification. Austin adapter is implemented and its exact query works, but it is not mapped to this industry; a plumbing-specific trade filter is still required.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-industries.ts",
+      "src/lib/lead-engine-registers.ts"
+    ]
+  },
+  "nextMeasurement": "Audit 5-20 plumbing-filtered Austin records with separate distinct-business, role and business-contact-field counts, then independently authorized contact verification. No replacement endpoint is necessary on current evidence."
+}

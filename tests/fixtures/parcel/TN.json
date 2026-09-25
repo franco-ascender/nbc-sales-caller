@@ -1,0 +1,39 @@
+{
+ "_about": "TN parcel layer answer for SMITH JOHN, 2026-09-21",
+ "body": {
+  "objectIdFieldName": "OBJECTID",
+  "uniqueIdField": {
+   "name": "OBJECTID",
+   "isSystemMaintained": true
+  },
+  "globalIdFieldName": "",
+  "geometryType": "esriGeometryPolygon",
+  "exceededTransferLimit": true,
+  "features": [
+   {
+    "attributes": {
+     "Owner": "SMITH, TYLER J",
+     "OwnAddr1": "1041 EAST TRINITY LN #202",
+     "OwnCity": "NASHVILLE",
+     "OwnZip": "37216"
+    }
+   },
+   {
+    "attributes": {
+     "Owner": "SMITH, ROBERT LEWIS",
+     "OwnAddr1": "8673 LAWSON DR",
+     "OwnCity": "ANTIOCH",
+     "OwnZip": "37013"
+    }
+   },
+   {
+    "attributes": {
+     "Owner": "SMITH, JOSHUA CALEB & WILDUN, ASHLIN B",
+     "OwnAddr1": "8678 LAWSON DR",
+     "OwnCity": "ANTIOCH",
+     "OwnZip": "37013"
+    }
+   }
+  ]
+ }
+}

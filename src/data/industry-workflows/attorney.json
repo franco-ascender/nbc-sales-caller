@@ -1,0 +1,271 @@
+{
+  "industry": "attorney",
+  "title": "Attorneys and small law firms",
+  "hypothesis": "The generic attorney recipe-B route cannot safely produce a contact because it proceeds from firm identity toward private residential tracing. The NY attorney registration is the implemented free public business-contact alternative: its current registration, firm, and published office phone create a business-contact candidate, while surname-in-firm remains owner-probability evidence only.",
+  "ownerSource": "No generic attorney owner source is safely implemented. For NY, data.ny.gov eqw2-r5nb supplies a currently registered attorney and firm; a surname in the firm name is a heuristic candidate signal, not owner confirmation.",
+  "phoneSource": "For NY, the public Attorney Registrations dataset supplies the published office phone. It is a business-contact candidate, not evidence of a mobile handset or direct owner phone. The generic recipe-B residence/trace phone path is held.",
+  "workflow": [
+    {
+      "id": "request",
+      "label": "Attorney request",
+      "detail": "Resolve the requested state before selecting a source; Maps cannot be the deliverable for attorney routes.",
+      "kind": "source"
+    },
+    {
+      "id": "state",
+      "label": "Public business-contact route available?",
+      "detail": "NY has the catalog-verified court registration dataset. The generic attorney route has no safe mapped public business-contact source.",
+      "kind": "decision"
+    },
+    {
+      "id": "legacyhold",
+      "label": "Hold generic private route",
+      "detail": "Do not use the generic recipe-B parcel, residential, or trace path, and do not replace it with a Maps deliverable.",
+      "kind": "hold"
+    },
+    {
+      "id": "nyregister",
+      "label": "NY public attorney registration",
+      "detail": "Read the current NY registration, firm, and published office-phone candidate from eqw2-r5nb.",
+      "kind": "source"
+    },
+    {
+      "id": "current",
+      "label": "Current person and firm filter",
+      "detail": "Keep currently registered people with a firm and normalized published phone; hold inactive, non-person, firmless, or phoneless rows.",
+      "kind": "filter"
+    },
+    {
+      "id": "registerhold",
+      "label": "Registration hold",
+      "detail": "Hold inactive, non-person, missing-firm, missing-phone, or source-unavailable rows.",
+      "kind": "hold"
+    },
+    {
+      "id": "candidate",
+      "label": "Business-contact candidate",
+      "detail": "Use the public office phone only as a business-contact candidate. Surname-in-firm is a heuristic owner-probability signal.",
+      "kind": "decision"
+    },
+    {
+      "id": "shared",
+      "label": "Phone reuse and switchboard check",
+      "detail": "Hold high-reuse or switchboard patterns; uniqueness is not proof of a direct owner handset.",
+      "kind": "filter"
+    },
+    {
+      "id": "sharedhold",
+      "label": "Shared-contact hold",
+      "detail": "Hold phone candidates shared across several attorneys or otherwise identified as an office switchboard.",
+      "kind": "hold"
+    },
+    {
+      "id": "gates",
+      "label": "Line and compliance gates",
+      "detail": "Require mobile classification, reachability, DNC/TCPA clearance, suppression, duplicate, freshness, and timezone checks.",
+      "kind": "verify"
+    },
+    {
+      "id": "gatehold",
+      "label": "Contact gate hold",
+      "detail": "Hold landline, VoIP, unreachable, DNC/TCPA, suppressed, duplicate, stale, or timezone-unresolved candidates.",
+      "kind": "hold"
+    },
+    {
+      "id": "owner",
+      "label": "Independent owner and direct-contact evidence",
+      "detail": "An owner-confirmed result requires current owner/founder evidence for the firm and an explicit direct-business-contact link to this phone.",
+      "kind": "verify"
+    },
+    {
+      "id": "ownerhold",
+      "label": "Owner claim unresolved",
+      "detail": "Hold heuristic-only, employee, associate, front-desk, conflicting, or unlinked evidence; do not infer handset ownership.",
+      "kind": "hold"
+    },
+    {
+      "id": "deliver",
+      "label": "Future owner-confirmed delivery",
+      "detail": "Deliver an owner-confirmed attorney contact only after the business-contact and owner/direct-contact evidence gates pass.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    {
+      "from": "request",
+      "to": "state",
+      "label": "resolve state route"
+    },
+    {
+      "from": "state",
+      "to": "legacyhold",
+      "label": "no eligible public business-contact route"
+    },
+    {
+      "from": "state",
+      "to": "nyregister",
+      "label": "NY public register route"
+    },
+    {
+      "from": "nyregister",
+      "to": "current",
+      "label": "parse registration"
+    },
+    {
+      "from": "current",
+      "to": "registerhold",
+      "label": "status or contact field fails"
+    },
+    {
+      "from": "current",
+      "to": "candidate",
+      "label": "current person, firm, and published phone"
+    },
+    {
+      "from": "candidate",
+      "to": "shared",
+      "label": "evaluate reuse"
+    },
+    {
+      "from": "shared",
+      "to": "sharedhold",
+      "label": "shared or switchboard pattern"
+    },
+    {
+      "from": "shared",
+      "to": "gates",
+      "label": "eligible business-phone candidate"
+    },
+    {
+      "from": "gates",
+      "to": "gatehold",
+      "label": "line or compliance check fails"
+    },
+    {
+      "from": "gates",
+      "to": "owner",
+      "label": "contact gates pass"
+    },
+    {
+      "from": "owner",
+      "to": "ownerhold",
+      "label": "owner or direct-contact evidence unresolved"
+    },
+    {
+      "from": "owner",
+      "to": "deliver",
+      "label": "all evidence supported"
+    }
+  ],
+  "failures": [
+    {
+      "risk": "The generic attorney recipe-B route moves from firm identity toward private residential tracing.",
+      "mitigation": "Keep it held and require an eligible public business-contact source; do not use parcel, residential, or private-phone enrichment.",
+      "status": "implemented"
+    },
+    {
+      "risk": "Maps is used as the deliverable for attorney or NY-attorney fallback.",
+      "mitigation": "Keep both keys in NEVER_MAPS_DELIVERABLE and preserve the fallback block.",
+      "status": "implemented"
+    },
+    {
+      "risk": "A surname-in-firm heuristic is treated as owner confirmation.",
+      "mitigation": "Store it as owner-probability evidence only and require a supported independent owner/direct-contact assessment for an owner label.",
+      "status": "blocked"
+    },
+    {
+      "risk": "A published NY office phone is treated as a personal mobile or direct owner handset.",
+      "mitigation": "Require reuse, line, reachability, DNC/TCPA, suppression, freshness, timezone, and explicit direct-business-contact evidence separately.",
+      "status": "proposed"
+    },
+    {
+      "risk": "A firm switchboard shared by several attorneys enters a direct-contact path.",
+      "mitigation": "Apply a source-phone reuse threshold and hold shared-contact patterns before direct-contact classification.",
+      "status": "proposed"
+    }
+  ],
+  "sources": [
+    {
+      "label": "Generic attorney brain route",
+      "scope": "Recipe B, firm-name discovery, no mapped public business-contact register",
+      "evidence": "VERIFIED",
+      "reference": "src/data/lead-engine-brain.json industries.attorney; src/lib/lead-engine-jobs.ts quoteJob",
+      "status": "blocked"
+    },
+    {
+      "label": "NY public attorney registration",
+      "scope": "Currently registered NY attorney, firm, published office phone, and court-rule public status",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md NYS Attorney Registrations; handoff/07_RESEARCH_BUILD_SPEC.md section 6a; src/lib/lead-engine-registers.ts nyAttorneys",
+      "status": "implemented"
+    },
+    {
+      "label": "NY parser and surname heuristic",
+      "scope": "Current-status/person filters and surname-in-firm title signal; no owner confirmation",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-registers.ts nyAttorneyRow; tests/lead-engine-registers.test.ts ny_attorneys",
+      "status": "implemented"
+    },
+    {
+      "label": "Never-Maps delivery guard",
+      "scope": "Attorney and attorney_ny cannot use recipe-A Maps delivery or fallback",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-gates.ts NEVER_MAPS_DELIVERABLE; src/lib/lead-engine-jobs.ts quoteJob",
+      "status": "implemented"
+    },
+    {
+      "label": "Owner-evidence assessment",
+      "scope": "Helper requires independent owner/founder and explicit direct-business-contact evidence but is not invoked by register delivery",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-research.ts assessOwnerEvidence; src/services/lead-engine-jobs.service.ts settleVerified",
+      "status": "blocked"
+    },
+    {
+      "label": "Generic verification and delivery gates",
+      "scope": "Mobile, reachability, DNC/TCPA, suppression, duplicate, freshness, and timezone gates",
+      "evidence": "VERIFIED",
+      "reference": "src/services/lead-engine-jobs.service.ts settleVerified; src/lib/lead-engine-gates.ts evaluateJobGates",
+      "status": "implemented"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "The NY parser retains only a current person-level registration and labels a firm surname match as a heuristic rather than parsing it as explicit ownership.",
+      "test": "Five-case local fixture/code audit on 2026-09-24 using five saved rows from tests/fixtures/registers/ny_attorneys.json and the focused ny_attorneys test. Command: node --experimental-strip-types --test --test-name-pattern='ny_attorneys' tests/lead-engine-registers.test.ts. No network, paid call, secret, private lookup, contact compilation, or phone verification ran.",
+      "observed": "The focused test passed. The five audited saved rows were current NY registrations with firm and normalized office-phone fields and were retained as Attorney, not Named Partner. Its paired synthetic surname variation produced Named Partner; its Delinquent variation held as status_not_registered. This measures parser behavior only, not business coverage, ownership, handset, mobile, reachability, DNC/TCPA, or delivery.",
+      "change": "Use the NY public register only as a business-contact candidate route, keep generic recipe B held, and require independent owner/direct-contact evidence before any owner-confirmed label."
+    },
+    {
+      "hypothesis": "Root integration regression check, 2026-09-24",
+      "test": "Focused synthetic regression checks in tests/lead-engine-industry-corrections.test.ts, lead-engine-reviews.test.ts, lead-engine-gates-jobs.test.ts and lead-engine-jobs.test.ts. No paid provider call.",
+      "observed": "The never-Maps delivery/quote guard now covers attorney_ny as well as attorney. Export status no longer represents a recipe-B public register number as traced to a home or owner-confirmed.",
+      "change": "Shared runtime correction integrated. Original source samples are retained with their original denominators; no phone-yield improvement is claimed."
+    }
+  ],
+  "measurement": {
+    "kind": "fixture",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Five local NY attorney fixture rows were retained as current registrations with a firm and normalized published office phone; the focused parser test passed. Fixture/code audit only; no live source, personal contact, verification, ownership, compliance, or delivery measurement.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Local five-row fixture/code audit only; no source fetch, provider, append, trace, review, or phone-verification call ran.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean owner contact was measured. Historical brain benchmarks use a different denominator and do not establish clean-contact cost."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "The never-Maps delivery/quote guard now covers attorney_ny as well as attorney. Export status no longer represents a recipe-B public register number as traced to a home or owner-confirmed. Original review: The generic attorney path is a blocked private recipe-B route, while NY has an implemented public registration adapter and a Maps-delivery prohibition. The runtime still delivers a register-derived mobile after generic gates without a supported owner/direct-contact assessment, so owner-confirmed attorney delivery is not implemented.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-registers.ts",
+      "src/lib/lead-engine-jobs.ts",
+      "src/lib/lead-engine-gates.ts",
+      "src/services/lead-engine-jobs.service.ts",
+      "src/lib/lead-engine-research.ts"
+    ]
+  },
+  "nextMeasurement": "After an owner-evidence gate is wired, run a lawful 5–20 row aggregate test only from the catalog-verified NY public registration endpoint. Keep denominators separate for current registrations, named/solo firm candidates, unique published business phones, matched businesses, independent-owner-supported, mobile, reachable, DNC/TCPA-clear, suppression/duplicate-clear, direct-business-contact-supported, and delivered rows. Do not use residential/property sources to find personal phones; perCleanUsd remains null until an approved outcome study."
+}

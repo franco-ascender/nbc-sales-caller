@@ -1,0 +1,10 @@
+flowchart TD
+    R[Person level registers<br/>TX TDI owner labels, FL DFS name + phone + email,<br/>IRS PTIN list, TX TREC and FL real estate,<br/>SEC Form ADV Schedule A, NY attorney registrations] --> C[Owner vs employee classifier<br/>appointment count, designated broker,<br/>firm permit, ownership band, firm name = surname]
+    C --> X[Exclude captives and employees,<br/>large firms, franchise brokerages]
+    G[Google Maps<br/>office phone, practice area, team size] --> K
+    X --> K{Register phone vs office phone}
+    K -- differs or register phone is mobile --> D1[Direct line candidate]
+    K -- same --> P[Cell append by name + address]
+    D1 --> V[Telnyx, FTC DNC, litigator, ledger]
+    P --> V
+    V --> O[Verified owner cells<br/>6 to 16 cents each]

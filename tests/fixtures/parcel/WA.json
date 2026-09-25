@@ -1,0 +1,55 @@
+{
+ "_about": "WA parcel layer answer for SMITH JOHN, 2026-09-21",
+ "body": {
+  "objectIdFieldName": "OBJECTID",
+  "uniqueIdField": {
+   "name": "OBJECTID",
+   "isSystemMaintained": true
+  },
+  "globalIdFieldName": "",
+  "geometryType": "esriGeometryPolygon",
+  "exceededTransferLimit": true,
+  "features": [
+   {
+    "attributes": {
+     "OWNERNAME": "SMITH JOHNATHAN & MARY",
+     "OWNERLINE1": "2521 MAPLE ST",
+     "OWNERCITY": "EVERETT",
+     "OWNERZIP": "98201-3225"
+    }
+   },
+   {
+    "attributes": {
+     "OWNERNAME": "SMITH JOHN L",
+     "OWNERLINE1": "17102 39TH PL W",
+     "OWNERCITY": "LYNNWOOD",
+     "OWNERZIP": "98037-7012"
+    }
+   },
+   {
+    "attributes": {
+     "OWNERNAME": "SMITH JOHNNY E",
+     "OWNERLINE1": "5829 93RD PL NE",
+     "OWNERCITY": "MARYSVILLE",
+     "OWNERZIP": "98270-2796"
+    }
+   },
+   {
+    "attributes": {
+     "OWNERNAME": "SMITH JOHN R",
+     "OWNERLINE1": "13509 42ND AVE W",
+     "OWNERCITY": "MUKILTEO",
+     "OWNERZIP": "98275-5932"
+    }
+   },
+   {
+    "attributes": {
+     "OWNERNAME": "SMITH JOHN N & SHANNON K",
+     "OWNERLINE1": "9119 173RD AVE SE",
+     "OWNERCITY": "SNOHOMISH",
+     "OWNERZIP": "98290-4105"
+    }
+   }
+  ]
+ }
+}

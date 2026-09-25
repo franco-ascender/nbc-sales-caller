@@ -1,0 +1,220 @@
+{
+  "industry": "dentist",
+  "title": "Dentists and dental organizations",
+  "hypothesis": "An active NPPES NPI-2 dental organization can yield a public business-contact candidate from an Authorized Official name plus a published AO or LOCATION line. It does not prove ownership, a direct personal contact, mobile status, reachability, or compliance eligibility; those require separate evidence and gates.",
+  "ownerSource": "NPPES NPI-2 Authorized Official identity is an owner candidate only. A supported owner label requires independent, business-matched owner or founder evidence and an explicit direct business-contact link to the same published line.",
+  "phoneSource": "Only the published NPPES Authorized Official or LOCATION business-contact field is in scope for the proposed alternative. Mailing, parcel, residential, and trace-derived private-phone paths are excluded from this review.",
+  "workflow": [
+    {
+      "id": "nppes",
+      "label": "NPPES NPI-2 dental organization",
+      "detail": "Read the free national NPPES organization route filtered to the requested dental taxonomy and state.",
+      "kind": "source"
+    },
+    {
+      "id": "scope",
+      "label": "Active primary-taxonomy and AO filter",
+      "detail": "Keep active records whose primary taxonomy matches the requested taxonomy and whose AO is a person; the current adapter excludes known staff titles.",
+      "kind": "filter"
+    },
+    {
+      "id": "scopehold",
+      "label": "NPPES scope hold",
+      "detail": "Hold inactive, primary-taxonomy-mismatched, missing-person, or known staff-title rows.",
+      "kind": "hold"
+    },
+    {
+      "id": "published",
+      "label": "Published business-contact candidate",
+      "detail": "Retain AO or LOCATION phone provenance as a public business-contact candidate, never as a private owner-traced contact or handset claim.",
+      "kind": "source"
+    },
+    {
+      "id": "fieldhold",
+      "label": "No suitable public field",
+      "detail": "Hold rows without a usable published business-contact field; do not use mailing, parcel, residential, or skip-trace data in this alternative.",
+      "kind": "hold"
+    },
+    {
+      "id": "owner",
+      "label": "Independent owner and direct-contact evidence",
+      "detail": "Require current business-matched owner/founder evidence and an explicit direct business-role link to the same published line.",
+      "kind": "verify"
+    },
+    {
+      "id": "ownerhold",
+      "label": "Ownership unresolved",
+      "detail": "Hold DSO, multi-practice, employee, front-desk, conflicting, or unlinked evidence; an AO title or different line alone is insufficient.",
+      "kind": "hold"
+    },
+    {
+      "id": "gates",
+      "label": "Line and compliance gates",
+      "detail": "Require authorized line type, reachability, DNC/TCPA, suppression, duplicate, freshness, and timezone controls separately from ownership proof.",
+      "kind": "verify"
+    },
+    {
+      "id": "gatehold",
+      "label": "Contact gate hold",
+      "detail": "Hold non-mobile, unreachable, DNC/TCPA, suppressed, duplicate, stale, or timezone-unresolved rows.",
+      "kind": "hold"
+    },
+    {
+      "id": "deliver",
+      "label": "Owner-confirmed delivery",
+      "detail": "Deliver only after independent ownership/direct-contact evidence and all normal contact/compliance gates pass; no current NPPES dentist lane implements this delivery rule.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    {
+      "from": "nppes",
+      "to": "scope",
+      "label": "parse NPPES record"
+    },
+    {
+      "from": "scope",
+      "to": "scopehold",
+      "label": "inactive, primary mismatch, staff, or no person"
+    },
+    {
+      "from": "scope",
+      "to": "published",
+      "label": "eligible AO candidate"
+    },
+    {
+      "from": "published",
+      "to": "fieldhold",
+      "label": "no usable published business field"
+    },
+    {
+      "from": "published",
+      "to": "owner",
+      "label": "published business field present"
+    },
+    {
+      "from": "owner",
+      "to": "ownerhold",
+      "label": "missing, conflicting, DSO, or unlinked evidence"
+    },
+    {
+      "from": "owner",
+      "to": "gates",
+      "label": "owner and direct-contact evidence supported"
+    },
+    {
+      "from": "gates",
+      "to": "gatehold",
+      "label": "any line or compliance gate fails"
+    },
+    {
+      "from": "gates",
+      "to": "deliver",
+      "label": "all gates pass"
+    }
+  ],
+  "failures": [
+    {
+      "risk": "A published AO or LOCATION line is represented as a private owner-traced contact because the current dentist route is recipe B.",
+      "mitigation": "Persist NPPES public-field provenance, prevent this lane from entering parcel/trace selection, and correct recipe-B presentation before delivery.",
+      "status": "blocked"
+    },
+    {
+      "risk": "An Authorized Official, dentist title, or different phone is treated as proof of ownership or a direct owner handset.",
+      "mitigation": "Require assessOwnerEvidence with independent business-matched owner/founder and explicit direct-business-contact evidence; hold all unresolved rows.",
+      "status": "blocked"
+    },
+    {
+      "risk": "Office manager, billing, credentialing, administrator, or coordinator AOs enter as owner candidates.",
+      "mitigation": "The NPPES adapter excludes its documented staff-title expressions before producing a name row.",
+      "status": "implemented"
+    },
+    {
+      "risk": "A dentist listed only in secondary taxonomy is silently excluded despite the NPPES taxonomy query matching any taxonomy.",
+      "mitigation": "Treat this as a coverage limitation and add a separately tested any-taxonomy selection only after root review; do not weaken the owner gate.",
+      "status": "proposed"
+    },
+    {
+      "risk": "Mailing, parcel, or residential data is used to uncover an unpublished phone.",
+      "mitigation": "This alternative admits only published NPPES business-contact fields and holds rows without one.",
+      "status": "proposed"
+    }
+  ],
+  "sources": [
+    {
+      "label": "NPPES NPI Registry API",
+      "scope": "Free national NPI-2 organization, AO identity/title/telephone, LOCATION telephone, taxonomy, and active-status fields",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group C; src/lib/lead-engine-registers.ts nppesOrganization",
+      "status": "implemented"
+    },
+    {
+      "label": "Live dentist brain mapping",
+      "scope": "National nppes:dentist recipe-B route with state parcel eligibility",
+      "evidence": "VERIFIED",
+      "reference": "src/data/lead-engine-brain.json industries.dentist; src/lib/lead-engine-jobs.ts registerSourceFor and quoteJob",
+      "status": "implemented"
+    },
+    {
+      "label": "Public business-contact dentist lane",
+      "scope": "NPPES AO/LOCATION provenance separated from parcel/trace and owner-labelled delivery",
+      "evidence": "VERIFIED",
+      "reference": "src/services/lead-engine-jobs.service.ts pullNames, parcelStep, traceStep, settleVerified",
+      "status": "blocked"
+    },
+    {
+      "label": "Independent owner/direct-contact assessment",
+      "scope": "Fresh business website plus independent registry evidence linked to the same business and phone",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-research.ts assessOwnerEvidence",
+      "status": "blocked"
+    },
+    {
+      "label": "Healthcare AO identity study",
+      "scope": "Reported 682 NPI-2 FL/TX/NC identity-field observation; not a clean-contact or delivery measurement",
+      "evidence": "REPORTED",
+      "reference": "handoff/07_RESEARCH_BUILD_SPEC.md section 5.3; src/data/lead-engine-brain.json industries.healthcare_ao_contrast",
+      "status": "proposed"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "The existing NPPES dentist adapter admits active primary-Dentist AO candidates while rejecting known staff and non-primary dental records.",
+      "test": "Five-case local fixture/code audit on 2026-09-24: three active primary-Dentist rows, one active office-manager AO row, and one active Dental-Hygienist-primary row with secondary dental taxonomies. Focused command: node --experimental-strip-types --test --test-name-pattern='nppes:' tests/lead-engine-registers.test.ts. No network, provider, append, trace, phone-verification, owner, compliance, or delivery call ran.",
+      "observed": "The selected three primary-Dentist cases were kept; the office-manager case was held as staff_title_excluded; the Dental-Hygienist-primary case was held as primary_taxonomy_mismatch. The focused test passed. This measures parser behavior only and contains no phone, owner, handset, reachability, DNC/TCPA, or delivery outcome.",
+      "change": "Propose a public NPPES business-contact lane with distinct AO/LOCATION provenance and an owner-evidence gate; block it from the legacy parcel/trace route until the runtime supports those semantics."
+    },
+    {
+      "hypothesis": "Root integration regression check, 2026-09-24",
+      "test": "Focused synthetic regression checks in tests/lead-engine-industry-corrections.test.ts, lead-engine-reviews.test.ts, lead-engine-gates-jobs.test.ts and lead-engine-jobs.test.ts. No paid provider call.",
+      "observed": "Export wording now uses row evidence. A published NPPES contact is no longer described as traced to a home merely because the job uses recipe B. All exported contact-status labels retain ownership unconfirmed. A complete independent owner-evidence pipeline remains pending.",
+      "change": "Shared runtime correction integrated. Original source samples are retained with their original denominators; no phone-yield improvement is claimed."
+    }
+  ],
+  "measurement": {
+    "kind": "fixture",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Five selected saved NPPES dentist fixture cases: three active primary-Dentist AO rows kept, one office-manager AO held, and one secondary-only dentistry row held by the primary-taxonomy rule. Focused adapter test passed. Fixture/code audit only; no live source, phone, ownership, handset, reachability, DNC/TCPA, compliance, or delivery measurement.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Local five-case fixture/code audit only; no source fetch, provider, append, trace, review, or phone-verification call ran.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean owner or business contact was measured. Historical brain benchmarks and the reported AO identity study have different denominators."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "Export wording now uses row evidence. A published NPPES contact is no longer described as traced to a home merely because the job uses recipe B. All exported contact-status labels retain ownership unconfirmed. A complete independent owner-evidence pipeline remains pending. Original review: The NPPES adapter and generic contact gates are implemented. Dentist jobs retain the legacy recipe-B route; a populated published AO line bypasses parcel and trace because those steps query only null-phone rows, and generic settlement has no assessOwnerEvidence call. The public-business-contact provenance and owner-evidence lane is therefore blocked pending a shared-runtime correction.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-registers.ts",
+      "src/services/lead-engine-jobs.service.ts",
+      "src/lib/lead-engine-research.ts",
+      "src/lib/lead-engine-gates.ts",
+      "src/lib/lead-engine-quality.ts"
+    ]
+  },
+  "nextMeasurement": "After the public-business-contact lane and owner-evidence gate are wired, run a lawful 5-20 row aggregate NPPES study. Separate active requested-taxonomy organizations, non-staff AO candidates, published-field presence, independent owner support, explicit direct-business-contact support, authorized line outcomes, and delivery. Do not use mailing, parcel, residential, or skip-trace data to find private phones."
+}

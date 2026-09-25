@@ -1,0 +1,71 @@
+// Read-only production review. Never starts jobs or provider calls; masks account chrome in screenshots.
+import { fileURLToPath } from 'node:url';
+import { chromium } from 'playwright';
+import { loadEnvFile } from 'node:process';
+import { mkdir, writeFile } from 'node:fs/promises';
+import assert from 'node:assert/strict';
+loadEnvFile('.env.local');
+const base='https://nbc-sales-nbc-sales.vercel.app';
+const artifact=fileURLToPath(new URL('../artifacts/lanes/L03/industry-workflows-r4/',import.meta.url));
+await mkdir(artifact,{recursive:true});
+const browser=await chromium.launch({channel:'chrome',headless:true});
+try{
+  const context=await browser.newContext({reducedMotion:'reduce',viewport:{width:1440,height:1000}});
+  const anon=await context.request.get(base+'/api/lead-engine/brain');
+  assert.equal(anon.status(),401);
+  const page=await context.newPage();const errors=[];
+  const masks=()=>[page.locator('header[class*=topbar]')];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(base+'/lead-engine',{waitUntil:'domcontentloaded'});
+  await page.getByLabel('Email address',{exact:true}).fill(process.env.NBC_OPERATOR_EMAIL);
+  await page.getByLabel('Password',{exact:true}).fill(process.env.NBC_OPERATOR_INITIAL_PASSWORD);
+  await page.getByRole('button',{name:'Enter NBC Sales'}).click();
+  const api=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/lead-engine/brain');
+  await page.getByRole('tab',{name:'Brain (admin)'}).click();
+  const response=await api;assert.equal(response.status(),200);
+  const payload=await response.json();assert.equal(Object.keys(payload.workflowReviews).length,44);
+  await page.getByRole('heading',{name:'Choose a niche'}).waitFor();
+  await page.getByRole('region',{name:'Industry workflows'}).screenshot({style:'header[class*="topbar"] { visibility: hidden !important; }',mask:masks(),path:artifact+'production-list.png'});
+  assert.equal(await page.getByRole('button',{name:/^Open /}).count(),35);
+  await page.getByLabel('Search niches').fill('Contractors');
+  await page.getByRole('button',{name:'Open Contractors',exact:true}).click();
+  await page.getByRole('region',{name:'Contractors tool diagram'}).waitFor();
+      const states=page.getByRole('group',{name:'State routes',exact:true});
+      assert.equal(await states.getByRole('button').count(),51);
+      for(const [search,code,name] of [['Alaska','AK','Alaska'],['WY','WY','Wyoming']]) {
+        await page.getByLabel('Search states',{exact:true}).fill(search);
+        assert.equal(await states.getByRole('button').count(),1);
+        const choice=page.getByRole('button',{name:`Inspect ${name}`,exact:true});
+        await choice.click();
+        assert.equal(await page.getByLabel('Workflow state').inputValue(),code);
+        assert.equal(await choice.getAttribute('aria-pressed'),'true');
+        await page.getByRole('region',{name:'Contractors tool diagram'}).waitFor();
+      }
+      await page.getByLabel('Search states',{exact:true}).fill('Atlantis');
+      await page.getByText('No states match. Clear the search to see the whole country.',{exact:true}).waitFor();
+      await page.getByRole('button',{name:'Show all',exact:true}).click();
+      assert.equal(await states.getByRole('button').count(),51);
+      await page.getByRole('complementary',{name:'All US states'}).screenshot({style:'header[class*="topbar"] { visibility: hidden !important; }',path:`${artifact}/national-states-desktop.png`});
+      await page.setViewportSize({width:390,height:844});
+      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'State list fits mobile');
+      await page.getByRole('complementary',{name:'All US states'}).screenshot({style:'header[class*="topbar"] { visibility: hidden !important; }',path:`${artifact}/national-states-mobile.png`});
+      await page.setViewportSize({width:1440,height:1000});
+
+  await page.getByLabel('Workflow state').selectOption('MN');
+  await page.getByRole('region',{name:'Selected approach'}).getByText('Minnesota contractor license records',{exact:true}).waitFor();
+  await page.getByRole('region',{name:'Industry workflows'}).screenshot({style:'header[class*="topbar"] { visibility: hidden !important; }',mask:masks(),path:artifact+'production-contractors.png'});
+  await page.getByRole('button',{name:'All niches',exact:true}).click();
+  await page.getByLabel('Search niches').fill('Real estate agents');
+  await page.getByRole('button',{name:'Open Real estate agents',exact:true}).click();
+  await page.getByLabel('Workflow state').selectOption('IL');
+  const diagram=page.getByRole('region',{name:'Real estate agents tool diagram'});
+  await diagram.getByText(/Licensee name, license status and location. No phone field/).waitFor();
+  await diagram.getByText(/Cook County Assessor parcel addresses \+ BatchData lookup/).waitFor();
+  await diagram.screenshot({style:'header[class*="topbar"] { visibility: hidden !important; }',mask:masks(),path:artifact+'production-illinois-diagram.png'});
+  await page.setViewportSize({width:390,height:844});
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'No page-wide overflow');
+  await page.getByRole('region',{name:'Industry workflows'}).screenshot({style:'header[class*="topbar"] { visibility: hidden !important; }',mask:masks(),path:artifact+'production-mobile.png'});
+  assert.deepEqual(errors,[]);
+  const result={date:new Date().toISOString(),base,anonymousStatus:401,adminStatus:200,industryReviews:44,niches:35,stateInspector:true,jurisdictionsPerNiche:51,alaskaWyoming:true,stateSearch:true,illinoisToolDiagram:true,mobileWidth:390,paidProviderCalls:0,jobMutations:0};
+  await writeFile(artifact+'production-validation.json',JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
+}finally{await browser.close();}

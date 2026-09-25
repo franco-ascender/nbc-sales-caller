@@ -1,0 +1,10 @@
+flowchart TD
+    R[Establishment licenses<br/>NY names the owner on 99.8 percent<br/>FL names barbershop owners<br/>TX gives phone + owner home address] --> A[Address clustering<br/>practitioners per address]
+    A -- one practitioner --> S[Suite studio or one chair shop<br/>Maps phone is the owner cell]
+    A -- many practitioners --> B[Booth rental salon<br/>owner is the SOS officer]
+    G[Google Maps + reviews<br/>owner name, language signal] --> A
+    Y[Gyms: no register<br/>SOS + reviews + franchise list] --> B
+    S --> V[Telnyx, FTC DNC, litigator, ledger]
+    B --> P[Cell append by name + home address<br/>DataZapp reverse address]
+    P --> V
+    V --> O[Verified owner cells<br/>7 cents suites, 15 cents mixed]

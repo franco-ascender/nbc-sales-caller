@@ -1,0 +1,75 @@
+{
+  "industry": "remodeling",
+  "title": "Remodeling: Maps-first discovery with permit activity safeguards",
+  "hypothesis": "A public contractor register or recent general-contractor permit can corroborate remodeling activity, but a permit contractor, qualifier, and published business phone remain candidates until remodel relevance, independent ownership evidence, line-type, live, DNC, and dedupe gates pass.",
+  "ownerSource": "Maps-first remodeling discovery plus a legally usable contractor register or Austin permit contractor field as candidate-only identity/activity evidence. No current source in this route independently proves the permit contact owns the business.",
+  "phoneSource": "Published Maps or Austin contractor phone as one business-contact candidate. It is not an owner-confirmed mobile merely because a city permit publishes it.",
+  "workflow": [
+    { "id": "discover", "label": "Discover remodeling candidate", "detail": "Start from the live recipe-A kitchen-remodeling query or a lawful register/permit candidate.", "kind": "source" },
+    { "id": "fit", "label": "Remodeling relevance", "detail": "Require remodel, renovation, kitchen/bath remodel, or design-build evidence; generic contractors and trade-only specialists need review.", "kind": "filter" },
+    { "id": "holdfit", "label": "Hold off-target contractor", "detail": "Do not classify general, mechanical, electrical, cabinet, flooring, tile, franchise, or commercial-only rows as remodelers without positive evidence.", "kind": "hold" },
+    { "id": "permit", "label": "Optional permit or register corroboration", "detail": "Use current activity and named contractor role only after legal and remodeling-fit checks; a permit contact is a candidate, not owner proof.", "kind": "source" },
+    { "id": "role", "label": "Candidate role supported?", "detail": "Retain a sole owner or independently supported principal separately; keep Permit Contractor, filer, qualifier, and employee roles as candidates.", "kind": "decision" },
+    { "id": "holdrole", "label": "Hold unsupported owner claim", "detail": "Keep the business lead without an owner label when role evidence is absent or ambiguous.", "kind": "hold" },
+    { "id": "phone", "label": "Published business contact", "detail": "Use a Maps or permit phone once only when it is published and not already shared or suppressed.", "kind": "decision" },
+    { "id": "holdphone", "label": "Hold missing or shared contact", "detail": "Do not infer a private phone or treat a repeated office number as a direct owner contact.", "kind": "hold" },
+    { "id": "verify", "label": "Contact and compliance gates", "detail": "Apply mobile line-type, live, DNC, global dedupe, and required ownership-evidence checks.", "kind": "verify" },
+    { "id": "holdverify", "label": "Hold failed verification", "detail": "Park non-mobile, unreachable, DNC, duplicate, or unsupported-owner cases.", "kind": "hold" },
+    { "id": "deliver", "label": "Deliver supported classification", "detail": "Deliver only after every required gate passes; owner-confirmed mobile requires independent ownership evidence.", "kind": "deliver" }
+  ],
+  "edges": [
+    { "from": "discover", "to": "fit", "label": "candidate received" },
+    { "from": "fit", "to": "permit", "label": "positive remodel evidence" },
+    { "from": "fit", "to": "holdfit", "label": "generic, adjacent-only, franchise, or commercial-only" },
+    { "from": "permit", "to": "role", "label": "lawful candidate corroborated" },
+    { "from": "permit", "to": "holdrole", "label": "no matching or usable corroboration" },
+    { "from": "role", "to": "phone", "label": "candidate role retained" },
+    { "from": "role", "to": "holdrole", "label": "unsupported owner assertion" },
+    { "from": "phone", "to": "verify", "label": "one published candidate contact" },
+    { "from": "phone", "to": "holdphone", "label": "missing, shared, or unproven contact" },
+    { "from": "verify", "to": "deliver", "label": "all contact and owner-evidence gates pass" },
+    { "from": "verify", "to": "holdverify", "label": "contact or owner-evidence gate fails" }
+  ],
+  "failures": [
+    { "risk": "The broad remodeling allow pattern admits a generic contractor or permit trade as a remodeler.", "mitigation": "Require positive remodel, renovation, kitchen/bath remodel, or design-build evidence before retaining an Austin or register candidate.", "status": "partial" },
+    { "risk": "A kitchen, bath, cabinet, flooring, or tile specialist is represented as a full-service remodeler.", "mitigation": "Treat adjacent specialties as review/hold unless an explicit remodel signal is also present.", "status": "implemented" },
+    { "risk": "A permit contractor, filer, qualifier, or employee is represented as business owner.", "mitigation": "Persist Permit Contractor as candidate role and require independent ownership evidence before owner labeling.", "status": "partial" },
+    { "risk": "Austin contractor_phone is called a direct owner mobile.", "mitigation": "Treat it as a published business contact and require exclusivity, line type, live, DNC, dedupe, and independent ownership evidence.", "status": "implemented" },
+    { "risk": "A stale Austin schema-failure claim blocks a currently available source, or future schema drift goes unnoticed.", "mitigation": "Use a required-field schema guard and freeze the adapter only if contractor fields are actually absent.", "status": "proposed" }
+  ],
+  "sources": [
+    { "label": "Live remodeling brain route", "scope": "National Maps-first remodeling discovery with preserved Anas statistics", "evidence": "VERIFIED", "reference": "src/data/lead-engine-brain.json industries.remodeling; src/lib/lead-engine-brain.ts route", "status": "implemented" },
+    { "label": "Remodeling relevance profile", "scope": "Core and adjacent remodeling vocabulary", "evidence": "VERIFIED", "reference": "src/lib/lead-engine-industries.ts PROFILES remodeling", "status": "implemented" },
+    { "label": "Austin Issued Construction Permits", "scope": "Austin contractor activity, candidate role, and published business-contact fields", "evidence": "VERIFIED", "reference": "https://data.austintexas.gov/api/views/3syk-w9eu; https://data.austintexas.gov/resource/3syk-w9eu.json; src/lib/lead-engine-registers.ts austinPermits", "status": "proposed" },
+    { "label": "Austin permit parser fixture", "scope": "Mixed-contractor field-shape fixture, not a live remodeling sample", "evidence": "REPORTED", "reference": "tests/fixtures/registers/austin_permits.json", "status": "implemented" },
+    { "label": "Home-services research catalog", "scope": "Historical contractor-register and permit source context", "evidence": "REPORTED", "reference": "handoff/04_SOURCE_CATALOG.md Austin row; handoff/07_RESEARCH_BUILD_SPEC.md sections 5.1 and permit table", "status": "proposed" }
+  ],
+  "iterations": [
+    { "hypothesis": "The Austin permit route was unavailable because its contractor fields had been removed from the current schema.", "test": "Free aggregate-only live metadata and endpoint audit on 2026-09-24: inspect field names, request the adapter's seven-field select without retaining values, and count contractor-field presence for rows issued after 2025-09-24.", "observed": "Metadata listed 78 columns including contractor_trade, contractor_company_name, contractor_full_name, contractor_phone, and applicant fields; the configured select returned HTTP 200. Among 55,154 recent permits, contractor_trade was present on 51,761, contractor_company_name on 50,077, contractor_full_name on 50,904, and contractor_phone on 51,118. These are all-trade coverage counts, not remodeling or owner outcomes.", "change": "Unblock the source only as an optional general-contractor activity/candidate route, require remodeling relevance before use, and add a required-field schema guard rather than relying on stale failure evidence." }
+  ],
+  "measurement": {
+    "kind": "free_source_sample",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Current Austin endpoint schema audit: a five-row issue_date-only response succeeded; metadata and aggregate-only field counts verified contractor fields. For 55,154 rows issued after 2025-09-24, contractor_trade 51,761, contractor_company_name 50,077, contractor_full_name 50,904, contractor_phone 51,118. No identities, addresses, or phone values were retained. The observation does not measure remodeling fit, mobile status, reachability, DNC, owner confirmation, or delivery.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Free public-schema and aggregate field-coverage observation only",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean delivered owner contact was measured. Historical remodeling brain rates have a different denominator and are unchanged."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "Remodeling is recipe A and has a relevance profile. Austin's adapter is live and its selected fields currently exist, but remodeling has no register mapping and register ingestion does not apply remodeling relevance to Austin contractor_trade. Enabling the source without a filter would admit general, mechanical, or electrical permit rows.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-registers.ts",
+      "src/lib/lead-engine-industries.ts",
+      "src/services/lead-engine-jobs.service.ts"
+    ]
+  },
+  "nextMeasurement": "Add synthetic Austin rows for remodeling-positive, generic general-contractor, and mechanical/electrical cases; prove only the remodel-positive row can enter a remodeling candidate path and that Permit Contractor plus phone cannot create an owner label. After authorization, measure remodel fit, mobile type, DNC, reachability, owner confirmation, and delivery with separate denominators."
+}

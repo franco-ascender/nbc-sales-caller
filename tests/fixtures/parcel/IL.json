@@ -1,0 +1,26 @@
+{
+ "_about": "IL parcel layer answer for SMITH JOHN, 2026-09-21",
+ "body": [
+  {
+   "owner_address_name": "JOHN  SMITH",
+   "owner_address_full": "1035 W 107TH ST",
+   "owner_address_city_name": "CHICAGO",
+   "owner_address_zipcode_1": "60643",
+   "prop_address_full": "1035 W 107TH ST"
+  },
+  {
+   "owner_address_name": "JOHN & ADRIENNE SMITH",
+   "owner_address_full": "1515 N WELLS ST 5B",
+   "owner_address_city_name": "CHICAGO",
+   "owner_address_zipcode_1": "60610",
+   "prop_address_full": "1515 N WELLS ST 5B"
+  },
+  {
+   "owner_address_name": "JOHN & ARETTA SMITH",
+   "owner_address_full": "16967 FOREST AV",
+   "owner_address_city_name": "OAK FOREST",
+   "owner_address_zipcode_1": "60452",
+   "prop_address_full": "16967 FOREST AVE"
+  }
+ ]
+}

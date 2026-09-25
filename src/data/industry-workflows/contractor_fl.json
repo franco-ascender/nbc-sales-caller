@@ -1,0 +1,50 @@
+{
+  "industry": "contractor_fl",
+  "title": "Florida contractors: DBPR qualifier identity with separate business-contact evidence",
+  "hypothesis": "A current Florida DBPR construction or electrical license can establish a named Qualifier candidate and licensed-trade context. The actual extract has no phone field, so a separately published business number is required; neither the Qualifier nor that number establishes a confirmed owner or direct owner mobile.",
+  "ownerSource": "FL DBPR CONSTRUCTIONLICENSE_1.csv and lic08el.csv provide an active, unexpired licensee parsed as a Qualifier candidate, with DBA, class code, and business address context. Qualifier is a license role, not owner confirmation.",
+  "phoneSource": "The DBPR adapter has no phone column. Recipe D obtains a separately published Maps business contact for the register row's city; it remains a business-contact candidate until match, line-type, live, DNC, dedupe, and independent owner-evidence gates pass.",
+  "workflow": [
+    {"id":"legal","label":"Florida public-record gate","detail":"Use only the documented public DBPR construction/electrical extracts while their eligible source conditions hold.","kind":"decision"},
+    {"id":"register","label":"Current DBPR qualifier record","detail":"Read a construction or electrical extract row only when primary status is C, secondary status is blank or A, and expiration is in the future.","kind":"source"},
+    {"id":"holdrecord","label":"Hold inactive or incomplete record","detail":"Do not route expired, non-current, secondary-inactive, malformed, or non-person licensee rows as a person candidate.","kind":"hold"},
+    {"id":"role","label":"Qualifier candidate assessment","detail":"Preserve the source title Qualifier and class code. Do not promote a qualifier to owner based only on the license record or DBA.","kind":"decision"},
+    {"id":"maps","label":"Published business-contact contrast","detail":"Recipe D discovers contractor listings in register-derived cities and compares a credible business match; the register itself contributes no phone.","kind":"source"},
+    {"id":"holdmatch","label":"Hold absent or weak business match","detail":"Keep the DBPR identity for review, but do not infer a number or person-phone edge from city, DBA, address, or a non-match.","kind":"hold"},
+    {"id":"contact","label":"Contact and ownership evidence gates","detail":"Require the existing mobile line-type, live, DNC, suppression/dedupe, and independent owner-evidence checks; a business listing is not owner proof.","kind":"verify"},
+    {"id":"holdcontact","label":"Hold business-only or failed contact","detail":"Park office, non-mobile, unreachable, suppressed, shared, or qualifier-only cases.","kind":"hold"},
+    {"id":"deliver","label":"Deliver supported classification","detail":"Deliver only after every contact and owner-evidence gate passes. No DBPR qualifier alone is an owner-confirmed mobile.","kind":"deliver"}
+  ],
+  "edges": [
+    {"from":"legal","to":"register","label":"eligible DBPR extract"},
+    {"from":"legal","to":"holdrecord","label":"unavailable or ineligible source"},
+    {"from":"register","to":"role","label":"current, unexpired person record"},
+    {"from":"register","to":"holdrecord","label":"status, expiry, or person parse fails"},
+    {"from":"role","to":"maps","label":"qualifier retained as candidate"},
+    {"from":"role","to":"holdrecord","label":"business-only or unsupported identity"},
+    {"from":"maps","to":"contact","label":"credible published business match"},
+    {"from":"maps","to":"holdmatch","label":"no reliable match or no published contact"},
+    {"from":"contact","to":"deliver","label":"all gates and independent owner evidence pass"},
+    {"from":"contact","to":"holdcontact","label":"contact or owner evidence fails"}
+  ],
+  "failures": [
+    {"risk":"The outdated brain note says the Florida extract has a phone on file, causing a qualifier identity row to be treated as a direct-contact source.","mitigation":"Keep DBPR rows phone-null and label the extract identity-only; require a separately published business contact before any verification branch.","status":"implemented"},
+    {"risk":"A Qualifier is labelled as the business owner or handset owner.","mitigation":"Persist title_code Qualifier and require independent owner evidence before owner labeling or delivery.","status":"partial"},
+    {"risk":"A city-level Maps contractor is silently connected to the DBPR qualifier merely because it was bucketed in the same run.","mitigation":"Require a credible business match and retain match evidence; city co-location, DBA text, and address similarity alone do not prove a person-phone relationship.","status":"partial"},
+    {"risk":"A phoneless DBPR match loses its qualifier provenance when Recipe D buckets it.","mitigation":"Keep the matched DBPR candidate linked to the Maps row with explicit match strength and Qualifier provenance, then hold it pending independent ownership evidence.","status":"blocked"},
+    {"risk":"Mixed construction and electrical records or inactive classes are passed through as a current contractor cohort.","mitigation":"Keep the adapter's current-status and future-expiry filters and preserve classCode for an explicit trade filter when a narrower industry is requested.","status":"implemented"}
+  ],
+  "sources": [
+    {"label":"FL DBPR contractor public-record extracts","scope":"Florida current construction and electrical qualifier identity, DBA, class, status, and address context; no phone column.","evidence":"VERIFIED","reference":"handoff/04_SOURCE_CATALOG.md Group A row 20; handoff/07_RESEARCH_BUILD_SPEC.md FL row; src/lib/lead-engine-registers.ts FL_DBPR_FILES and flDbprRecord","status":"implemented"},
+    {"label":"Live contractor_fl brain route","scope":"Florida recipe-D register-to-Maps workflow configuration.","evidence":"VERIFIED","reference":"src/data/lead-engine-brain.json industries.contractor_fl; src/lib/lead-engine-brain.ts route and registerSourceFor","status":"implemented"},
+    {"label":"Recipe-D bucketing and verification","scope":"Register-city Maps comparison and contact/compliance gates; qualifier-to-phoneless-Maps provenance remains proposed.","evidence":"VERIFIED","reference":"src/services/lead-engine-jobs.service.ts pullNames, bucketStep, ingestRows, and settleVerified","status":"proposed"}
+  ],
+  "iterations": [
+    {"hypothesis":"The configured Florida DBPR contractor route begins with a qualifier and a phone on file.","test":"Five-case local fixture/code audit of flDbprRecord and Recipe-D bucketing branches on 2026-09-24; no provider calls.","observed":"Current active construction person; current electrical person; expired row; non-current row; and current business-only licensee establish that the parser emits a Qualifier candidate with null phone only for the active person cases. The source comment and returned name row contain no phone assignment.","change":"Correct the workflow to identity-only DBPR intake and require a separately published business contact; do not call a registry qualifier or Maps number an owner contact."},
+    {"hypothesis":"A phoneless DBPR qualifier can remain connected to a credible Maps business match through Recipe D.","test":"Code audit of bucketStep's phoneless-register branch.","observed":"When a register row has no phone, bucketStep writes it as filtered with drop_reason no_register_phone and marks a matched Maps row as bucket 4. The persisted Maps row does not retain the qualifier identity or match linkage needed for owner evidence.","change":"Propose a provenance-preserving association for a credible phoneless register-to-Maps match, held as Qualifier candidate until independent owner evidence passes."}
+  ],
+  "measurement": {"kind":"fixture","sampleSize":5,"observedAt":"2026-09-24","result":"Five local parser/runtime fixtures covered current construction person, current electrical person, expired, non-current, and business-only licensee branches. Active person rows produce Qualifier identity candidates with no phone; inactive/expired rows are skipped. Code audit only: no source request, contact values, mobile status, reachability, DNC, owner confirmation, or delivery was measured.","verifiedPhones":0},
+  "cost": {"basis":"Fixture/code audit only; no provider or paid verification call","perInputUsd":0,"perCleanUsd":null,"note":"No clean delivered owner contact was measured. The contractor_fl brain estimate has a different, unverified denominator and is not a per-clean cost for this review."},
+  "implementation": {"status":"partial","summary":"The FL DBPR adapter correctly emits active Qualifier candidates without phone numbers, while the brain's historical description still says phone on file. Recipe D can obtain Maps business contacts by register city, but its phoneless branch discards the qualifier-to-Maps association, so it cannot support owner evidence from a matched record.","runtimeFiles":["src/data/lead-engine-brain.json","src/lib/lead-engine-brain.ts","src/lib/lead-engine-registers.ts","src/services/lead-engine-jobs.service.ts","src/lib/lead-engine-buckets.ts"]},
+  "nextMeasurement":"Add five synthetic Recipe-D rows: a current FL Qualifier with a credible Maps match, an unmatched qualifier, an expired row, a business-only row, and a shared/office Maps line. Verify that a credible match preserves Qualifier provenance without owner promotion, and that only independent owner evidence plus mobile/live/DNC/dedupe gates can deliver. Then conduct an authorized aggregate source and outcome measurement with separate denominators."
+}

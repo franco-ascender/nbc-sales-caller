@@ -1,0 +1,24 @@
+{
+ "_about": "PA parcel layer answer for SMITH JOHN, 2026-09-21",
+ "body": {
+  "rows": [
+   {
+    "owner_1": "SMITH JOHNNIE",
+    "location": "5217 SANSOM ST",
+    "zip_code": "19139"
+   },
+   {
+    "owner_1": "SMITH JOHN FRED",
+    "location": "2235 LATONA ST",
+    "zip_code": "19146"
+   },
+   {
+    "owner_1": "SMITH JOHN",
+    "location": "5207 LOCUST ST",
+    "zip_code": "19139"
+   }
+  ],
+  "time": 0.13,
+  "total_rows": 3
+ }
+}

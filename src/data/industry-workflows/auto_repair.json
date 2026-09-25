@@ -1,0 +1,167 @@
+{
+  "industry": "auto_repair",
+  "title": "Independent auto repair: NY license identity and published business-contact safeguards",
+  "hypothesis": "The live Maps-first auto-repair route can identify an independent repair business, while the implemented New York DMV repair-shop register can corroborate a current named licensee. Neither a licensee name nor a published shop line establishes an owner-confirmed mobile; delivery requires the existing permitted-contact and independent ownership gates.",
+  "ownerSource": "NY DMV nhjr-rpi2 RS and RSB rows retain a person-like owner_name only after the adapter's current-expiration and traceable-person checks. That named licensee is an owner candidate, not confirmation of ownership or of any handset.",
+  "phoneSource": "The NY DMV repair-shop register has no phone field. A separately published business phone from the Maps-first route is a business-contact candidate only and cannot be promoted to an owner mobile without separate evidence.",
+  "workflow": [
+    {
+      "id": "start",
+      "label": "Discover auto-repair business",
+      "detail": "Start with the live recipe-A auto repair shop query and retain a named business candidate.",
+      "kind": "source"
+    },
+    {
+      "id": "fit",
+      "label": "Repair-service relevance",
+      "detail": "Require auto repair, mechanic, automotive repair, transmission, or brake evidence; tire, oil-change, body-shop, detailing, inspection, dealer, or parts-only evidence is insufficient by itself.",
+      "kind": "filter"
+    },
+    {
+      "id": "offfit",
+      "label": "Hold off-trade candidate",
+      "detail": "Reject or review a generic automotive, franchise, dealer, parts, or adjacent-only candidate.",
+      "kind": "hold"
+    },
+    {
+      "id": "chain",
+      "label": "Independent-business check",
+      "detail": "Apply the existing auto brand exclusion before treating a candidate as an independent repair business.",
+      "kind": "filter"
+    },
+    {
+      "id": "nyreg",
+      "label": "Optional NY DMV corroboration",
+      "detail": "For NY, use a current RS or RSB row only as repair-license and named-licensee candidate evidence; expired rows, entity names, and other facility types do not establish an owner.",
+      "kind": "source"
+    },
+    {
+      "id": "phone",
+      "label": "Published business phone present?",
+      "detail": "A separately published shop number is a business-contact candidate. The NY DMV row contributes no phone.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdphone",
+      "label": "Hold: no permitted contact",
+      "detail": "Keep identity evidence only; do not infer a phone from a repair license or owner candidate.",
+      "kind": "hold"
+    },
+    {
+      "id": "verify",
+      "label": "Verify permitted business contact",
+      "detail": "Apply existing line-type, live, DNC, and global delivery-dedupe checks to the published business-contact candidate.",
+      "kind": "verify"
+    },
+    {
+      "id": "owner",
+      "label": "Independent owner evidence?",
+      "detail": "A DMV owner_name, a name matching a business, or a shop line alone does not prove current business ownership or ownership of a handset.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdowner",
+      "label": "Hold business contact",
+      "detail": "Retain a permitted business-contact classification when independent owner evidence is absent.",
+      "kind": "hold"
+    },
+    {
+      "id": "deliver",
+      "label": "Deliver approved contact",
+      "detail": "Deliver only after contact/compliance checks and separate owner evidence pass; owner-confirmed mobile needs its own evidence.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    { "from": "start", "to": "fit", "label": "classify candidate" },
+    { "from": "fit", "to": "offfit", "label": "generic, adjacent-only, dealer, parts, or franchise candidate" },
+    { "from": "fit", "to": "chain", "label": "repair-service evidence" },
+    { "from": "chain", "to": "offfit", "label": "known chain" },
+    { "from": "chain", "to": "nyreg", "label": "independent candidate" },
+    { "from": "nyreg", "to": "phone", "label": "NY match or Maps-only candidate" },
+    { "from": "phone", "to": "verify", "label": "published business phone" },
+    { "from": "phone", "to": "holdphone", "label": "no published phone" },
+    { "from": "verify", "to": "owner", "label": "line-type, live, DNC, and dedupe passed" },
+    { "from": "verify", "to": "holdphone", "label": "contact verification failed" },
+    { "from": "owner", "to": "deliver", "label": "independent owner evidence" },
+    { "from": "owner", "to": "holdowner", "label": "business-only or no owner evidence" }
+  ],
+  "failures": [
+    {
+      "risk": "A generic auto-repair request in NY routes to the national Maps-first entry and bypasses the existing NY DMV repair-shop register route.",
+      "mitigation": "Make state-aware routing select auto_repair_ny for a normal auto-repair request in NY, or merge the NY source selection into auto_repair while preserving the historical benchmarks.",
+      "status": "proposed"
+    },
+    {
+      "risk": "NY DMV owner_name is represented as owner confirmation or as evidence that a shop phone belongs to that person.",
+      "mitigation": "Keep a traceable person as a named licensee candidate only; require independent current ownership and handset evidence before an owner or owner-mobile label.",
+      "status": "implemented"
+    },
+    {
+      "risk": "Tire, lube, collision, detailing, inspection, dealer, parts, or franchise businesses are admitted as independent general repair shops.",
+      "mitigation": "Require a repair core term and apply the auto brand exclusion; route adjacent-only and chain candidates to hold or rejection.",
+      "status": "implemented"
+    },
+    {
+      "risk": "A license row without a phone is treated as a contactable business or triggers an unapproved append path.",
+      "mitigation": "Use NY DMV rows as identity-only in this review and hold when no separately published business contact exists.",
+      "status": "implemented"
+    }
+  ],
+  "sources": [
+    {
+      "label": "Live auto_repair brain and relevance classifier",
+      "scope": "National Maps-first auto-repair discovery and core/adjacent trade classifier",
+      "evidence": "VERIFIED",
+      "reference": "src/data/lead-engine-brain.json industries.auto_repair; src/lib/lead-engine-brain.ts; src/lib/lead-engine-industries.ts PROFILES auto repair",
+      "status": "implemented"
+    },
+    {
+      "label": "NY DMV Facilities Licensed by the DMV",
+      "scope": "NY RS and RSB repair-shop license identity and named-licensee candidate; no phone field",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group G; handoff/07_RESEARCH_BUILD_SPEC.md G1-G4; src/lib/lead-engine-registers.ts nyRepairShopRow and nyRepairShops; https://data.ny.gov/resource/nhjr-rpi2.json",
+      "status": "implemented"
+    },
+    {
+      "label": "Auto brand exclusion table",
+      "scope": "Known automotive brands and chains excluded from independent-business candidates",
+      "evidence": "VERIFIED",
+      "reference": "src/data/lead-engine-brands.json groups.auto; src/lib/lead-engine-buckets.ts isChain",
+      "status": "implemented"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "The verified NY DMV endpoint still returns current RS/RSB repair rows with a named licensee but no phone field, matching the adapter's identity-only use.",
+      "test": "One free aggregate-only live query of five NY RS/RSB rows with 2027 text expiration on 2026-09-24; no names, addresses, or phone values retained.",
+      "observed": "5/5 rows returned; 5/5 had owner_name and facility_name; 4/5 were RS and 1/5 RSB; 5/5 owner_name values were person-like under the adapter's entity-token screen; 0/5 exposed a phone-named response field.",
+      "change": "Keep the register identity-only and retain verifiedPhones at zero. The review identifies routing, rather than source field coverage, as the implementable shared correction."
+    }
+  ],
+  "measurement": {
+    "kind": "free_source_sample",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "NY DMV nhjr-rpi2 aggregate field-coverage query limited to five 2027 RS/RSB rows: 5/5 owner_name present; 5/5 facility_name present; RS 4/5; RSB 1/5; owner_name person-like under an entity-token screen 5/5; response fields named phone or telephone 0/5. No contact values, person names, or addresses were retained. This does not measure current ownership, mobile status, reachability, DNC, or delivery.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Free public-source field-coverage observation only; no paid discovery, append, or verification was invoked.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean delivered owner-contact outcome was measured. The live brain's historical Anas figures use a different denominator and remain outside this review."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "The generic auto_repair entry is implemented as recipe A, and NY DMV RS/RSB parsing is implemented under the separate auto_repair_ny entry. matchIndustry does not select that NY entry for a normal auto-repair request, so the source-specific route is unreachable through the ordinary industry/state request.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-registers.ts",
+      "src/lib/lead-engine-industries.ts",
+      "src/lib/lead-engine-buckets.ts"
+    ]
+  },
+  "nextMeasurement": "After state-aware routing is corrected, use synthetic route cases to verify that auto repair plus NY selects the NY register source while auto repair plus another state remains Maps-first. Then run an authorized outcome study that measures trade fit, owner confirmation, line type, DNC, reachability, and delivery separately."
+}

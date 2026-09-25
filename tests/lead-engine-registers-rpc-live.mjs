@@ -1,0 +1,10 @@
+import { loadEnvFile } from 'node:process';
+import { createClient } from '@supabase/supabase-js';
+loadEnvFile('.env.local');
+const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SECRET_KEY, { auth: { persistSession: false } });
+const auth = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?grant_type=password`, { method: 'POST', headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: process.env.NBC_OPERATOR_EMAIL, password: process.env.NBC_OPERATOR_INITIAL_PASSWORD }) });
+const operator = (await auth.json()).user?.id;
+const r = await db.rpc('lead_engine_register_start', { p_operator: operator, p_source: 'or_ccb' });
+console.log('start:', JSON.stringify(r.error ?? r.data).slice(0, 600));
+const s = await db.rpc('lead_engine_register_summary', {});
+console.log('summary:', JSON.stringify(s.error ?? (s.data?.length ?? 0)).slice(0, 300));

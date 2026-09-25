@@ -1,0 +1,152 @@
+{
+  "industry": "hvac",
+  "title": "HVAC: business-contact discovery with licensed qualifier cross-check",
+  "hypothesis": "A published HVAC business number can begin a business-contact workflow, while a licensee or qualifying individual is only an owner candidate until independent owner evidence and the mobile/live/DNC/dedupe gates pass.",
+  "ownerSource": "State HVAC registers can supply an active licensee or qualifying-individual candidate; TX TDLR A/C Contractor rows were sampled as identity-only because no phone field was populated.",
+  "phoneSource": "Published business contact from the existing recipe-A discovery path; it remains a business contact until the runtime gates establish the permitted delivery status.",
+  "workflow": [
+    {
+      "id": "discover",
+      "label": "Discover HVAC businesses",
+      "detail": "Use the live recipe-A HVAC query and require a core HVAC term.",
+      "kind": "source"
+    },
+    {
+      "id": "fit",
+      "label": "HVAC relevance",
+      "detail": "Accept HVAC, air-conditioning, heating, cooling, or a matching HVAC class; reject generic and adjacent-only trades.",
+      "kind": "filter"
+    },
+    {
+      "id": "license",
+      "label": "Optional license cross-check",
+      "detail": "Retain an active matching HVAC license as a qualifier/owner candidate only.",
+      "kind": "source"
+    },
+    {
+      "id": "phone",
+      "label": "Published business phone present?",
+      "detail": "TDLR A/C is identity-only in the observed sample; a separate published business contact is required.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdphone",
+      "label": "Hold: no contact source",
+      "detail": "Do not append or infer a phone from a license identity row.",
+      "kind": "hold"
+    },
+    {
+      "id": "verify",
+      "label": "Verify permitted business contact",
+      "detail": "Apply line-type, live, DNC, and global delivery-dedupe checks.",
+      "kind": "verify"
+    },
+    {
+      "id": "owner",
+      "label": "Owner evidence?",
+      "detail": "A qualifier title alone does not establish ownership of the company or handset.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdowner",
+      "label": "Hold business contact",
+      "detail": "Keep a non-owner business-contact classification when independent owner evidence is absent.",
+      "kind": "hold"
+    },
+    {
+      "id": "deliver",
+      "label": "Deliver approved contact",
+      "detail": "Deliver only after all gates pass; owner-confirmed mobile requires separate evidence.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    { "from": "discover", "to": "fit", "label": "candidate" },
+    { "from": "fit", "to": "license", "label": "HVAC core or matching class" },
+    { "from": "fit", "to": "holdowner", "label": "generic or adjacent-only" },
+    { "from": "license", "to": "phone", "label": "candidate identity retained" },
+    { "from": "phone", "to": "verify", "label": "separate published business contact" },
+    { "from": "phone", "to": "holdphone", "label": "no published contact" },
+    { "from": "verify", "to": "owner", "label": "mobile/live/DNC/dedupe passed" },
+    { "from": "verify", "to": "holdphone", "label": "verification failed" },
+    { "from": "owner", "to": "deliver", "label": "independent owner evidence" },
+    { "from": "owner", "to": "holdowner", "label": "qualifier-only or no owner evidence" }
+  ],
+  "failures": [
+    {
+      "risk": "A licensed qualifier is represented as an owner.",
+      "mitigation": "Persist qualifier status as a candidate and require independent owner evidence before owner labeling.",
+      "status": "proposed"
+    },
+    {
+      "risk": "TX TDLR A/C identity records are treated as phone records.",
+      "mitigation": "Require a separate published business contact; the 10-row sample had zero populated business or owner telephone fields.",
+      "status": "implemented"
+    },
+    {
+      "risk": "Florida HVAC request routes by phrase order or consumes unfiltered contractor classes.",
+      "mitigation": "Use state-aware order-independent matching and an explicit HVAC class filter before register intake.",
+      "status": "proposed"
+    },
+    {
+      "risk": "A dispatch or shared office line is called a direct owner cell.",
+      "mitigation": "Keep the contact as business-level until line-type, live, DNC, dedupe, and owner-evidence gates pass.",
+      "status": "partial"
+    }
+  ],
+  "sources": [
+    {
+      "label": "TX TDLR All Licenses: A/C Contractor",
+      "scope": "Texas public HVAC license identities",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md (TX TDLR row); handoff/07_RESEARCH_BUILD_SPEC.md (TX detail note); https://data.texas.gov/resource/7358-krk7.json",
+      "status": "proposed"
+    },
+    {
+      "label": "Live HVAC recipe-A route",
+      "scope": "Published HVAC business discovery",
+      "evidence": "VERIFIED",
+      "reference": "src/data/lead-engine-brain.json industries.hvac; src/lib/lead-engine-brain.ts route",
+      "status": "implemented"
+    },
+    {
+      "label": "Florida DBPR construction extract",
+      "scope": "Florida construction/electrical license qualifier candidates",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-registers.ts FL_DBPR_FILES, flDbprRecord, flDbprConstruction",
+      "status": "implemented"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "Texas TDLR A/C Contractor might contribute a direct phone source.",
+      "test": "Free aggregate-only live query of 10 A/C Contractor rows on 2026-09-24.",
+      "observed": "10/10 had owner_name, 10/10 were person-shaped under the aggregate heuristic, and 0/10 had business_telephone or owner_telephone.",
+      "change": "Classify this source as identity-only; do not route it to a phone verification branch without a separate published business contact."
+    }
+  ],
+  "measurement": {
+    "kind": "free_source_sample",
+    "sampleSize": 10,
+    "observedAt": "2026-09-24",
+    "result": "TX TDLR 7358-krk7 A/C Contractor filter: owner_name present 10/10; person-shaped aggregate heuristic 10/10; business_name present 7/10; business_telephone 0/10; owner_telephone 0/10. Aggregate evidence only; no contact values retained. It does not measure mobile, live, DNC, owner confirmation, or delivery.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Free public-source field-coverage observation only",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No delivered owner contact was measured. Historical HVAC brain rates use a different denominator and remain outside this review."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "The runtime recognizes HVAC and applies relevance and contact gates, but it has no dedicated TDLR A/C adapter and Florida HVAC routing/filtering is phrase-order dependent and not class-scoped.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-industries.ts",
+      "src/lib/lead-engine-registers.ts"
+    ]
+  },
+  "nextMeasurement": "With synthetic rows, verify that an FL HVAC request resolves independent of phrase order, admits only explicit HVAC class codes, retains Qualifier as candidate role, and cannot deliver an owner label without independent evidence. Then run an authorized outcome pilot measuring published-contact line type, DNC, reachability, and owner confirmation separately."
+}

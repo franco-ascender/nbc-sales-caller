@@ -1,0 +1,240 @@
+{
+  "industry": "jewelers",
+  "title": "Independent jewelers and jewelry stores",
+  "hypothesis": "The Maps-first jewelers route can produce a published business-contact candidate after jewelry relevance and delivery gates. It cannot establish a business owner or direct owner handset without independent ownership evidence and an explicit business-role link to the published number.",
+  "ownerSource": "No jewelry-specific owner-confirming register or adapter is implemented. A future owner label requires independent public owner/founder evidence matched to the same business; an address must never be used to discover an unpublished personal number.",
+  "phoneSource": "The live recipe-A route begins with a published Maps business number for the keyword jewelry store. It is a business-contact candidate only and was not phone-tested in this code audit.",
+  "workflow": [
+    {
+      "id": "maps",
+      "label": "Published Maps listing",
+      "detail": "Start with the recipe-A jewelry-store listing and retain its number only as a published business-contact candidate.",
+      "kind": "source"
+    },
+    {
+      "id": "fit",
+      "label": "Jewelry relevance",
+      "detail": "Require a core jeweler or jewelry-store signal after the proposed classifier correction.",
+      "kind": "filter"
+    },
+    {
+      "id": "offfit",
+      "label": "Adjacent or ambiguous listing",
+      "detail": "Hold pawn, watch-repair, appraisal, engraving, consignment, precious-metals, antique, manufacturer, and generic retail listings unless core jewelry evidence also appears.",
+      "kind": "hold"
+    },
+    {
+      "id": "chain",
+      "label": "Chain and multi-location check",
+      "detail": "Apply the existing chain filter; an untagged listing is still not independent-owner evidence.",
+      "kind": "decision"
+    },
+    {
+      "id": "brandhold",
+      "label": "Brand or multi-location hold",
+      "detail": "Hold ownership claims for a chain, franchise, or multi-location retailer until business-specific independent evidence exists.",
+      "kind": "hold"
+    },
+    {
+      "id": "contact",
+      "label": "Published business contact",
+      "detail": "Keep the advertised number distinct from the identity of any owner candidate.",
+      "kind": "source"
+    },
+    {
+      "id": "gates",
+      "label": "Line and compliance gates",
+      "detail": "Require a verified mobile, reachability, DNC/TCPA clearance, suppression and duplicate clearance, and fresh verification.",
+      "kind": "verify"
+    },
+    {
+      "id": "gatehold",
+      "label": "Contact gate hold",
+      "detail": "Do not deliver a number when any required line or compliance gate fails.",
+      "kind": "hold"
+    },
+    {
+      "id": "owner",
+      "label": "Independent owner and contact evidence",
+      "detail": "For an owner-labelled result, require independent owner/founder evidence plus an explicit direct business-role link to this published number.",
+      "kind": "verify"
+    },
+    {
+      "id": "ownerhold",
+      "label": "Owner evidence unresolved",
+      "detail": "Hold missing, conflicting, front-desk, staff-only, franchise, or unlinked evidence; do not infer a handset owner.",
+      "kind": "hold"
+    },
+    {
+      "id": "deliver",
+      "label": "Deliver owner-confirmed contact",
+      "detail": "A future owner-confirmed delivery requires every contact/compliance gate and the separate ownership/contact proof.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    {
+      "from": "maps",
+      "to": "fit",
+      "label": "classify listing"
+    },
+    {
+      "from": "fit",
+      "to": "offfit",
+      "label": "adjacent or no core signal"
+    },
+    {
+      "from": "fit",
+      "to": "chain",
+      "label": "core jewelry signal"
+    },
+    {
+      "from": "chain",
+      "to": "brandhold",
+      "label": "chain or multi-location evidence"
+    },
+    {
+      "from": "chain",
+      "to": "contact",
+      "label": "listing remains a business-contact candidate"
+    },
+    {
+      "from": "contact",
+      "to": "gates",
+      "label": "verify contact"
+    },
+    {
+      "from": "gates",
+      "to": "gatehold",
+      "label": "any gate fails"
+    },
+    {
+      "from": "gates",
+      "to": "owner",
+      "label": "contact gates pass"
+    },
+    {
+      "from": "owner",
+      "to": "ownerhold",
+      "label": "missing, conflicting, or unlinked evidence"
+    },
+    {
+      "from": "owner",
+      "to": "deliver",
+      "label": "independent owner and direct business-contact evidence"
+    }
+  ],
+  "failures": [
+    {
+      "risk": "Normal Jewelry and Jeweler listings are rejected as no_positive_relevance while the plural Jewelers spelling passes.",
+      "mitigation": "Add an explicit jewelers relevance profile covering jewelry, jeweler, jewelers, and jewelry store, with adjacent retail categories held unless a core jewelry signal co-occurs.",
+      "status": "blocked"
+    },
+    {
+      "risk": "Pawn, watch repair, appraisal, engraving, consignment, precious-metals, antique, manufacturer, or generic retail listings are treated as core jewelry stores.",
+      "mitigation": "Require core jewelry evidence and hold adjacent-only or ambiguous listings.",
+      "status": "proposed"
+    },
+    {
+      "risk": "A published business line or verified mobile is represented as a direct owner handset.",
+      "mitigation": "Keep owner evidence separate from the business contact and require the existing mobile, reachability, DNC/TCPA, suppression, duplicate, and freshness gates.",
+      "status": "implemented"
+    },
+    {
+      "risk": "A chain, franchise, or multi-location retailer is represented as independently owner-operated.",
+      "mitigation": "Apply the existing generic chain filter and hold ownership claims until business-specific independent evidence is recorded.",
+      "status": "proposed"
+    },
+    {
+      "risk": "A staff, front-desk, website, or review mention is represented as owner-confirmed.",
+      "mitigation": "Require independent owner/founder evidence and an explicit direct business-role link to the published number; hold conflicting or front-desk evidence.",
+      "status": "proposed"
+    }
+  ],
+  "sources": [
+    {
+      "label": "Live jewelers brain route",
+      "scope": "National recipe-A Maps-first discovery using keyword jewelry store and allow expression jewel",
+      "evidence": "VERIFIED",
+      "reference": "src/data/lead-engine-brain.json industries.jewelers; src/lib/lead-engine-brain.ts route",
+      "status": "implemented"
+    },
+    {
+      "label": "Live discovery parser",
+      "scope": "Parser applies generic relevance before the brain allow expression; five synthetic jewelers cases expose singular and Jewelry false negatives",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-scrape.ts parseDiscoveryCandidate; src/lib/lead-engine-industries.ts classifyRelevance",
+      "status": "implemented"
+    },
+    {
+      "label": "Jewelry relevance profile",
+      "scope": "No dedicated jewelers profile exists, so the parser recognizes only the literal plural industry string",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-industries.ts PROFILES and classifyRelevance",
+      "status": "blocked"
+    },
+    {
+      "label": "Source catalog and build specification",
+      "scope": "No jewelry or jeweler-specific source entry was found in the assigned catalog and build specification",
+      "evidence": "UNKNOWN",
+      "reference": "handoff/04_SOURCE_CATALOG.md; handoff/07_RESEARCH_BUILD_SPEC.md",
+      "status": "blocked"
+    },
+    {
+      "label": "Published-contact and delivery gates",
+      "scope": "Business-contact provenance, verified mobile, reachability, DNC/TCPA, suppression, duplicate, and freshness checks",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-quality.ts evaluateVerifiedBusiness; src/lib/lead-engine-gates.ts evaluateJobGates",
+      "status": "implemented"
+    },
+    {
+      "label": "Owner-evidence assessment",
+      "scope": "Independent direct-business-contact and owner/founder evidence assessment helper; not wired as a jewelers delivery requirement",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-research.ts assessOwnerEvidence",
+      "status": "proposed"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "The live jewelers route's generic relevance classifier accepts ordinary jewelry-business spelling variants and rejects adjacent retail listings.",
+      "test": "Five-case local code audit on 2026-09-24 through parseDiscoveryCandidate using synthetic Maps records: Harbor Jewelry, Harbor Jeweler, Harbor Jewelers, Harbor Watch Repair, and Harbor Pawn. No network, provider, credential, or contact-data call ran.",
+      "observed": "Harbor Jewelry and Harbor Jeweler produced fitTier null and no_positive_relevance; Harbor Jewelers produced core with no rejection; Harbor Watch Repair and Harbor Pawn were rejected. This measures parser behavior only, not source coverage, phones, owner identity, reachability, DNC/TCPA, or delivery.",
+      "change": "Add a dedicated jewelers profile with singular, plural, and jewelry aliases/core terms, preserve watch repair and pawn as non-core, and add these cases as a parser regression test."
+    },
+    {
+      "hypothesis": "Root integration regression check, 2026-09-24",
+      "test": "Focused synthetic regression checks in tests/lead-engine-industry-corrections.test.ts, lead-engine-reviews.test.ts, lead-engine-gates-jobs.test.ts and lead-engine-jobs.test.ts. No paid provider call.",
+      "observed": "Dedicated singular/plural jewelry aliases now pass discovery. Watch/pawn/antiques-only rows remain outside the narrow cohort. Historical benchmark fields were not changed.",
+      "change": "Shared runtime correction integrated. Original source samples are retained with their original denominators; no phone-yield improvement is claimed."
+    }
+  ],
+  "measurement": {
+    "kind": "code_audit",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Five synthetic parser cases: Jewelry and Jeweler were rejected as no_positive_relevance; Jewelers passed as core; Watch Repair and Pawn were rejected. Local code audit only; no live endpoint, business contact, phone, identity, or delivery measurement.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Local five-case code audit only; no provider, source, append, review, or phone-verification call ran.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean delivered owner contact was measured, so cost per clean contact is unknown. Historical brain benchmarks have a different denominator."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "Dedicated singular/plural jewelry aliases now pass discovery. Watch/pawn/antiques-only rows remain outside the narrow cohort. Historical benchmark fields were not changed. Original review: Jewelers is live as a Maps-first published-business-contact route with generic discovery and delivery gates. The runtime has no jewelers relevance profile, causing ordinary Jewelry and Jeweler listings to be filtered before the brain allow expression. No jewelry-specific owner source or owner-evidence delivery gate is implemented.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-scrape.ts",
+      "src/lib/lead-engine-industries.ts",
+      "src/lib/lead-engine-quality.ts",
+      "src/lib/lead-engine-gates.ts",
+      "src/lib/lead-engine-research.ts",
+      "src/services/lead-engine-jobs.service.ts"
+    ]
+  },
+  "nextMeasurement": "After adding the jewelers relevance profile and its five parser regression fixtures, run a lawful 5-20 row aggregate public business-contact sample only if a catalog-verified endpoint exists. Report source, core-qualified, adjacent-held, chain-held, published-business-contact, authorized-line, independently owner-confirmed, and owner-to-handset-evidence denominators separately; do not use addresses to discover personal phones."
+}

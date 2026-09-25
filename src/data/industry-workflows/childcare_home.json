@@ -1,0 +1,216 @@
+{
+  "industry": "childcare_home",
+  "title": "Home-based child care",
+  "hypothesis": "A public state child-care directory can identify a licensed provider and its explicitly published business contact field, but provider, administrator, and owner must remain distinct and every home-location address must be excluded from contact delivery.",
+  "ownerSource": "PA OCDEL responsible person only when its published title is OWNER; NY OCFS provider is a provider candidate; TX operation name is a provider candidate only when it is a person. An administrator/director is never owner-confirming evidence.",
+  "phoneSource": "The PA, NY, and TX directories publish a facility phone as a business-contact field. It is not a personal-cell, owner, line-type, reachability, or DNC result; retain it only behind the contact and compliance gates.",
+  "workflow": [
+    {
+      "id": "start",
+      "label": "Public home-care directory row",
+      "detail": "Accept only PA Family/Group Child Care Home, NY GFDC/FDC, or TX licensed, registered, or listed home rows from the verified public datasets.",
+      "kind": "source"
+    },
+    {
+      "id": "ca_hold",
+      "label": "California small family home",
+      "detail": "Reject before ingestion and dialing under the existing HSC 1596.86 guardrail.",
+      "kind": "hold"
+    },
+    {
+      "id": "status",
+      "label": "Active-status filter",
+      "detail": "Reject NY rows outside License/Registration and TX rows marked closed or temporarily closed.",
+      "kind": "filter"
+    },
+    {
+      "id": "ny_optout",
+      "label": "NY phone omission",
+      "detail": "Reject phone_number_omitted=Y before a name/contact row is created.",
+      "kind": "hold"
+    },
+    {
+      "id": "role",
+      "label": "Published-role decision",
+      "detail": "PA OWNER is owner evidence; NY provider and a TX person-named operation are provider candidates. A TX administrator/director is not an owner.",
+      "kind": "decision"
+    },
+    {
+      "id": "role_hold",
+      "label": "Administrator or unclear role",
+      "detail": "Hold business-named TX operations whose only person is administrator/director; do not represent that person as an owner.",
+      "kind": "hold"
+    },
+    {
+      "id": "business_phone",
+      "label": "Published facility-contact field",
+      "detail": "Use only a valid public facility phone field; it is a business-contact candidate, not a private-phone lookup or an owner-confirmed handset.",
+      "kind": "source"
+    },
+    {
+      "id": "address_remove",
+      "label": "Remove home-location address",
+      "detail": "Do not persist or export street, unit, geocode, or other residential-location data from home-care rows.",
+      "kind": "filter"
+    },
+    {
+      "id": "contact_hold",
+      "label": "Contact and compliance hold",
+      "detail": "Require the authorized line-type, DNC, suppression, time-zone, and reachability checks. No such outcome is measured here.",
+      "kind": "verify"
+    },
+    {
+      "id": "deliver",
+      "label": "Eligible business contact",
+      "detail": "Deliver only the permitted public business-contact record after all gates; preserve provider versus owner evidence.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    {
+      "from": "start",
+      "to": "ca_hold",
+      "label": "CA small family home"
+    },
+    {
+      "from": "start",
+      "to": "status",
+      "label": "PA, NY, or TX"
+    },
+    {
+      "from": "status",
+      "to": "ny_optout",
+      "label": "NY omission flag"
+    },
+    {
+      "from": "status",
+      "to": "role",
+      "label": "active non-opted-out row"
+    },
+    {
+      "from": "role",
+      "to": "role_hold",
+      "label": "admin-only or unclear role"
+    },
+    {
+      "from": "role",
+      "to": "business_phone",
+      "label": "published provider/OWNER evidence"
+    },
+    {
+      "from": "business_phone",
+      "to": "address_remove",
+      "label": "valid facility phone"
+    },
+    {
+      "from": "address_remove",
+      "to": "contact_hold",
+      "label": "non-residential contact record"
+    },
+    {
+      "from": "contact_hold",
+      "to": "deliver",
+      "label": "authorized gates pass"
+    }
+  ],
+  "failures": [
+    {
+      "risk": "Home-care source rows carry a residence-like facility address and current adapters persist street fields and most raw address fields.",
+      "mitigation": "Strip street/unit/geocode and raw facility, location, mailing, and legal-entity address fields before persistence; retain only the minimum non-residential routing fields if justified.",
+      "status": "proposed"
+    },
+    {
+      "risk": "A TX administrator/director fallback is treated as a named contact when the operation name is a business, although that role does not establish ownership.",
+      "mitigation": "Hold or skip admin-only rows for owner targeting until independent owner evidence exists; retain a distinct provider/admin role if the product supports it.",
+      "status": "proposed"
+    },
+    {
+      "risk": "NY records expressly suppress a phone with phone_number_omitted=Y.",
+      "mitigation": "Skip the whole contact row before name creation; the current NY adapter implements this filter.",
+      "status": "implemented"
+    },
+    {
+      "risk": "A publicly listed facility phone may be a shared, landline, personal, or otherwise unsuitable number.",
+      "mitigation": "Do not infer cell status, owner reachability, or consent from field presence; apply authorized contact and DNC gates and record outcomes separately.",
+      "status": "implemented"
+    },
+    {
+      "risk": "CA small family child-care homes are prohibited from dialing by the existing program guardrail.",
+      "mitigation": "Keep CA family homes excluded from ingestion and delivery.",
+      "status": "implemented"
+    }
+  ],
+  "sources": [
+    {
+      "label": "PA OCDEL provider directory",
+      "scope": "Family and Group Child Care Home rows; responsible person and published facility-contact fields.",
+      "evidence": "VERIFIED",
+      "reference": "docs/features/owner-cell-audit-sources.md; src/lib/lead-engine-registers.ts paChildcareRow",
+      "status": "implemented"
+    },
+    {
+      "label": "NY OCFS child-care directory",
+      "scope": "GFDC/FDC rows with provider and facility-contact fields, including phone omission marker.",
+      "evidence": "VERIFIED",
+      "reference": "docs/features/owner-cell-audit-sources.md; src/lib/lead-engine-registers.ts nyChildcareRow",
+      "status": "implemented"
+    },
+    {
+      "label": "TX HHSC child-care operations dataset",
+      "scope": "Licensed, registered, and listed home rows with operation, administrator/director, status, and published facility-contact fields.",
+      "evidence": "VERIFIED",
+      "reference": "docs/features/lead-sourcing-handoff.md; src/lib/lead-engine-registers.ts txChildcareRow",
+      "status": "implemented"
+    },
+    {
+      "label": "CA CHHS Family Child Care Homes",
+      "scope": "California family homes.",
+      "evidence": "VERIFIED",
+      "reference": "docs/features/owner-cell-audit-sources.md; src/data/lead-engine-brain.json states.CA and guardrails",
+      "status": "blocked"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "The verified TX public endpoint exposes a bounded set of home-operation records without requiring personal contact collection for a coverage check.",
+      "test": "Free live TX Socrata request on 2026-09-24, limit 20, selecting only operation_type, operation_status, and temporarily_closed; response was reduced immediately to aggregate counts.",
+      "observed": "20 rows returned: 10 home rows (1 Licensed Child-Care Home, 4 Registered Child-Care Home, 5 Listed Family Home), 20 active, and 20 not temporarily closed. No names, phone values, or addresses were retained.",
+      "change": "Keep TX as an eligible public business-contact source, but make role and residential-data filtering explicit before any contact evaluation."
+    },
+    {
+      "hypothesis": "The TX phone field is broadly populated but cannot establish a usable owner phone.",
+      "test": "Free live grouped TX endpoint aggregate on 2026-09-24 for the three home operation types, counting phone_number and administrator_director_name without selecting values.",
+      "observed": "4,704 eligible home rows and 4,667 populated phone fields; administrator/director is populated for 1,581 rows, almost entirely Licensed Child-Care Home rows. This is field presence only.",
+      "change": "Do not claim phone verification or owner linkage; administrator-only paths remain held."
+    },
+    {
+      "hypothesis": "Root integration regression check, 2026-09-24",
+      "test": "Focused synthetic regression checks in tests/lead-engine-industry-corrections.test.ts, lead-engine-reviews.test.ts, lead-engine-gates-jobs.test.ts and lead-engine-jobs.test.ts. No paid provider call.",
+      "observed": "TX no longer substitutes administrator/director for an unresolved provider name. It holds the row with owner_identity_unresolved. Existing residential payload retention is not expanded and remains a separate limitation.",
+      "change": "Shared runtime correction integrated. Original source samples are retained with their original denominators; no phone-yield improvement is claimed."
+    }
+  ],
+  "measurement": {
+    "kind": "free_source_sample",
+    "sampleSize": 20,
+    "observedAt": "2026-09-24",
+    "result": "TX public endpoint metadata-only sample: 20 records, 10 home-operation records, all active and not temporarily closed. Separate source-wide grouped aggregate: 4,667 populated phone fields of 4,704 eligible home rows. No phone values, names, or addresses retained; verified phones, ownership, mobile status, reachability, and DNC outcomes are all unmeasured.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Free public TX Socrata metadata-only sample and grouped aggregate; no paid discovery, append, or verification was invoked.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No cost per clean owner contact is supportable without measured ownership, authorized contact, and delivery outcomes."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "TX no longer substitutes administrator/director for an unresolved provider name. It holds the row with owner_identity_unresolved. Existing residential payload retention is not expanded and remains a separate limitation. Original review: PA, NY, and TX adapters exist; NY opt-out and activity filters are present. The current childcare adapters still persist home-location address data, and TX accepts administrator/director fallbacks as named records without owner evidence.",
+    "runtimeFiles": [
+      "src/lib/lead-engine-registers.ts",
+      "src/services/lead-engine-registers.service.ts",
+      "tests/lead-engine-registers.test.ts"
+    ]
+  },
+  "nextMeasurement": "After residential-field removal and the administrator-only hold are implemented, run a consented 5-20 record audit that records separate denominators for source rows, role-evidenced providers, PA OWNER rows, valid published business-contact fields, authorized contact-gate passes, and delivered outcomes."
+}

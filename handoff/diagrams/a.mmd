@@ -1,0 +1,13 @@
+flowchart TD
+    R[State contractor board bulk file<br/>CA CSLB, WA L&I, OR CCB, FL DBPR, MN DLI, TX TDLR, VA, IL, CO, NJ, NYC] --> N[Normalize and resolve<br/>owner roles: Sole Owner, Member, RMI, Individual]
+    P[Building permits<br/>Austin, NYC DOB, Chicago, Seattle<br/>contractor name + phone + activity] --> N
+    G[Google Maps by metro and trade<br/>Apify] --> N
+    N --> S[Size gate<br/>under 100 reviews, under 4 licensed staff<br/>franchise removed]
+    S --> K{Register phone vs Maps}
+    K -- differs --> D1[Owner direct line candidate]
+    K -- same --> D2[Business line, keep if mobile]
+    K -- no Maps listing --> D0[Licensed but invisible<br/>append cell by name + address]
+    D0 --> V[Telnyx, FTC DNC, litigator, ledger]
+    D1 --> V
+    D2 --> V
+    V --> O[Verified owner cells<br/>7 to 12 cents each]

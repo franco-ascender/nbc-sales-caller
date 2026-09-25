@@ -1,0 +1,51 @@
+{
+  "industry": "contractor_mn",
+  "title": "Minnesota contractors: Master-license identity with contact safeguards",
+  "hypothesis": "MN DLI Electrical and Plumbing Master-level, Issued license rows can establish a license-role and published business-contact candidate. A Personal licensee, a Business row, and a register phone do not independently establish business ownership, handset ownership, mobile line type, or permission to contact a person.",
+  "ownerSource": "MN DLI Licensee Name on a Personal Master-level license is a named license-role candidate only. Business rows have no named person, and neither row type independently confirms ownership.",
+  "phoneSource": "MN DLI Phone_No is a published business-contact candidate. The catalog reports reuse up to 189 licenses, so it cannot be treated as a direct or exclusive owner phone without a distinct-business/person reuse gate and all downstream contact gates.",
+  "workflow": [
+    {"id":"source","label":"MN DLI source and category gate","detail":"Use only eligible Electrical or Plumbing CSVs. Hold an HTTP-success HTML error page, unavailable category, or source whose terms cannot be confirmed.","kind":"source"},
+    {"id":"active","label":"Current Issued Master license?","detail":"Require Issued status, a Master-level subtype, and a parsed expiration date current through its stated date. Do not widen the documented Master cohort to non-Master contractor rows.","kind":"filter"},
+    {"id":"holdlicense","label":"Hold inactive, non-Master, or malformed license","detail":"Do not use expired, non-Issued, unsupported-class, or malformed-date rows as contractor candidates.","kind":"hold"},
+    {"id":"role","label":"License role classification","detail":"A Personal row is a named license-role candidate; a Business row is business-only. Neither establishes an owner.","kind":"decision"},
+    {"id":"holdrole","label":"Hold business-only owner claim","detail":"Keep Business rows and unsupported ownership claims out of an owner-confirmed branch.","kind":"hold"},
+    {"id":"reuse","label":"Published-phone reuse gate","detail":"Treat Phone_No as a business-contact candidate only. Hold absent, shared, or over-threshold phone values before verification.","kind":"decision"},
+    {"id":"holdphone","label":"Hold absent or shared contact","detail":"Do not infer or append a private number, and do not call a shared office or answering-service line a direct owner contact.","kind":"hold"},
+    {"id":"verify","label":"Contact and owner-evidence gates","detail":"Require independent owner evidence plus line-type, live, DNC, suppression, and delivery-dedupe checks.","kind":"verify"},
+    {"id":"holdverify","label":"Hold failed evidence","detail":"Keep non-mobile, unreachable, suppressed, DNC, or owner-unconfirmed cases out of owner-confirmed delivery.","kind":"hold"},
+    {"id":"deliver","label":"Deliver supported contact","detail":"Deliver only when every permitted-contact and independent owner-evidence gate passes.","kind":"deliver"}
+  ],
+  "edges": [
+    {"from":"source","to":"active","label":"eligible Electrical or Plumbing CSV"},
+    {"from":"source","to":"holdlicense","label":"unavailable, HTML error, or ineligible source"},
+    {"from":"active","to":"role","label":"Issued current Master row"},
+    {"from":"active","to":"holdlicense","label":"inactive, non-Master, expired, or malformed"},
+    {"from":"role","to":"reuse","label":"license-role candidate or business-contact candidate"},
+    {"from":"role","to":"holdrole","label":"owner claim unsupported"},
+    {"from":"reuse","to":"verify","label":"exclusive permitted contact candidate"},
+    {"from":"reuse","to":"holdphone","label":"absent, shared, or over threshold"},
+    {"from":"verify","to":"deliver","label":"all contact and owner gates pass"},
+    {"from":"verify","to":"holdverify","label":"contact or owner evidence fails"}
+  ],
+  "failures": [
+    {"risk":"An Issued MN Master license expiring on the current date is excluded before eligibility assessment.","mitigation":"Use an MN-specific parsed-date predicate that accepts Exp_Date equal to today; retain Issued and Master-level filters.","status":"proposed"},
+    {"risk":"A Personal licensee is represented as a confirmed owner.","mitigation":"Keep Personal provenance as a license-role candidate and require independent owner evidence before owner labeling.","status":"partial"},
+    {"risk":"A Business row or Phone_No is represented as a direct owner mobile.","mitigation":"Retain business-contact provenance only and require reuse, line-type, live, DNC, suppression, dedupe, and owner-evidence gates.","status":"partial"},
+    {"risk":"A shared DLI phone reaches verification because reuse is not measured across distinct businesses and people.","mitigation":"Count the MN cohort's distinct business names and persons per normalized phone; hold values over two businesses or three persons as catalogued.","status":"blocked"},
+    {"risk":"An unsupported category returns an HTTP-200 HTML error page that is accepted as source data.","mitigation":"Keep the adapter header/content assertion and hold unavailable category routes.","status":"implemented"}
+  ],
+  "sources": [
+    {"label":"MN DLI CCLD license export CSVs","scope":"Electrical and Plumbing licensee identity, class, status, address, and published business-phone candidates; Master-level cohort only.","evidence":"VERIFIED","reference":"handoff/04_SOURCE_CATALOG.md line 19 and MN row; handoff/07_RESEARCH_BUILD_SPEC.md MN row; src/lib/lead-engine-registers.ts mnDli","status":"implemented"},
+    {"label":"MN DLI phone-reuse rule","scope":"Phone may be reused up to 189 licenses; threshold is more than two distinct businesses or more than three distinct persons.","evidence":"VERIFIED","reference":"handoff/04_SOURCE_CATALOG.md line 403","status":"blocked"},
+    {"label":"MN Data Practices source-use note","scope":"Prior research reports no solicitation restriction seen and public licensee name, license, and business address; recheck source terms before a live run.","evidence":"REPORTED","reference":"handoff/04_SOURCE_CATALOG.md line 19; handoff/07_RESEARCH_BUILD_SPEC.md line 1079","status":"proposed"},
+    {"label":"MN DLI adapter","scope":"Electrical and Plumbing CSV parser with Master, Issued, expiry, and HTML-content gates.","evidence":"VERIFIED","reference":"src/lib/lead-engine-registers.ts mnDli and mnDliRecord; tests/lead-engine-registers.test.ts mn_dli","status":"implemented"}
+  ],
+  "iterations": [
+    {"hypothesis":"The MN parser accepts an Issued Master license that remains valid through its listed expiration date while keeping business-only and unsupported rows out of the owner branch.","test":"Five-case local fixture/code audit on 2026-09-24 using mnDliRecord: Personal Master expiring today; Personal Master expiring tomorrow; Business Master; non-Issued Master; and non-Master Electrical Contractor. No network request or contact data retention.","observed":"The tomorrow-expiring Personal Master was kept as a named role candidate; the Business Master was kept without a person; non-Issued and non-Master rows were rejected. The expiry-today Personal Master was rejected as expired because mnDliRecord calls inFuture and inFuture requires date strictly greater than today.","change":"Propose a local MN expiry predicate, expires !== null && expires >= today(), plus an expiry-day regression fixture. Keep Master, status, source-content, role, reuse, and downstream contact gates unchanged."}
+  ],
+  "measurement": {"kind":"fixture","sampleSize":5,"observedAt":"2026-09-24","result":"Synthetic five-case mnDliRecord audit only: expiry-today Issued Personal Master rejected; expiry-tomorrow Personal Master kept; Business Master kept without person; non-Issued Master rejected; non-Master Electrical Contractor rejected. This measures code behavior only, not source coverage, mobile line type, DNC, reachability, ownership, or delivery.","verifiedPhones":0},
+  "cost": {"basis":"Local fixture/code audit only; no provider, paid verification, or source request","perInputUsd":0,"perCleanUsd":null,"note":"No clean delivered owner contact was measured. The contractor_mn brain estimate has a different denominator and is not a per-clean cost for this workflow."},
+  "implementation": {"status":"partial","summary":"The MN DLI adapter safely limits source categories, detects HTML error content, and filters to Issued Master rows, but it rejects expiry-day licenses through a strict shared future-date predicate. Owner confirmation and the catalogued distinct-business/person phone-reuse rule are not implemented by this adapter.","runtimeFiles":["src/data/lead-engine-brain.json","src/lib/lead-engine-registers.ts","src/lib/lead-engine-jobs.ts","tests/lead-engine-registers.test.ts"]},
+  "nextMeasurement":"After the MN expiry-day regression is added, run an eligible bounded aggregate-only public-source sample reporting Master/status/Personal-Business and reuse counts without retaining contacts. A later authorized outcome study must separately measure line type, DNC, reachability, independent owner confirmation, and delivery before assigning a clean rate or per-clean cost."
+}

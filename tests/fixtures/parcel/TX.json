@@ -1,0 +1,55 @@
+{
+ "_about": "TX parcel layer answer for SMITH JOHN, 2026-09-21",
+ "body": {
+  "objectIdFieldName": "FID",
+  "uniqueIdField": {
+   "name": "FID",
+   "isSystemMaintained": true
+  },
+  "globalIdFieldName": "",
+  "geometryType": "esriGeometryPolygon",
+  "exceededTransferLimit": true,
+  "features": [
+   {
+    "attributes": {
+     "OWNER_NAME": "SMITH JOHN GABRIEL & VANNA ASHLYN",
+     "MAIL_LINE1": "10604 LAKE BEACH DR",
+     "MAIL_CITY": "DRIPPING SPRINGS",
+     "MAIL_ZIP": "78620"
+    }
+   },
+   {
+    "attributes": {
+     "OWNER_NAME": "SMITH JOHN ZACHARY",
+     "MAIL_LINE1": "3703 RIP FORD DR",
+     "MAIL_CITY": "AUSTIN",
+     "MAIL_ZIP": "78732"
+    }
+   },
+   {
+    "attributes": {
+     "OWNER_NAME": "SMITH JOHNNY R",
+     "MAIL_LINE1": "PO BOX 157",
+     "MAIL_CITY": "SPICEWOOD",
+     "MAIL_ZIP": "78669"
+    }
+   },
+   {
+    "attributes": {
+     "OWNER_NAME": "SMITH JOHNNY R",
+     "MAIL_LINE1": "PO BOX 157",
+     "MAIL_CITY": "SPICEWOOD",
+     "MAIL_ZIP": "78669"
+    }
+   },
+   {
+    "attributes": {
+     "OWNER_NAME": "SMITH JOHN THOMAS & PATRICIA SUE",
+     "MAIL_LINE1": "3820 S JACKSON RD UNIT A",
+     "MAIL_CITY": "PHARR",
+     "MAIL_ZIP": "78577"
+    }
+   }
+  ]
+ }
+}

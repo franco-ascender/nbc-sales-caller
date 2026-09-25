@@ -1,0 +1,56 @@
+{
+  "industry": "healthcare_ao_contrast",
+  "title": "Healthcare NPPES Authorized Official versus LOCATION contact contrast",
+  "hypothesis": "An active primary-taxonomy NPPES NPI-2 record can establish practice identity. AO and LOCATION telephones are distinct published business-contact fields; their equality or difference is a source contrast only and never proves ownership, direct reach, handset ownership, mobile status, or delivery eligibility.",
+  "ownerSource": "NPPES Authorized Official identity and title are role-candidate evidence only. An owner-supported label requires independent current owner/founder corroboration and an explicit direct-business-contact link to the same published contact.",
+  "phoneSource": "NPPES LOCATION telephone is the proposed published practice-contact field. Preserve AO telephone separately as nppes_ao_published metadata; do not promote AO-only, equal, or different phone fields into an owner contact, private-contact, or handset claim.",
+  "workflow": [
+    { "id": "nppes", "label": "NPPES NPI-2 organization", "detail": "Read the free public organization record and retain AO and LOCATION source fields separately.", "kind": "source" },
+    { "id": "scope", "label": "Active primary-taxonomy role gate", "detail": "Require active status, requested primary taxonomy, person AO, and no explicit staff-title exclusion.", "kind": "filter" },
+    { "id": "scopehold", "label": "Source-row hold", "detail": "Hold inactive, taxonomy-mismatched, missing-person, or explicit staff-title records.", "kind": "hold" },
+    { "id": "fields", "label": "AO and LOCATION provenance", "detail": "Record each field as published AO or LOCATION evidence. Same/different values remain source contrast only.", "kind": "decision" },
+    { "id": "fieldhold", "label": "AO-only or no-LOCATION hold", "detail": "Hold rows without a published LOCATION field from the public practice-contact lane.", "kind": "hold" },
+    { "id": "contact", "label": "Published practice-contact candidate", "detail": "Use LOCATION only as a business-contact candidate; AO remains unproven role metadata.", "kind": "source" },
+    { "id": "corporate", "label": "Corporate and repeated-AO gate", "detail": "Hold corporate/DSO and AO identity-plus-phone repetition pending independent ownership evidence.", "kind": "decision" },
+    { "id": "corphold", "label": "Corporate/repeated-AO hold", "detail": "Do not label corporate or repeated-AO records as independent owner contacts.", "kind": "hold" },
+    { "id": "gates", "label": "Contact and compliance gates", "detail": "Apply authorized line-type, reachability, DNC/TCPA, suppression, duplicate, freshness, and timezone gates to the published practice contact.", "kind": "verify" },
+    { "id": "gatehold", "label": "Contact-gate hold", "detail": "Hold or drop any nonqualifying business-contact candidate with its actual gate reason.", "kind": "hold" },
+    { "id": "owner", "label": "Independent owner/direct-link evidence", "detail": "Require current business-site direct-contact evidence plus independent owner/founder corroboration for an owner-supported label.", "kind": "verify" },
+    { "id": "ownerhold", "label": "Business contact only", "detail": "Retain only the business-contact classification when ownership or direct link is unresolved.", "kind": "hold" },
+    { "id": "deliver", "label": "Owner-supported delivery", "detail": "Deliver only after independent owner/direct-link evidence and all contact/compliance gates support the stated classification.", "kind": "deliver" }
+  ],
+  "edges": [
+    { "from": "nppes", "to": "scope", "label": "parse public source row" },
+    { "from": "scope", "to": "scopehold", "label": "inactive, mismatch, staff, or no person" },
+    { "from": "scope", "to": "fields", "label": "eligible role candidate" },
+    { "from": "fields", "to": "fieldhold", "label": "AO-only or no LOCATION field" },
+    { "from": "fields", "to": "contact", "label": "LOCATION field published" },
+    { "from": "contact", "to": "corporate", "label": "practice-contact candidate" },
+    { "from": "corporate", "to": "corphold", "label": "corporate or repeated AO" },
+    { "from": "corporate", "to": "gates", "label": "no corporate/repetition hold" },
+    { "from": "gates", "to": "gatehold", "label": "line or compliance gate fails" },
+    { "from": "gates", "to": "owner", "label": "business-contact gates pass" },
+    { "from": "owner", "to": "ownerhold", "label": "owner or direct-link evidence unresolved" },
+    { "from": "owner", "to": "deliver", "label": "independent evidence supports label" }
+  ],
+  "failures": [
+    { "risk": "Different AO and LOCATION or Maps numbers are labelled direct owner lines.", "mitigation": "Persist field provenance and treat equality/difference as contrast only; never set owner evidence from bucket assignment.", "status": "blocked" },
+    { "risk": "A LOCATION-only public practice line is dropped while AO-only data becomes the job phone.", "mitigation": "Select LOCATION for the public practice-contact lane and hold AO-only/no-LOCATION rows.", "status": "blocked" },
+    { "risk": "Staff, corporate, DSO, or repeated-AO records are treated as independent owner contacts.", "mitigation": "Keep staff-title exclusion and add corporate plus normalized AO identity-and-phone repetition holds before owner labelling.", "status": "partial" },
+    { "risk": "A verified mobile is delivered with an owner implication without independent ownership evidence.", "mitigation": "Call assessOwnerEvidence and hold unresolved rows before owner-supported delivery.", "status": "blocked" },
+    { "risk": "Mailing, parcel, residential, trace, or append data discovers an unpublished contact.", "mitigation": "Keep this source-specific route to published NPPES fields and hold missing field cases.", "status": "proposed" }
+  ],
+  "sources": [
+    { "label": "NPPES NPI-2 register adapter", "scope": "Free public active NPI-2 source filtered by requested taxonomy; parser retains AO identity/title/phone and LOCATION phone.", "evidence": "VERIFIED", "reference": "src/lib/lead-engine-registers.ts nppesOrganization, nppesUrl, nppes", "status": "implemented" },
+    { "label": "NPPES source catalogue", "scope": "Documents AO telephone as person or HQ desk and LOCATION telephone as practice contact, with free keyless access.", "evidence": "VERIFIED", "reference": "handoff/04_SOURCE_CATALOG.md Group C, NPPES NPI Registry API", "status": "implemented" },
+    { "label": "Healthcare contrast brain entry", "scope": "Recipe D historical identity study; its 682 rows are not verified-phone or clean-contact outcomes.", "evidence": "REPORTED", "reference": "src/data/lead-engine-brain.json industries.healthcare_ao_contrast", "status": "implemented" },
+    { "label": "Independent owner evidence gate", "scope": "Current business-site direct-contact evidence plus distinct registry owner/founder corroboration.", "evidence": "VERIFIED", "reference": "src/lib/lead-engine-research.ts assessOwnerEvidence", "status": "proposed" }
+  ],
+  "iterations": [
+    { "hypothesis": "An AO/Maps mismatch can be represented as a direct owner-line candidate in recipe D.", "test": "Five synthetic NPI-2 parser cases on 2026-09-24: same AO/LOCATION field, different fields, LOCATION-only, Billing Coordinator AO, and corporate-looking Vice President AO.", "observed": "Same and different cases both kept AO phone as phone10; LOCATION-only kept with phone10 null despite payload location_phone; staff title held; corporate-like case kept. The existing bucket label calls any unequal register/Maps phone a direct line candidate without field provenance or owner assessment.", "change": "Create a source-specific NPPES healthcare field-provenance lane: LOCATION-only public practice contact, AO-only hold, equality/difference contrast only, corporate/repeated-AO hold, and assessOwnerEvidence before owner-supported delivery." }
+  ],
+  "measurement": { "kind": "code_audit", "sampleSize": 5, "observedAt": "2026-09-24", "result": "Five synthetic local NPPES parser cases measured AO/LOCATION field handling only: same and different field rows kept with AO phone as primary; LOCATION-only had null primary phone; explicit staff title rejected; corporate-like AO kept. No network, paid provider, lookup, phone verification, ownership determination, reachability, DNC/TCPA check, or delivery occurred.", "verifiedPhones": 0 },
+  "cost": { "basis": "Local five-case code audit; NPPES public source is free", "perInputUsd": 0, "perCleanUsd": null, "note": "No clean, owner-supported, or delivered contact outcome was measured. The live brain's identity-study denominator is distinct from a clean-contact denominator." },
+  "implementation": { "status": "partial", "summary": "NPPES parser has active, primary-taxonomy, and explicit staff-title gates, but stores AO phone as phone10 and LOCATION only in payload. Recipe-D bucketing labels unequal Maps phone as direct-line candidate; corporate/repeated-AO and independent owner/direct-link gates are absent from settlement.", "runtimeFiles": ["src/lib/lead-engine-registers.ts", "src/services/lead-engine-jobs.service.ts", "src/lib/lead-engine-buckets.ts", "src/lib/lead-engine-research.ts", "src/data/lead-engine-brain.json"] },
+  "nextMeasurement": "After the correction, run five synthetic route fixtures for same, different, LOCATION-only, AO-only, and staff/corporate-repeated cases. Assert that only LOCATION enters public practice-contact gates, AO contrast never sets an owner-direct flag, AO-only/corporate/repeated rows hold, and assessOwnerEvidence gates any owner label. Then conduct a lawful aggregate 5-20 row public NPPES observation with separate source, field, hold, contact-gate, owner-evidence, and delivery denominators."
+}

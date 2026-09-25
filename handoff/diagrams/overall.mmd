@@ -1,0 +1,16 @@
+flowchart TD
+    A[A. Identity register<br/>names the human owner<br/>license board, SOS, NPPES, permits] --> M[Match and bucket<br/>name + address + phone<br/>entity resolution]
+    C[C. Google Maps listing<br/>the advertised phone<br/>the gatekeeper line] --> M
+    M --> B1[Bucket 1<br/>In register, not on Maps<br/>owner doing no marketing]
+    M --> B2[Bucket 2<br/>Register phone differs from Maps<br/>owner direct line candidate]
+    M --> B3[Bucket 3<br/>Same phone<br/>business line, keep if mobile]
+    M --> B4[Bucket 4<br/>Maps only<br/>identity needed]
+    B1 --> P[B. Cell append by name + address<br/>DataZapp, BatchData fallback]
+    B4 --> P
+    B2 --> D[D. Validation<br/>Telnyx line type, FTC DNC,<br/>litigator scrub, local time window]
+    B3 --> D
+    P --> D
+    D --> L[Compliance ledger + Owner Probability Score]
+    L --> O[3,000 to 5,000 verified owner cells<br/>manual dial]
+    O --> F[Call outcomes feed the score]
+    F --> L

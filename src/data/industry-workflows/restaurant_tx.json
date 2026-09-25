@@ -1,0 +1,246 @@
+{
+  "industry": "restaurant_tx",
+  "title": "Texas TABC restaurant and bar liquor-license-holder review",
+  "hypothesis": "An active TABC person-form owner field is liquor-license-holder evidence only. It does not prove that person operates the restaurant, is its permit manager, owns its operating business, owns a handset, or has a direct business contact. With no TABC phone field, the current safe route holds the row unless a separately implemented public business contact is explicitly tied to the exact business.",
+  "ownerSource": "TABC 7hf9-qc9f provides an active alcohol-license owner field and trade/premises details. A parseable person is a liquor-license-holder candidate, not a restaurant operator, permit manager, current business owner, or owner-confirmed contact. Entity, institutional, and incomplete-person rows are held.",
+  "phoneSource": "The implemented TABC fixture and catalog audit show no phone field. A TABC mailing or premises address is not a contact source and may not be used for parcel, residential, append, or trace work. The only future contact source is an explicitly published business contact from a separately implemented eligible public source, matched to the exact trade name and premises.",
+  "workflow": [
+    {
+      "id": "tabc",
+      "label": "Active TABC liquor-license record",
+      "detail": "Read the implemented active BG, BQ, NT, and MB register segments with license, trade name, holder field, and premises provenance. This is alcohol-license evidence, not restaurant-operation evidence.",
+      "kind": "source"
+    },
+    {
+      "id": "person",
+      "label": "Person-form license holder?",
+      "detail": "Require a current active supported record and a parseable person-form holder. Entity, institution, incomplete-name, and unsupported-type rows cannot enter a person branch.",
+      "kind": "filter"
+    },
+    {
+      "id": "entityhold",
+      "label": "Hold entity or incomplete holder",
+      "detail": "Hold entity, university, nonprofit, corporate, initial-only, missing-holder, inactive, and unsupported-license rows. Do not resolve officers or infer a person.",
+      "kind": "hold"
+    },
+    {
+      "id": "role",
+      "label": "Classify liquor-license-holder evidence",
+      "detail": "Retain a person-form TABC holder only as a liquor-license-holder candidate. Do not label the person Owner, restaurant Operator, Permit manager, or direct contact from this record.",
+      "kind": "decision"
+    },
+    {
+      "id": "opcheck",
+      "label": "Current restaurant-operation evidence?",
+      "detail": "Require independent current evidence that the exact trade name and premises operate an in-scope restaurant or bar. Liquor type, DBA, license holder, or premise alone does not establish operating role.",
+      "kind": "verify"
+    },
+    {
+      "id": "ophold",
+      "label": "Hold non-restaurant or role-ambiguous record",
+      "detail": "Hold off-premise, nonprofit, university, catering, institutional, chain, closed, mismatched-premises, and holder-only records; a license holder or permit manager is not automatically the restaurant operator.",
+      "kind": "hold"
+    },
+    {
+      "id": "contact",
+      "label": "Explicit published business contact available?",
+      "detail": "Only a separately implemented, legally eligible public business contact explicitly matched to the exact trade name and premises may proceed. TABC has no phone field; its addresses cannot substitute.",
+      "kind": "decision"
+    },
+    {
+      "id": "contacthold",
+      "label": "Hold without published business contact",
+      "detail": "Hold the TABC provenance when no eligible published business contact is available or when the contact is shared, stale, mismatched, or not explicitly tied to the business. Never parcel-search, append, trace, or use a residential mailing address.",
+      "kind": "hold"
+    },
+    {
+      "id": "gates",
+      "label": "Business-contact and compliance gates",
+      "detail": "For a future explicit business contact, require line type, reachability, DNC/TCPA, suppression, duplicate, freshness, and timezone checks. A mobile result does not establish the holder's or operator's handset.",
+      "kind": "verify"
+    },
+    {
+      "id": "gatehold",
+      "label": "Hold failed contact gate",
+      "detail": "Hold landline, VoIP, unreachable, DNC/TCPA, suppressed, duplicate, stale, shared-office, or timezone-unresolved business contacts.",
+      "kind": "hold"
+    },
+    {
+      "id": "proof",
+      "label": "Owner/operator and direct-contact proof",
+      "detail": "Require independent current support that the matched person owns or operates the restaurant and explicit evidence that this same published business contact is direct to that supported role. License-holder, permit-manager, name, or number match alone fails.",
+      "kind": "verify"
+    },
+    {
+      "id": "proofhold",
+      "label": "Hold unresolved owner contact",
+      "detail": "Hold liquor-license-holder-only, permit-manager-only, entity, employee, chain, conflicting-role, shared-office, and unlinked-contact cases; do not infer handset ownership.",
+      "kind": "hold"
+    },
+    {
+      "id": "deliver",
+      "label": "Future supported restaurant owner contact",
+      "detail": "Deliver only after restaurant-operation, public business-contact, compliance, independent owner/operator, and direct-contact evidence all pass.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    {
+      "from": "tabc",
+      "to": "person",
+      "label": "parse active holder record"
+    },
+    {
+      "from": "person",
+      "to": "entityhold",
+      "label": "entity, institution, incomplete holder, inactive, or unsupported type"
+    },
+    {
+      "from": "person",
+      "to": "role",
+      "label": "person-form active holder"
+    },
+    {
+      "from": "role",
+      "to": "opcheck",
+      "label": "holder candidate retained"
+    },
+    {
+      "from": "opcheck",
+      "to": "ophold",
+      "label": "restaurant operation or role evidence absent, mismatched, or excluded"
+    },
+    {
+      "from": "opcheck",
+      "to": "contact",
+      "label": "exact current restaurant operation supported"
+    },
+    {
+      "from": "contact",
+      "to": "contacthold",
+      "label": "no explicit linked published business contact"
+    },
+    {
+      "from": "contact",
+      "to": "gates",
+      "label": "eligible published business contact"
+    },
+    {
+      "from": "gates",
+      "to": "gatehold",
+      "label": "line or compliance gate fails"
+    },
+    {
+      "from": "gates",
+      "to": "proof",
+      "label": "contact gates pass"
+    },
+    {
+      "from": "proof",
+      "to": "proofhold",
+      "label": "owner/operator or direct-contact evidence missing or conflicting"
+    },
+    {
+      "from": "proof",
+      "to": "deliver",
+      "label": "independent evidence supported"
+    }
+  ],
+  "failures": [
+    {
+      "risk": "The TABC owner field is represented as a restaurant owner, operator, permit manager, or owner-confirmed mobile.",
+      "mitigation": "Rename the parser role to liquor-license-holder candidate and require independent current restaurant-operation, owner/operator, and direct-business-contact evidence.",
+      "status": "blocked"
+    },
+    {
+      "risk": "A TABC mailing address that differs from the premises is treated as a home address and routed through parcel or paid trace.",
+      "mitigation": "For restaurant_tx, hold before parcel and trace; never derive or retain a residential address, append a private phone, or invoke a paid trace from TABC address fields.",
+      "status": "blocked"
+    },
+    {
+      "risk": "BQ/off-premise, NT/nonprofit, university, catering, chain, or entity-held alcohol licenses are treated as independent restaurant-operator leads.",
+      "mitigation": "Require separate current restaurant-operation evidence for exact trade name and premises, then hold all role-ambiguous or excluded cohorts.",
+      "status": "proposed"
+    },
+    {
+      "risk": "A public business number is relabelled as the liquor holder's or operator's direct handset.",
+      "mitigation": "Use an explicit published business contact only as a business-contact candidate; require line/compliance gates and a separate direct business-role link.",
+      "status": "blocked"
+    },
+    {
+      "risk": "The generic recipe-B quote permits residential fallback because a different TABC mailing address exists.",
+      "mitigation": "Special-case restaurant_tx in quote and advance paths so an explicit implemented public business-contact source is the only fallback; otherwise hold with published_business_contact_unavailable.",
+      "status": "blocked"
+    }
+  ],
+  "sources": [
+    {
+      "label": "TX TABC active license adapter",
+      "scope": "Socrata 7hf9-qc9f active BG, BQ, NT, and MB records; parses a person-form owner field, trade name, status, license type, and address provenance. It has no phone field and currently assigns titleCode Owner.",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-registers.ts txTabcRow, TX_TABC_TYPES, txTabc; tests/fixtures/registers/tx_tabc.json",
+      "status": "implemented"
+    },
+    {
+      "label": "Texas restaurant source catalog",
+      "scope": "Catalog documents 7hf9-qc9f field coverage, zero phones in the active sample, and mixed alcohol-license cohorts; it does not establish restaurant-operation or direct-contact proof.",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Texas TABC License Information; handoff/07_RESEARCH_BUILD_SPEC.md I2 and I3",
+      "status": "implemented"
+    },
+    {
+      "label": "TABC mailing-address recipe-B behavior",
+      "scope": "A differing TABC mail_address is put in the name row, then shared recipe-B code can classify it as register_mailing/home_street and submit it to parcel or skip-trace phases.",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-registers.ts txTabcRow; src/lib/lead-engine-parcel.ts homeStreetSource; src/lib/lead-engine-jobs.ts quoteJob; src/services/lead-engine-jobs.service.ts pullNames, parcelStep, traceStep",
+      "status": "blocked"
+    },
+    {
+      "label": "Explicit published business-contact fallback",
+      "scope": "A legally eligible public business contact explicitly tied to the exact trade name and premises. No such restaurant_tx source or owner/operator/direct-contact gate is implemented in the catalog/runtime audit.",
+      "evidence": "UNKNOWN",
+      "reference": "src/data/lead-engine-brain.json industries.restaurant_tx; src/lib/lead-engine-registers.ts REGISTER_ADAPTERS",
+      "status": "blocked"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "The TABC parser keeps person-form license holders and holds entity holders, while a different mailing address can enter the recipe-B residential path even though no phone exists.",
+      "test": "Five-case local fixture/code audit on 2026-09-24 over the first five saved rows in tests/fixtures/registers/tx_tabc.json through txTabc and the focused tx_tabc register test. No network, secret, paid provider, append, trace, residential/property lookup, or contact-data export ran.",
+      "observed": "3/5 person-form holder values were retained and 2/5 entity-holder values were held as owner_is_entity. Of the retained rows, 1/3 had mailDiffersFromPremises=true and was assigned the differing mailing street; 2/3 had matching mailing/premises addresses and no street. The five rows contained no phone field. The parser labels every retained person titleCode Owner, while the source/fixture does not establish restaurant operation, permit-manager role, or contact ownership.",
+      "change": "Make liquor-license-holder status explicit, hold restaurant_tx before any residential phase, and require an implemented explicit published-business-contact source plus independent role and direct-contact evidence for every future delivery."
+    },
+    {
+      "hypothesis": "Root integration regression check, 2026-09-24",
+      "test": "Focused synthetic regression checks in tests/lead-engine-industry-corrections.test.ts, lead-engine-reviews.test.ts, lead-engine-gates-jobs.test.ts and lead-engine-jobs.test.ts. No paid provider call.",
+      "observed": "The TABC adapter now labels the person License Holder rather than Owner. That does not establish restaurant ownership or a direct handset; a separately published business-contact route is still pending.",
+      "change": "Shared runtime correction integrated. Original source samples are retained with their original denominators; no phone-yield improvement is claimed."
+    }
+  ],
+  "measurement": {
+    "kind": "fixture",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Five saved TABC fixtures: 3 person-form holder rows retained; 2 entity-holder rows held as owner_is_entity; 1 of the 3 retained rows had a mailing address different from premises and was assigned that address by the parser; 0/5 exposed a phone field. Fixture/code audit only; no live source, restaurant-operation, owner/operator, permit-manager, handset, compliance, or delivery measurement.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Local five-row fixture/code audit only; no source fetch, provider, residential lookup, append, trace, review, or phone-verification call ran.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean owner or operator contact was measured. Historical brain estimates use another denominator and do not establish a restaurant business-contact or owner-contact cost."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "The TABC adapter now labels the person License Holder rather than Owner. That does not establish restaurant ownership or a direct handset; a separately published business-contact route is still pending. Original review: TABC active-record filtering, person parsing, entity holds, and source provenance are implemented. The parser overstates a liquor-license holder as Owner and the generic recipe-B flow can route a differing TABC mailing address into residential parcel and paid trace. No explicit published-business-contact fallback or independent restaurant-operator/direct-contact proof is implemented.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-registers.ts",
+      "src/lib/lead-engine-parcel.ts",
+      "src/lib/lead-engine-jobs.ts",
+      "src/services/lead-engine-jobs.service.ts"
+    ]
+  },
+  "nextMeasurement": "After restaurant_tx is held before parcel/trace and a catalog-verified public business-contact source is implemented, run only a lawful 5–20-row aggregate study. Separate active alcohol licenses, person-form license holders, restaurant-operation support, license-holder/operator/permit-manager roles, explicit business contacts, independent owner/operator support, direct-contact support, mobile, reachable, DNC/TCPA-clear, suppression/duplicate-clear, and delivered. Do not use residential, property, private-phone, paid, secret, or prohibited-list sources."
+}

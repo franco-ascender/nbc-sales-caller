@@ -1,0 +1,10 @@
+import {requireWorkspaceUser} from '@/services/workspace-auth';
+import {apiError,IntegrationError} from '@/services/integration.service';
+import {readCallerJson} from '@/services/caller-crm.service';
+import {getCallerView,saveCallerView} from '@/services/caller-views.service';
+import {validView} from '@/lib/caller-dashboard';
+import {validSessionId} from '@/lib/caller-validation';
+import {isRecord} from '@/lib/integration-validation';
+type Context={params:Promise<{scope:string}>};
+export async function GET(request:Request,context:Context):Promise<Response>{try{const user=await requireWorkspaceUser(request),{scope}=await context.params,mode=new URL(request.url).searchParams.get('demo');if(!['analytics','crm'].includes(scope)||mode!==null&&!['true','false'].includes(mode))throw new IntegrationError(400,'Choose a valid view and data mode.');if(mode==='true'&&user.role!=='admin')throw new IntegrationError(403,'Demo is available to administrators only.');return Response.json(await getCallerView(user.id,mode==='true',scope as 'analytics'|'crm'),{headers:{'Cache-Control':'no-store'}});}catch(e){return apiError(e);}}
+export async function PUT(request:Request,context:Context):Promise<Response>{try{const user=await requireWorkspaceUser(request),{scope}=await context.params,body=await readCallerJson(request,65536);if(scope!=='analytics'&&scope!=='crm'||!isRecord(body)||!validSessionId(body.requestId)||body.version!==null&&!validSessionId(body.version)||typeof body.demo!=='boolean'||!validView(scope,body.config))throw new IntegrationError(400,'Use a valid layout, revision and data mode.');if(body.demo&&user.role!=='admin')throw new IntegrationError(403,'Demo is available to administrators only.');return Response.json(await saveCallerView(user.id,body.demo,scope,body.version as string|null,body.requestId,scope==='analytics'?{widgets:(body.config as import('@/lib/caller-dashboard').AnalyticsConfig).widgets.map(({id,cols,rows})=>({id,cols,rows}))}:{order:(body.config as import('@/lib/caller-dashboard').CrmConfig).order.map(id=>id.toLowerCase())}),{headers:{'Cache-Control':'no-store'}});}catch(e){return apiError(e);}}

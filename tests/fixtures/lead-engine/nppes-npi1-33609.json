@@ -1,0 +1,599 @@
+{
+ "_about": "Live NPPES NPI-1 address roster sample for Tampa ZIP 33609 fetched 2026-09-21 (free, public federal registry, CMS-6060-N). Query: version=2.1&enumeration_type=NPI-1&address_purpose=LOCATION&postal_code=33609&taxonomy_description=<Nurse Practitioner|Physician Assistant|Registered Nurse>&limit=200&skip=0. Trimmed to the fields the parser reads.",
+ "counts": {
+  "Nurse Practitioner": {
+   "result_count": 167,
+   "rows": 167
+  },
+  "Physician Assistant": {
+   "result_count": 56,
+   "rows": 56
+  },
+  "Registered Nurse": {
+   "result_count": 3,
+   "rows": 3
+  }
+ },
+ "results": [
+  {
+   "number": "1710847587",
+   "enumeration_type": "NPI-1",
+   "basic": {
+    "first_name": "MARIA TERESA",
+    "last_name": "AGUILAR",
+    "middle_name": "A",
+    "credential": "APRN",
+    "sole_proprietor": "NO",
+    "status": "A"
+   },
+   "addresses": [
+    {
+     "address_purpose": "MAILING",
+     "address_1": "12222 LEGACY BRIGHT ST",
+     "address_2": null,
+     "city": "RIVERVIEW",
+     "state": "FL",
+     "postal_code": "335784069",
+     "telephone_number": "813-619-2222"
+    },
+    {
+     "address_purpose": "LOCATION",
+     "address_1": "2605 W SWANN AVE STE 600",
+     "address_2": null,
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336094044",
+     "telephone_number": "813-876-7073"
+    }
+   ],
+   "taxonomies": [
+    {
+     "code": "363L00000X",
+     "desc": "Nurse Practitioner",
+     "primary": true,
+     "state": "FL",
+     "license": "APRN1104376"
+    }
+   ]
+  },
+  {
+   "number": "1710629373",
+   "enumeration_type": "NPI-1",
+   "basic": {
+    "first_name": "TYWANNA",
+    "last_name": "ALBRO",
+    "middle_name": "A",
+    "credential": "FNP, PMHNP",
+    "sole_proprietor": "NO",
+    "status": "A"
+   },
+   "addresses": [
+    {
+     "address_purpose": "LOCATION",
+     "address_1": "4830 W KENNEDY BLVD STE 600",
+     "address_2": null,
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336092584",
+     "telephone_number": "813-708-8823"
+    },
+    {
+     "address_purpose": "MAILING",
+     "address_1": "PO BOX 89582",
+     "address_2": null,
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336890409",
+     "telephone_number": "813-708-8823"
+    }
+   ],
+   "taxonomies": [
+    {
+     "code": "363LP0808X",
+     "desc": "Nurse Practitioner, Psych/Mental Health",
+     "primary": true,
+     "state": "FL",
+     "license": "APRN11028503"
+    },
+    {
+     "code": "363L00000X",
+     "desc": "Nurse Practitioner",
+     "primary": false,
+     "state": "FL",
+     "license": "RN9512677"
+    }
+   ]
+  },
+  {
+   "number": "1881585743",
+   "enumeration_type": "NPI-1",
+   "basic": {
+    "first_name": "JOY",
+    "last_name": "ALEXANDER-SMITH",
+    "middle_name": "E",
+    "credential": "ARNP",
+    "sole_proprietor": "NO",
+    "status": "A"
+   },
+   "addresses": [
+    {
+     "address_purpose": "LOCATION",
+     "address_1": "2605 W SWANN AVE STE 600",
+     "address_2": null,
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336094044",
+     "telephone_number": "813-876-7073"
+    },
+    {
+     "address_purpose": "MAILING",
+     "address_1": "2605 W SWANN AVE STE 600",
+     "address_2": null,
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336094044",
+     "telephone_number": null
+    }
+   ],
+   "taxonomies": [
+    {
+     "code": "363L00000X",
+     "desc": "Nurse Practitioner",
+     "primary": true,
+     "state": "FL",
+     "license": "11039312"
+    }
+   ]
+  },
+  {
+   "number": "1407501752",
+   "enumeration_type": "NPI-1",
+   "basic": {
+    "first_name": "HADEEL",
+    "last_name": "ALI HAMDAN",
+    "middle_name": "E",
+    "credential": "APRN",
+    "sole_proprietor": "NO",
+    "status": "A"
+   },
+   "addresses": [
+    {
+     "address_purpose": "MAILING",
+     "address_1": "2605 W SWANN AVE STE 100",
+     "address_2": null,
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336094039",
+     "telephone_number": "813-874-5500"
+    },
+    {
+     "address_purpose": "LOCATION",
+     "address_1": "2605 W SWANN AVE STE 100",
+     "address_2": null,
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336094039",
+     "telephone_number": "813-874-5500"
+    }
+   ],
+   "taxonomies": [
+    {
+     "code": "363LF0000X",
+     "desc": "Nurse Practitioner, Family",
+     "primary": true,
+     "state": "FL",
+     "license": "11016804"
+    }
+   ]
+  },
+  {
+   "number": "1922302884",
+   "enumeration_type": "NPI-1",
+   "basic": {
+    "first_name": "LIZBETH",
+    "last_name": "ARROYO",
+    "middle_name": "MARIE",
+    "credential": "ARNP",
+    "sole_proprietor": "NO",
+    "status": "A",
+    "name_prefix": "--"
+   },
+   "addresses": [
+    {
+     "address_purpose": "MAILING",
+     "address_1": "508 S HABANA AVE",
+     "address_2": "SUITE 340",
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336094181",
+     "telephone_number": "813-875-3161"
+    },
+    {
+     "address_purpose": "LOCATION",
+     "address_1": "508 S HABANA AVE",
+     "address_2": "SUITE 340",
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336094181",
+     "telephone_number": "813-873-7367"
+    }
+   ],
+   "taxonomies": [
+    {
+     "code": "363LF0000X",
+     "desc": "Nurse Practitioner, Family",
+     "primary": true,
+     "state": "FL",
+     "license": "ARNP 9229674"
+    }
+   ]
+  },
+  {
+   "number": "1841735123",
+   "enumeration_type": "NPI-1",
+   "basic": {
+    "first_name": "SHELLY",
+    "last_name": "ATALIG",
+    "credential": "APRN",
+    "sole_proprietor": "YES",
+    "status": "A"
+   },
+   "addresses": [
+    {
+     "address_purpose": "LOCATION",
+     "address_1": "1 N DALE MABRY HWY STE 100",
+     "address_2": null,
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336092764",
+     "telephone_number": "813-289-2500"
+    },
+    {
+     "address_purpose": "MAILING",
+     "address_1": "1 N DALE MABRY HWY STE 100",
+     "address_2": null,
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336092764",
+     "telephone_number": "813-289-2500"
+    }
+   ],
+   "taxonomies": [
+    {
+     "code": "363LF0000X",
+     "desc": "Nurse Practitioner, Family",
+     "primary": true,
+     "state": "FL",
+     "license": "ARNP9294421"
+    }
+   ]
+  },
+  {
+   "number": "1497210314",
+   "enumeration_type": "NPI-1",
+   "basic": {
+    "first_name": "JAIME",
+    "last_name": "APPLEFIELD FRAIN",
+    "credential": "PA-C",
+    "sole_proprietor": "YES",
+    "status": "A"
+   },
+   "addresses": [
+    {
+     "address_purpose": "LOCATION",
+     "address_1": "WATT PLASTIC SURGERY & MEDSPA",
+     "address_2": "2615 WEST SWANN AVE",
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "33609",
+     "telephone_number": "813-859-5936"
+    },
+    {
+     "address_purpose": "MAILING",
+     "address_1": "WATT PLASTIC SURGERY",
+     "address_2": "2615 WEST SWANN AVENUE",
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "33609",
+     "telephone_number": null
+    }
+   ],
+   "taxonomies": [
+    {
+     "code": "363A00000X",
+     "desc": "Physician Assistant",
+     "primary": false,
+     "state": null,
+     "license": null
+    },
+    {
+     "code": "367H00000X",
+     "desc": "Anesthesiologist Assistant",
+     "primary": false,
+     "state": "FL",
+     "license": "9111713"
+    },
+    {
+     "code": "363A00000X",
+     "desc": "Physician Assistant",
+     "primary": true,
+     "state": "FL",
+     "license": "9111713"
+    }
+   ]
+  },
+  {
+   "number": "1235878273",
+   "enumeration_type": "NPI-1",
+   "basic": {
+    "first_name": "ETHAN",
+    "last_name": "CAREY",
+    "middle_name": "A",
+    "credential": "Physician Assistant",
+    "sole_proprietor": "YES",
+    "status": "A"
+   },
+   "addresses": [
+    {
+     "address_purpose": "LOCATION",
+     "address_1": "909 N DALE MABRY HWY",
+     "address_2": null,
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336091251",
+     "telephone_number": "813-978-9700"
+    },
+    {
+     "address_purpose": "MAILING",
+     "address_1": "13020 N TELECOM PKWY",
+     "address_2": null,
+     "city": "TEMPLE TERRACE",
+     "state": "FL",
+     "postal_code": "336370915",
+     "telephone_number": "813-978-9700"
+    }
+   ],
+   "taxonomies": [
+    {
+     "code": "363AS0400X",
+     "desc": "Physician Assistant, Surgical",
+     "primary": false,
+     "state": null,
+     "license": null
+    },
+    {
+     "code": "363A00000X",
+     "desc": "Physician Assistant",
+     "primary": true,
+     "state": null,
+     "license": null
+    }
+   ]
+  },
+  {
+   "number": "1275280117",
+   "enumeration_type": "NPI-1",
+   "basic": {
+    "first_name": "NICHOLAS",
+    "last_name": "CIESLAK",
+    "credential": "PA",
+    "sole_proprietor": "NO",
+    "status": "A"
+   },
+   "addresses": [
+    {
+     "address_purpose": "LOCATION",
+     "address_1": "909 N DALE MABRY HWY",
+     "address_2": null,
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336091251",
+     "telephone_number": "813-978-9700"
+    },
+    {
+     "address_purpose": "MAILING",
+     "address_1": "13020 N TELECOM PKWY",
+     "address_2": null,
+     "city": "TEMPLE TERRACE",
+     "state": "FL",
+     "postal_code": "336370915",
+     "telephone_number": null
+    }
+   ],
+   "taxonomies": [
+    {
+     "code": "390200000X",
+     "desc": "Student in an Organized Health Care Education/Training Program",
+     "primary": false,
+     "state": null,
+     "license": null
+    },
+    {
+     "code": "363A00000X",
+     "desc": "Physician Assistant",
+     "primary": true,
+     "state": "FL",
+     "license": "PA9116216"
+    }
+   ]
+  },
+  {
+   "number": "1407860166",
+   "enumeration_type": "NPI-1",
+   "basic": {
+    "first_name": "MELISSA",
+    "last_name": "CLARK",
+    "middle_name": "D.",
+    "credential": "PA C",
+    "sole_proprietor": "NO",
+    "status": "A",
+    "name_prefix": "--"
+   },
+   "addresses": [
+    {
+     "address_purpose": "MAILING",
+     "address_1": "13020 N TELECOM PKWY",
+     "address_2": null,
+     "city": "TEMPLE TERRACE",
+     "state": "FL",
+     "postal_code": "336370925",
+     "telephone_number": "813-978-9700"
+    },
+    {
+     "address_purpose": "LOCATION",
+     "address_1": "909 N DALE MABRY HWY",
+     "address_2": null,
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336091251",
+     "telephone_number": "813-978-9700"
+    }
+   ],
+   "taxonomies": [
+    {
+     "code": "363A00000X",
+     "desc": "Physician Assistant",
+     "primary": true,
+     "state": "FL",
+     "license": "PA9102703"
+    }
+   ]
+  },
+  {
+   "number": "1295352185",
+   "enumeration_type": "NPI-1",
+   "basic": {
+    "first_name": "ERICA",
+    "last_name": "CLIPPS",
+    "credential": "APRN",
+    "sole_proprietor": "NO",
+    "status": "A",
+    "name_prefix": "Mrs."
+   },
+   "addresses": [
+    {
+     "address_purpose": "LOCATION",
+     "address_1": "5401 W KENNEDY BLVD STE 100",
+     "address_2": null,
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336092457",
+     "telephone_number": "813-317-1787"
+    },
+    {
+     "address_purpose": "MAILING",
+     "address_1": "6484 LAUREL OAK DR",
+     "address_2": null,
+     "city": "SPRING HILL",
+     "state": "FL",
+     "postal_code": "346072321",
+     "telephone_number": "813-846-7582"
+    }
+   ],
+   "taxonomies": [
+    {
+     "code": "163WG0000X",
+     "desc": "Registered Nurse, General Practice",
+     "primary": false,
+     "state": "FL",
+     "license": "RN9453161"
+    },
+    {
+     "code": "363LF0000X",
+     "desc": "Nurse Practitioner, Family",
+     "primary": true,
+     "state": "FL",
+     "license": "APRN11004662"
+    }
+   ]
+  },
+  {
+   "number": "1275345407",
+   "enumeration_type": "NPI-1",
+   "basic": {
+    "first_name": "JESSICA",
+    "last_name": "FALIN",
+    "credential": "BSN, RN, CNOR, CRNFA",
+    "sole_proprietor": "NO",
+    "status": "A"
+   },
+   "addresses": [
+    {
+     "address_purpose": "MAILING",
+     "address_1": "4006 W WALLACE AVE",
+     "address_2": null,
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336113544",
+     "telephone_number": "419-618-9470"
+    },
+    {
+     "address_purpose": "LOCATION",
+     "address_1": "2901 W SWANN AVE",
+     "address_2": null,
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336094056",
+     "telephone_number": "419-618-9470"
+    }
+   ],
+   "taxonomies": [
+    {
+     "code": "163WR0006X",
+     "desc": "Registered Nurse, Registered Nurse First Assistant",
+     "primary": true,
+     "state": "FL",
+     "license": "9406461"
+    }
+   ]
+  },
+  {
+   "number": "1386249837",
+   "enumeration_type": "NPI-1",
+   "basic": {
+    "first_name": "JULIE",
+    "last_name": "VALDES",
+    "middle_name": "MARLY",
+    "credential": "APRN",
+    "sole_proprietor": "NO",
+    "status": "A"
+   },
+   "addresses": [
+    {
+     "address_purpose": "MAILING",
+     "address_1": "3105 W AZEELE ST",
+     "address_2": null,
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336093089",
+     "telephone_number": "813-327-5485"
+    },
+    {
+     "address_purpose": "LOCATION",
+     "address_1": "3105 W AZEELE ST",
+     "address_2": null,
+     "city": "TAMPA",
+     "state": "FL",
+     "postal_code": "336093089",
+     "telephone_number": "813-327-5485"
+    }
+   ],
+   "taxonomies": [
+    {
+     "code": "163WP0809X",
+     "desc": "Registered Nurse, Psych/Mental Health, Adult",
+     "primary": false,
+     "state": "FL",
+     "license": "2020089183"
+    },
+    {
+     "code": "363LP0808X",
+     "desc": "Nurse Practitioner, Psych/Mental Health",
+     "primary": true,
+     "state": "FL",
+     "license": "2020089183"
+    }
+   ]
+  }
+ ]
+}

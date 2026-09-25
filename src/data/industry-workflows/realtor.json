@@ -1,0 +1,56 @@
+{
+  "industry": "realtor",
+  "title": "Realtor: broker identity candidates held from contact delivery",
+  "hypothesis": "An active real-estate register can establish a broker or designated-broker identity candidate, but it cannot establish brokerage ownership, handset ownership, or a direct business contact. Candidates must be held until independently supported by a permitted public business-contact route and normal contact gates.",
+  "ownerSource": "Active broker-company and broker records: TX TREC designated-broker links; FL DBPR independent BK rows; and equivalent state register roles. These are identity candidates, not owner-confirmed people.",
+  "phoneSource": "No eligible contact source is implemented for this review. Catalogue register fields are identity-only or lack a phone; do not use licence or property addresses to obtain private contact data.",
+  "workflow": [
+    { "id": "legal", "label": "State legal gate", "detail": "Permit only an eligible public register route; SC and UT list sources are held as prohibited.", "kind": "decision" },
+    { "id": "holdlegal", "label": "Hold restricted state", "detail": "Do not ingest a prohibited commercial-list source or replace it with a private lookup.", "kind": "hold" },
+    { "id": "register", "label": "Active broker register", "detail": "Read an active broker company, independent broker, or explicitly eligible managing-broker record.", "kind": "source" },
+    { "id": "role", "label": "Role evidence assessment", "detail": "Preserve designated broker, independent broker, or managing broker; reject sales associates and unsupported entity-only rows.", "kind": "decision" },
+    { "id": "holdrole", "label": "Hold insufficient identity", "detail": "Inactive, employee, sales-associate, entity-only, and ambiguous rows are not owner candidates.", "kind": "hold" },
+    { "id": "match", "label": "Public business match", "detail": "Require exact business identity evidence where a permitted public business-contact source exists; city-only and name-only matches are held.", "kind": "filter" },
+    { "id": "holdmatch", "label": "Hold unmatched business", "detail": "Do not turn a licence or residential address into a personal-contact lookup.", "kind": "hold" },
+    { "id": "contact", "label": "Permitted business contact available?", "detail": "A public business contact requires independent owner evidence before it can be treated as direct to the candidate.", "kind": "decision" },
+    { "id": "holdcontact", "label": "Hold contact candidate", "detail": "No safe contact path is wired; do not parcel-match, trace, append, or deliver.", "kind": "hold" },
+    { "id": "verify", "label": "Future contact gates", "detail": "A separately authorized route would require contact type, live, DNC, suppression, dedupe, and owner-evidence gates.", "kind": "verify" },
+    { "id": "deliver", "label": "Deliver supported classification", "detail": "Only deliver after every permitted contact and ownership gate passes.", "kind": "deliver" }
+  ],
+  "edges": [
+    { "from": "legal", "to": "register", "label": "eligible state" },
+    { "from": "legal", "to": "holdlegal", "label": "restricted or prohibited" },
+    { "from": "register", "to": "role", "label": "active scoped row" },
+    { "from": "register", "to": "holdrole", "label": "inactive or out of scope" },
+    { "from": "role", "to": "match", "label": "identity candidate retained" },
+    { "from": "role", "to": "holdrole", "label": "employee, sales associate, or entity-only" },
+    { "from": "match", "to": "contact", "label": "exact public business match" },
+    { "from": "match", "to": "holdmatch", "label": "ambiguous or absent match" },
+    { "from": "contact", "to": "verify", "label": "future permitted route" },
+    { "from": "contact", "to": "holdcontact", "label": "no permitted contact" },
+    { "from": "verify", "to": "deliver", "label": "all gates pass" },
+    { "from": "verify", "to": "holdcontact", "label": "contact or owner evidence fails" }
+  ],
+  "failures": [
+    { "risk": "A designated broker is treated as the brokerage owner.", "mitigation": "Retain the exact licence role and require independent ownership evidence.", "status": "proposed" },
+    { "risk": "Sales associates, managing brokers, and independent brokers are treated as equivalent.", "mitigation": "Scope active licence types and preserve source role codes before candidate classification.", "status": "partial" },
+    { "risk": "A licence address, especially FL BK address, proceeds to residential parcel lookup or skip tracing.", "mitigation": "Hold Realtor recipe-B rows before parcel and trace stages until a permitted public business-contact route exists.", "status": "blocked" },
+    { "risk": "A public listing phone is labelled a direct broker mobile.", "mitigation": "Treat it only as a business-contact candidate pending independent owner and contact evidence.", "status": "proposed" },
+    { "risk": "SC or UT restricted licence lists enter a generic Realtor path.", "mitigation": "Apply the state legal gate and retain prohibited-state rows in hold.", "status": "implemented" }
+  ],
+  "sources": [
+    { "label": "TX TREC licence data", "scope": "Texas active Broker Company and Broker Individual identity fields, including designated-broker relation on company rows.", "evidence": "VERIFIED", "reference": "handoff/04_SOURCE_CATALOG.md Group F TX TREC row; handoff/07_RESEARCH_BUILD_SPEC.md §5.6; src/lib/lead-engine-registers.ts txTrec", "status": "implemented" },
+    { "label": "FL DBPR regional real-estate CSVs", "scope": "Florida active BK broker identity; empty employer is an independent-broker signal; address may be residential.", "evidence": "VERIFIED", "reference": "handoff/04_SOURCE_CATALOG.md Group F FL DBPR real estate row; src/lib/lead-engine-registers.ts flRe", "status": "implemented" },
+    { "label": "AZ ADRE and IL IDFPR real-estate adapters", "scope": "Broker and managing-broker identity candidates; AZ grouped-source evidence is UNKNOWN, IL identity evidence is VERIFIED.", "evidence": "UNKNOWN", "reference": "handoff/04_SOURCE_CATALOG.md Group F AZ/IL rows; src/lib/lead-engine-registers.ts azAdre and ilIdfpr", "status": "implemented" },
+    { "label": "PA PALS realtor mapping", "scope": "Live brain mapping has no observed matching adapter in the register adapter list.", "evidence": "UNKNOWN", "reference": "src/data/lead-engine-brain.json industries.realtor; src/lib/lead-engine-registers.ts REGISTER_ADAPTERS", "status": "blocked" },
+    { "label": "NY DOS, CA DRE, and CO DORA real-estate registers", "scope": "Free identity sources described in the catalogue; no live Realtor route or permitted public-business-contact workflow was found.", "evidence": "VERIFIED", "reference": "handoff/04_SOURCE_CATALOG.md Group F real-estate rows; handoff/07_RESEARCH_BUILD_SPEC.md §5.6", "status": "proposed" },
+    { "label": "SC LLR and UT DOPL restrictions", "scope": "Restricted commercial-list sources; no list ingestion for Realtor work.", "evidence": "VERIFIED", "reference": "handoff/04_SOURCE_CATALOG.md Group A SC LLR and UT DOPL rows; src/lib/lead-engine-brain.ts route", "status": "implemented" }
+  ],
+  "iterations": [
+    { "hypothesis": "A Realtor register route can produce owner-contact candidates from broker records.", "test": "Free aggregate-only query of five active TX TREC Broker Company records on 2026-09-24, requesting licence type, status, company name, designated-broker field, and original licence date.", "observed": "5/5 selected rows had all requested identity/linkage fields. The source observation contained no phone measurement and did not establish ownership or contact truth.", "change": "Use broker-company linkage only as identity-candidate evidence; hold Realtor jobs before any residential parcel or trace step." }
+  ],
+  "measurement": { "kind": "free_source_sample", "sampleSize": 5, "observedAt": "2026-09-24", "result": "TX TREC s7ft-44qi: five active Broker Company records had licence type, status, company-name, designated-broker, and original-licence-date fields present. Aggregate-only field-coverage observation; no values retained. It does not measure ownership, phone, mobile status, reachability, DNC, or delivery.", "verifiedPhones": 0 },
+  "cost": { "basis": "Free public identity-source field-coverage observation", "perInputUsd": 0, "perCleanUsd": null, "note": "No clean owner contact was observed. The live brain's historical rate is a different paid-step denominator and is not a per-clean cost for this review." },
+  "implementation": { "status": "partial", "summary": "Realtor register adapters and recipe-B mappings are wired, but recipe B proceeds through residential parcel lookup and paid skip tracing. No safe public-business-contact path, ownership classifier, or Realtor-specific hold exists.", "runtimeFiles": ["src/data/lead-engine-brain.json", "src/lib/lead-engine-brain.ts", "src/lib/lead-engine-registers.ts", "src/lib/lead-engine-parcel.ts", "src/services/lead-engine-jobs.service.ts"] },
+  "nextMeasurement": "Run five synthetic Realtor cases—active TX broker company, inactive company, sales associate, FL independent BK with a street, and SC/UT restricted state—and assert every retained candidate holds before parcel or trace. A separately authorized public business-contact test must measure business-match, candidate-contact, and gate outcomes with separate denominators."
+}

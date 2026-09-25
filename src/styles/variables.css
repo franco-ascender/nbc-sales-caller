@@ -1,0 +1,19 @@
+:root {
+  --brand-navy: #0a183b;
+  --brand-blue: #234f9e;
+  --brand-gold: #ffbb24;
+  --brand-on-gold: #172448;
+  --canvas: #f5f7fb;
+  --surface: #ffffff;
+  --ink: #162341;
+  --muted: #61708a;
+  --line: #e4e9f2;
+  --accent: var(--brand-blue);
+  --accent-dark: var(--brand-navy);
+  --sage: #eaf0fb;
+  --lime: #fff0c4;
+  --soft: #f0f3f9;
+  --amber: #8a5d21;
+  --radius: 14px;
+  --shadow: 0 3px 16px #0a183b06;
+}

@@ -1,0 +1,91 @@
+{
+  "version": "nbc-analysis-v1",
+  "analysis_llm": "gemini-2.5-flash",
+  "data_collection": {
+    "call_intent": {
+      "type": "string",
+      "name": "Call intent",
+      "enum": ["new_business_sales", "follow_up", "customer_care", "appointment_change", "other", "unknown"],
+      "description": "Classify the prospect's primary reason for this conversation. Use unknown when the transcript is too incomplete to decide. Return exactly one allowed value."
+    },
+    "primary_objection": {
+      "type": "string",
+      "name": "Primary objection",
+      "enum": ["none", "budget_or_price", "timing_or_priority", "authority_or_decision_process", "trust_or_past_bad_experience", "value_or_roi", "fit_or_need", "internal_capacity", "competition_or_existing_solution", "risk_or_compliance", "other", "unknown"],
+      "description": "Classify the prospect's main expressed objection. A question about price alone is not a price objection. Use none when no objection was expressed and unknown when the transcript is too incomplete. Return exactly one allowed value."
+    },
+    "objection_detail": {
+      "type": "string",
+      "name": "Objection detail",
+      "description": "If the prospect expressed an objection, state the specific concern in one short sentence using only facts from the prospect's words. Return an empty string when there was no objection or the transcript is unclear."
+    },
+    "buyer_stage": {
+      "type": "string",
+      "name": "Buyer stage",
+      "enum": ["unaware", "problem_aware", "solution_exploring", "evaluating", "ready_next_step", "not_a_fit", "unknown"],
+      "description": "Classify the most advanced buyer stage supported by what the prospect actually said. Do not infer readiness merely because the agent proposed a meeting. Return exactly one allowed value."
+    },
+    "next_step": {
+      "type": "string",
+      "name": "Next step",
+      "enum": ["booked_or_agreed", "follow_up_requested", "information_requested", "no_next_step", "do_not_contact", "unknown"],
+      "description": "Classify the next step the prospect explicitly agreed to or requested. Agent proposals without prospect agreement are no_next_step. Return exactly one allowed value."
+    },
+    "human_follow_up_needed": {
+      "type": "boolean",
+      "name": "Human follow-up needed",
+      "description": "True only when the prospect requested human contact, an unresolved issue requires a person, or an agreed next step requires manual action. False otherwise."
+    },
+    "customer_issue_category": {
+      "type": "string",
+      "name": "Customer care issue",
+      "enum": ["none", "billing", "access_or_account", "product_or_service", "complaint", "appointment_change", "other", "unknown"],
+      "description": "Classify the primary customer-care issue, if any. Sales objections are not customer-care issues. Use none when there is no care request and unknown when unclear. Return exactly one allowed value."
+    }
+  },
+  "evaluation": {
+    "criteria": [
+      {
+        "id": "discovery_quality",
+        "name": "Discovery quality",
+        "type": "prompt",
+        "conversation_goal_prompt": "Evaluate whether the agent learned the prospect's current situation, underlying problem, business impact, desired outcome, and relevant decision context without interrogating or repeating answered questions. Judge only dimensions relevant to this conversation.",
+        "use_knowledge_base": false,
+        "scope": "conversation",
+        "scoring_mode": "numeric_uniform",
+        "max_score": 100,
+        "score_instructions": "0: no useful discovery. 25: superficial facts only. 50: problem understood but impact or outcome missing. 75: clear problem, impact, and desired outcome with a natural conversation. 100: all relevant context understood, reflected accurately, and no unnecessary questioning."
+      },
+      {
+        "id": "objection_handling",
+        "name": "Objection handling",
+        "type": "prompt",
+        "conversation_goal_prompt": "If the prospect expressed an objection, success means the agent acknowledged it, clarified the real concern before answering, used only supported information, and asked one relevant follow-up without pressure. Failure means it argued, ignored, assumed, fabricated, or pushed past the objection. Return unknown when no objection was expressed.",
+        "use_knowledge_base": false,
+        "scope": "conversation",
+        "scoring_mode": "binary",
+        "max_score": 100
+      },
+      {
+        "id": "next_step_quality",
+        "name": "Next-step quality",
+        "type": "prompt",
+        "conversation_goal_prompt": "Success means the conversation ended with a clear and truthful next step that the prospect agreed to, or a respectful close when there was no fit or the prospect declined. Failure means the agent claimed an unperformed action, forced a next step, or ended an otherwise complete sales conversation ambiguously. Return unknown for incomplete or abruptly disconnected conversations.",
+        "use_knowledge_base": false,
+        "scope": "conversation",
+        "scoring_mode": "binary",
+        "max_score": 100
+      },
+      {
+        "id": "trust_and_customer_care",
+        "name": "Trust and customer care",
+        "type": "prompt",
+        "conversation_goal_prompt": "Success means the agent was concise, accurately reflected the user's concern, did not invent facts or completed actions, and respected requests to stop, escalate, cancel, or speak with a person. Failure means it dismissed frustration, falsely promised resolution, repeated questions unnecessarily, fabricated information, or continued selling after a stop request.",
+        "use_knowledge_base": false,
+        "scope": "conversation",
+        "scoring_mode": "binary",
+        "max_score": 100
+      }
+    ]
+  }
+}

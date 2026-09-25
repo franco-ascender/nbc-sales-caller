@@ -1,0 +1,72 @@
+{
+  "industry": "real_estate_investor",
+  "title": "Real-estate investor: business-public contact route and private-owner hold",
+  "hypothesis": "The live NC 3–8 parcel investor route cannot currently start because it lacks a register-source mapping. Even if it could, grouping private parcel owners is not a permitted basis for uncovering or appending personal contacts. A permitted future route must begin with an explicitly business-public investor/operator contact and keep owner and handset confirmation separate.",
+  "ownerSource": "No implemented owner-confirming source is available for this industry. The live brain describes NC parcel-owner grouping as an investor candidate signal only; it does not establish a current business owner, a business purpose for a private contact, or ownership of a handset.",
+  "phoneSource": "No implemented phone source. A business-public alternative may use an explicitly published business contact from an authorized commercial STR/operator or business-license endpoint, but never a residential parcel record, owner mailing address, or private append.",
+  "workflow": [
+    { "id": "start", "label": "Start with a business-public endpoint", "detail": "Use only an authorized public endpoint that explicitly publishes an operator or business contact for business use. The current parcel-owner grouping is held out of contact discovery.", "kind": "source" },
+    { "id": "scope", "label": "Business-purpose and role filter", "detail": "Require an active commercial/operator or clearly business-facing role, plus a documented permitted-use basis. A parcel owner, landlord, resident, owner mailing address, or title alone fails this filter.", "kind": "filter" },
+    { "id": "holdscope", "label": "Hold private or ambiguous identity", "detail": "Do not create a contact candidate from residential/property data or use it to find a private cell number.", "kind": "hold" },
+    { "id": "phone", "label": "Published business contact present?", "detail": "Retain only a contact explicitly published by the business-public source. A named role does not supply a telephone number.", "kind": "decision" },
+    { "id": "holdphone", "label": "Hold without business-public contact", "detail": "Keep no phone candidate and do not append, trace, or reverse-lookup a person from parcel or owner data.", "kind": "hold" },
+    { "id": "verify", "label": "Contact and compliance gates", "detail": "Require existing mobile classification, reachability, DNC/TCPA clearance, suppression, duplicate, and freshness gates. Passing these gates does not prove the business owner or handset owner.", "kind": "verify" },
+    { "id": "holdverify", "label": "Hold failed contact gate", "detail": "Hold non-mobile, unreachable, DNC/TCPA, suppressed, duplicate, stale, or otherwise unverified contacts.", "kind": "hold" },
+    { "id": "owner", "label": "Independent ownership and handset evidence?", "detail": "A commercial license holder, property-owner name, entity member, published business line, or mobile result alone is candidate evidence only.", "kind": "decision" },
+    { "id": "holdowner", "label": "Hold as business contact candidate", "detail": "Do not label or deliver an owner-confirmed mobile when current ownership and handset evidence are not independently recorded.", "kind": "hold" },
+    { "id": "deliver", "label": "Deliver approved owner-confirmed contact", "detail": "Only deliver after separately recorded business-public provenance, current owner evidence, handset evidence, and every contact/compliance gate pass.", "kind": "deliver" }
+  ],
+  "edges": [
+    { "from": "start", "to": "scope", "label": "endpoint row" },
+    { "from": "scope", "to": "phone", "label": "business-public operator/contact and permitted use" },
+    { "from": "scope", "to": "holdscope", "label": "parcel/private, residential, owner-only, or ambiguous" },
+    { "from": "phone", "to": "verify", "label": "explicitly published business contact" },
+    { "from": "phone", "to": "holdphone", "label": "no business-public contact" },
+    { "from": "verify", "to": "owner", "label": "all contact gates pass" },
+    { "from": "verify", "to": "holdverify", "label": "a contact gate fails" },
+    { "from": "owner", "to": "deliver", "label": "independent owner and handset evidence" },
+    { "from": "owner", "to": "holdowner", "label": "candidate-only evidence" }
+  ],
+  "failures": [
+    { "risk": "The NC investor brain route advertises `investors --min 3 --max 8`, but pullNames resolves only `register_source`; the mapping is absent and the job freezes before any name row is read.", "mitigation": "Add a validated, permitted source adapter and matching `register_source` only if it produces business-public, legally usable records. Otherwise route this industry to a blocked/no-contact state rather than exposing an unusable recipe-B route.", "status": "proposed" },
+    { "risk": "A 3–8 parcel grouping, owner name, owner mailing address, or county file is treated as proof of a commercial investor or as a basis for private-phone discovery.", "mitigation": "Treat parcel-derived people as out of scope for contact discovery. Require a business-public source and explicit business/operator role before any published-business contact can enter verification.", "status": "implemented" },
+    { "risk": "A published STR/operator or business contact is presented as a current owner-confirmed mobile.", "mitigation": "Keep published contact, owner role, and handset ownership as independent facts; hold candidate-only records after the contact/compliance gates.", "status": "implemented" },
+    { "risk": "A future source is assumed usable because it is public, despite unclear commercial-use terms or fields.", "mitigation": "Keep unverified endpoint, field, and permitted-use claims blocked until an authorized free aggregate observation verifies them.", "status": "blocked" }
+  ],
+  "sources": [
+    { "label": "Live real_estate_investor brain entry", "scope": "NC recipe-B candidate route with 3–8 parcel grouping; other states described as county-owner grouping", "evidence": "VERIFIED", "reference": "src/data/lead-engine-brain.json industries.real_estate_investor; src/lib/lead-engine-brain.ts route and registerSourceFor", "status": "implemented" },
+    { "label": "Recipe-B names runner", "scope": "Requires an ingested register-source id before it can read names", "evidence": "VERIFIED", "reference": "src/services/lead-engine-jobs.service.ts pullNames; src/lib/lead-engine-brain.ts registerSourceFor", "status": "implemented" },
+    { "label": "NC and other public parcel layers", "scope": "Parcel lookup is coded as a person-to-home-address step, not a business-public investor contact source", "evidence": "VERIFIED", "reference": "src/lib/lead-engine-parcel.ts PARCEL_SOURCES and resolveHome; src/services/lead-engine-jobs.service.ts parcelStep", "status": "blocked" },
+    { "label": "Commercial STR/operator records as a business-public alternative", "scope": "Only a source whose active commercial/operator records explicitly publish a business contact and whose terms permit the intended use; not a private-owner route", "evidence": "REPORTED", "reference": "handoff/04_SOURCE_CATALOG.md Group I: New Orleans and Orlando STR rows; handoff/07_RESEARCH_BUILD_SPEC.md §5.9 and §STR coverage", "status": "proposed" },
+    { "label": "Delivery contact gates", "scope": "Mobile, reachable, DNC/TCPA-clear, suppression, duplicate, and freshness checks", "evidence": "VERIFIED", "reference": "src/lib/lead-engine-quality.ts evaluateVerifiedBusiness; src/lib/lead-engine-gates.ts evaluateJobGates", "status": "implemented" }
+  ],
+  "iterations": [
+    { "hypothesis": "The configured NC investor route can hand its advertised grouping source to the recipe-B names runner, while other states cleanly fall back when no source is configured.", "test": "Five-case code audit on 2026-09-24 using route('real estate investor', state) and registerSourceFor for NC, TX, FL, WA, and PA; no network, source rows, contact fields, or paid calls.", "observed": "NC returned recipe B, source `investors --min 3 --max 8`, no fallback, and null registerSource. TX, FL, WA, and PA returned recipe B with fallback A, an empty source list, and null registerSource. Because pullNames freezes when registerSourceFor is null, all five audited cases lack a runnable names-source mapping. This measures routing configuration only, not investor identity, ownership, contact coverage, line type, DNC, or delivery.", "change": "Reject the claim that the configured investor grouping is operational. Keep the present route partial and require a source adapter plus a business-public eligibility review before enabling any replacement." }
+  ],
+  "measurement": {
+    "kind": "code_audit",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Five state-route fixture cases: NC had recipe B with advertised name source but null registerSource; TX, FL, WA, and PA had recipe B, fallback A, empty sources, and null registerSource. pullNames requires a non-null register source, so this is a configuration/runtime audit only. No live endpoint, person, property, address, phone, or delivery data was collected.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Code audit only; no provider, append, trace, or contact verification was invoked.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean delivered owner contact was measured. The live brain's historical Anas rate has a different denominator and is not a per-clean cost for this review."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "The brain contains a recipe-B investor entry and parcel code, but no register-source mapping or documented investor adapter feeds the names runner. The coded parcel step resolves a person to a home address for a paid trace, which is unsuitable for this review's business-public contact constraint. No permitted business-public investor source is implemented.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/services/lead-engine-jobs.service.ts",
+      "src/lib/lead-engine-parcel.ts",
+      "src/lib/lead-engine-quality.ts",
+      "src/lib/lead-engine-gates.ts"
+    ]
+  },
+  "nextMeasurement": "Before implementation, identify one authorized, free business-public endpoint for active commercial investor/operator records and verify its terms, fields, role semantics, and contact provenance with a 5–20-row aggregate-only sample. Measure business-contact coverage separately from current ownership, handset ownership, mobile line type, DNC/TCPA, reachability, and delivery. Do not use residential parcel or owner data for private-phone discovery."
+}

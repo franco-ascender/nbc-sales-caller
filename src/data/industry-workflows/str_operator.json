@@ -1,0 +1,78 @@
+{
+  "industry": "str_operator",
+  "title": "Short-term-rental operator role and contact review",
+  "hypothesis": "An official STR permit establishes only a permit/license-holder or published permit-contact candidate. An owner-deliverable workflow requires separate current-owner evidence and an explicitly published business-contact fact; host, contact, manager, property owner, and license holder roles are not interchangeable.",
+  "ownerSource": "NOLA and Orlando STR registers publish permit/license-holder and contact-related fields, but neither implemented parser records independent evidence that a named person currently owns the operating STR business.",
+  "phoneSource": "The NOLA contact_phone and Orlando license_holder_phone fields are publicly published permit fields. The reviewed catalog/schema does not establish that every such field is an explicitly published business contact or that it belongs to the business owner; property-owner addresses and private-contact enrichment are excluded.",
+  "workflow": [
+    { "id": "permit", "label": "Official STR permit row", "detail": "Read only the public NOLA or Orlando permit/license row and its published fields. Do not use a property-owner address, parcel, residence, or private-phone lookup.", "kind": "source" },
+    { "id": "current", "label": "Current issued/active status?", "detail": "NOLA must be Issued and Orlando Active. A pending, closed, inactive, or other status is not a deliverable operating record.", "kind": "decision" },
+    { "id": "holdstatus", "label": "Hold noncurrent permit", "detail": "Keep pending or non-active rows as non-deliverable source evidence.", "kind": "hold" },
+    { "id": "roles", "label": "Holder and contact roles align?", "detail": "Retain permit contact, license holder, and property-owner roles separately. A differing contact may be a manager or co-host and cannot replace the holder as owner identity.", "kind": "decision" },
+    { "id": "holdrole", "label": "Hold manager/contact-only role", "detail": "Do not call a contact, host, manager, property owner, or entity representative the operating business owner from role text alone.", "kind": "hold" },
+    { "id": "candidate", "label": "Permit-holder candidate", "detail": "An issued/active person holder or aligned permit contact is an identity candidate only; it does not prove business ownership or handset relationship.", "kind": "filter" },
+    { "id": "businesscontact", "label": "Explicit published business contact?", "detail": "Require affirmative source evidence that the phone is published for business contact. A public permit phone or a mobile classification alone is insufficient.", "kind": "decision" },
+    { "id": "holdcontact", "label": "Hold nonbusiness or unknown contact", "detail": "Do not use a personal/residential contact, property address, skip trace, append, or phone lookup to create business-contact evidence.", "kind": "hold" },
+    { "id": "ownerproof", "label": "Current owner relationship supported?", "detail": "Require independent, current evidence that the candidate owns the operating STR business; a license/permit-holder field alone does not satisfy this gate.", "kind": "decision" },
+    { "id": "holdowner", "label": "Hold owner-unconfirmed candidate", "detail": "Keep candidate-only, host, manager, and unresolved license-holder rows out of owner delivery.", "kind": "hold" },
+    { "id": "verify", "label": "Verify contact and compliance", "detail": "After both role gates pass, record line type, reachability, DNC/TCPA, suppression, freshness, and handset relationship independently.", "kind": "verify" },
+    { "id": "holdverify", "label": "Hold failed verification", "detail": "Hold non-mobile, unreachable, suppressed, stale, or otherwise unsupported records.", "kind": "hold" },
+    { "id": "deliver", "label": "Deliver supported owner classification", "detail": "Only current ownership, explicit business-contact publication, and all verification/compliance gates support owner delivery.", "kind": "deliver" }
+  ],
+  "edges": [
+    { "from": "permit", "to": "current", "label": "public permit row" },
+    { "from": "current", "to": "roles", "label": "issued or active" },
+    { "from": "current", "to": "holdstatus", "label": "pending or noncurrent" },
+    { "from": "roles", "to": "candidate", "label": "holder/contact identity retained" },
+    { "from": "roles", "to": "holdrole", "label": "manager/contact-only or unresolved role" },
+    { "from": "candidate", "to": "businesscontact", "label": "candidate reviewed" },
+    { "from": "businesscontact", "to": "ownerproof", "label": "explicit business contact" },
+    { "from": "businesscontact", "to": "holdcontact", "label": "personal, residential, or unknown publication role" },
+    { "from": "ownerproof", "to": "verify", "label": "current owner evidence" },
+    { "from": "ownerproof", "to": "holdowner", "label": "owner unconfirmed" },
+    { "from": "verify", "to": "deliver", "label": "all contact and compliance gates pass" },
+    { "from": "verify", "to": "holdverify", "label": "verification/compliance gate fails" }
+  ],
+  "failures": [
+    { "risk": "The NOLA parser accepts Pending applications as well as Issued permits.", "mitigation": "Restrict nolaStrRow to Issued and retain Pending as non-deliverable source evidence.", "status": "proposed" },
+    { "risk": "A NOLA permit contact who differs from the license holder can become the lead identity, despite possibly being a manager or co-host.", "mitigation": "Persist contact and holder roles, do not substitute a differing contact for the holder, and hold unresolved roles from owner delivery.", "status": "proposed" },
+    { "risk": "A permit/license holder is treated as proof of current ownership of the operating STR business.", "mitigation": "Require independently recorded, current owner evidence before owner delivery; retain permit evidence as candidate-only otherwise.", "status": "proposed" },
+    { "risk": "A publicly listed permit phone is treated as an explicitly published business contact without a source role fact.", "mitigation": "Require affirmative business-contact publication evidence and keep unknown/personal contact roles held; mobile verification does not repair source-role evidence.", "status": "proposed" },
+    { "risk": "Property-owner names or addresses become a route to residential lookup, parcel work, skip trace, or private-phone append.", "mitigation": "Do not use those fields for contact discovery or matching. The workflow is restricted to explicit published business-contact evidence.", "status": "implemented" }
+  ],
+  "sources": [
+    { "label": "New Orleans STR permit applications", "scope": "Official permit fields include status, contact name/phone/email, license-holder name, address, and permit dates; catalog notes personal email/address exposure.", "evidence": "VERIFIED", "reference": "handoff/04_SOURCE_CATALOG.md New Orleans STR permit applications; handoff/07_RESEARCH_BUILD_SPEC.md §5.9; src/lib/lead-engine-registers.ts nolaStrRow", "status": "implemented" },
+    { "label": "Orlando STR licenses", "scope": "Official active-license rows include license-holder phone/email and property-owner names/addresses; schema does not prove operating-business ownership or business-contact publication for every holder phone.", "evidence": "VERIFIED", "reference": "handoff/04_SOURCE_CATALOG.md Orlando STR licenses; handoff/07_RESEARCH_BUILD_SPEC.md §5.9; src/lib/lead-engine-registers.ts orlandoStrRow", "status": "implemented" },
+    { "label": "Recipe-C register selection and generic verification", "scope": "Mapped register phones with acceptable reuse counts enter generic phone verification and delivery gates.", "evidence": "VERIFIED", "reference": "src/data/lead-engine-brain.json industries.str_operator; src/lib/lead-engine-brain.ts registerSourceFor; src/services/lead-engine-jobs.service.ts pullNames and settleVerified", "status": "implemented" },
+    { "label": "Current owner plus explicit published-business-contact evidence", "scope": "Row-level facts needed for owner delivery without residential/private-contact enrichment.", "evidence": "UNKNOWN", "reference": "No STR adapter or delivery gate currently records both facts.", "status": "blocked" },
+    { "label": "Property-owner/residential enrichment", "scope": "Property-owner names and addresses from STR records.", "evidence": "VERIFIED", "reference": "src/lib/lead-engine-registers.ts orlandoStrRow; catalog source-field descriptions", "status": "blocked" }
+  ],
+  "iterations": [
+    { "hypothesis": "The live STR recipe C distinguishes current operators/owners from permit contacts and excludes noncurrent applications before delivery.", "test": "Offline five-case parser audit on 2026-09-24 using nolaStrRow and orlandoStrRow only: issued same contact/holder; issued differing contact/holder; pending same contact/holder; issued entity holder with person contact; active Orlando person holder with entity property owner. Placeholder values only; no network, paid call, secret, real contact, or property lookup.", "observed": "All five synthetic rows were accepted. NOLA accepted Pending and selected a person-shaped contact even when it differed from a person holder or when the holder was an entity; Orlando accepted the person holder while a distinct entity property owner was present. The generic recipe-C path selects non-null phones for verification and has no STR owner/business-contact role gate. This measures code behavior only, not source coverage, ownership, line type, reachability, DNC/TCPA, or delivery.", "change": "Mark the workflow partial and propose an issued-only NOLA gate, role retention without contact substitution, and a delivery hold pending independently supported current ownership plus explicit published-business-contact evidence. Keep property/residential and private-phone enrichment outside scope." }
+  ],
+  "measurement": {
+    "kind": "fixture",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Five synthetic parser cases were all accepted: NOLA issued same-holder/contact, NOLA issued differing contact/holder, NOLA Pending, NOLA issued entity-holder/person-contact, and Orlando Active person-holder/entity-property-owner. Fixture/code audit only; no live rows, personal contacts, phone values, ownership checks, reachability, DNC/TCPA, or delivery measurements.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Offline fixture/code audit only; no provider request, paid verification, append, property lookup, or private-contact enrichment was invoked.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean delivered owner contact was measured. The brain's STR research estimate and historical economics use another denominator and do not establish owner-delivery cost."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "NOLA and Orlando adapters are implemented and mapped to recipe C. NOLA accepts Pending and substitutes a person-shaped permit contact for the holder; generic register-phone verification/delivery has no STR-specific current-owner or explicit-business-contact gate. Property-owner/residential data remains outside the permitted workflow.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-registers.ts",
+      "src/lib/lead-engine-jobs.ts",
+      "src/services/lead-engine-jobs.service.ts"
+    ]
+  },
+  "nextMeasurement": "After the shared correction, rerun the five synthetic cases: only an Issued/Active row with separate role facts can enter candidate review; Pending, entity-contact-only, and differing contact/holder cases must hold. Before any live contact study, obtain explicit approval for a lawful source with documented business-contact publication and current-owner facts, then measure business fit, role/ownership, line type, DNC/TCPA, reachability, suppression, and delivery under separate denominators without residential/private-phone enrichment."
+}

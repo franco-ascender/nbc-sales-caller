@@ -1,0 +1,1124 @@
+{
+  "_about": "Routing brain for the Owner Cell app. The app loads this and follows it; engine.py executes the steps. Edit numbers here as new runs measure them. Yields are per record entering the paid step. clean = mobile AND not DNC AND not litigator. Measured Sept 2026. v2 (2026-09-21): merged with the Nalify research program. Entries carrying \"measured_by\": \"anas\" are Anas's live measurements and must not be edited without a new run. Entries carrying \"measured_by\": \"research_estimate\" have n = 0 and expected values from the research modules; the first sample run replaces them. New recipe D adds the register-phone-vs-Maps contrast and the four buckets.",
+  "version": "2026-09-21",
+  "unit_costs_usd": {
+    "scrape_per_business": 0.0037,
+    "verify_per_number": 0.007,
+    "trace_per_person": 0.07,
+    "line_type_per_number_telnyx": 0.0025,
+    "cell_append_per_match_datazapp": 0.025,
+    "litigator_scrub_per_number": 0.005,
+    "reviews_per_1000": 0.3,
+    "_note": "telnyx and datazapp are EXPERIMENTAL pre-gates and fallbacks (see 01_MERGED_ARCHITECTURE section 4). They are not in any recipe until the bake-off in Phase 2 measures them against BatchData. Anas rejected DataZapp on cost, coverage or terms in his run; the research found a lower list price, so the disagreement is resolved by measurement, not by document."
+  },
+  "credit_value_usd": 0.1,
+  "spend_cap_ratio": 0.6,
+  "rescrub_days": 31,
+  "sample": {
+    "target_cells": 20,
+    "abort_if_clean_rate_below_fraction_of_expected": 0.5,
+    "default_cities": [
+      "Tampa, FL",
+      "Dallas, TX",
+      "Phoenix, AZ",
+      "Charlotte, NC",
+      "Columbus, OH"
+    ]
+  },
+  "recipes": {
+    "A": {
+      "name": "Scrape",
+      "when": "The owner answers the business phone. Works in every US city.",
+      "steps": [
+        {
+          "step": "scrape",
+          "engine": "scrape",
+          "paid": true,
+          "cost": "scrape_per_business",
+          "input": "keyword + cities",
+          "output": "businesses with phone, maps link, rating, reviews"
+        },
+        {
+          "step": "filter",
+          "engine": "scrape",
+          "paid": false,
+          "rules": [
+            "drop no phone",
+            "drop toll-free",
+            "drop duplicates",
+            "drop business_status != OPERATIONAL",
+            "drop chains",
+            "keep only rows matching allowlist on category/subtypes/name"
+          ]
+        },
+        {
+          "step": "verify",
+          "engine": "verify",
+          "paid": true,
+          "cost": "verify_per_number",
+          "keep": "type == Mobile AND dnc == false AND tcpa == false (flag mode: keep dnc rows marked)"
+        },
+        {
+          "step": "deliver",
+          "engine": "deliver",
+          "paid": false
+        }
+      ],
+      "scale_rule": "More cells = more cities. Never trace a Lane A record.",
+      "credits_per_clean_cell": 2
+    },
+    "B": {
+      "name": "Name → home → trace",
+      "when": "A receptionist answers, or there is no storefront. Needs a state with a name source AND an address source (see states).",
+      "steps": [
+        {
+          "step": "names",
+          "engine": "names",
+          "paid": false,
+          "input": "name_source for the industry + state/county",
+          "output": "owner first/last (+ street if the licence file has it)"
+        },
+        {
+          "step": "parcel",
+          "engine": "parcel",
+          "paid": false,
+          "skip_if": "names already carry a home street (fl_re, fl_cpa)",
+          "rules": [
+            "match owner string LAST FIRST% or FIRST LAST",
+            "exactly one owner → keep; two different owners → skip",
+            "prefer owner-occupied / single-family",
+            "street must have number + name + suffix; no suite/PO box"
+          ]
+        },
+        {
+          "step": "trace",
+          "engine": "trace",
+          "paid": true,
+          "cost": "trace_per_person",
+          "keep": "highest-score Mobile with dnc == false AND tcpa == false; keep email"
+        },
+        {
+          "step": "deliver",
+          "engine": "deliver",
+          "paid": false
+        }
+      ],
+      "scale_rule": "More cells = more names. ~25% of names resolve to a home; ~45% of traces come back clean. 1,000 clean ≈ 2,200 traces ≈ 9,000 names.",
+      "credits_per_clean_cell": 5
+    },
+    "C": {
+      "name": "Registry (phone already on file)",
+      "when": "The state prints the licensee's own phone. Always check for this first — 10x cheaper.",
+      "steps": [
+        {
+          "step": "names",
+          "engine": "names",
+          "paid": false,
+          "input": "registry with phone field"
+        },
+        {
+          "step": "verify",
+          "engine": "trace",
+          "paid": true,
+          "cost": "verify_per_number",
+          "note": "engine.trace verifies any record that already has a phone instead of tracing it"
+        },
+        {
+          "step": "deliver",
+          "engine": "deliver",
+          "paid": false
+        }
+      ],
+      "credits_per_clean_cell": 2
+    },
+    "D": {
+      "name": "Contrast (register phone vs Maps phone)",
+      "when": "A free register carries BOTH a person name AND a phone, and the industry also has Google Maps listings. Adds to recipe C: the register phone is compared with the Maps phone; a different phone is the owner's direct line candidate, an equal phone is the business line. Also produces the 'licensed but invisible' bucket (in register, absent from Maps) which Maps-first competitors cannot see.",
+      "steps": [
+        {
+          "step": "names",
+          "engine": "names",
+          "paid": false,
+          "input": "registry with phone field (see states.registry_phone)",
+          "output": "owner name, register phone, address, license id, issue date"
+        },
+        {
+          "step": "scrape",
+          "engine": "scrape",
+          "paid": true,
+          "cost": "scrape_per_business",
+          "input": "trade keyword + the cities present in the register slice",
+          "output": "Maps phone per business (the contrast line)"
+        },
+        {
+          "step": "bucket",
+          "engine": "bucket",
+          "paid": false,
+          "rules": [
+            "match register row to Maps place on normalized business name + address (rapidfuzz, name >= 0.87, address >= 0.90)",
+            "bucket 1: in register, no Maps match",
+            "bucket 2: matched, register_phone != maps_phone",
+            "bucket 3: matched, register_phone == maps_phone",
+            "bucket 4: Maps only (no register row) -> route to recipe A or B",
+            "drop register phones used by more than 3 licences (phone reuse filter)"
+          ]
+        },
+        {
+          "step": "verify",
+          "engine": "trace",
+          "paid": true,
+          "cost": "verify_per_number",
+          "keep": "type == Mobile AND dnc == false AND tcpa == false",
+          "note": "verify register phone for buckets 1, 2, 3; bucket 3 kept only if Mobile"
+        },
+        {
+          "step": "deliver",
+          "engine": "deliver",
+          "paid": false,
+          "extra_columns": [
+            "Bucket",
+            "Register Source",
+            "License Issue Date",
+            "Maps Phone"
+          ]
+        }
+      ],
+      "scale_rule": "More cells = more register rows. Sort newest licence first (85% mobile on 2020s licences vs 18% on 2000s, Anas). Bucket 1 and 2 first, bucket 3 last.",
+      "credits_per_clean_cell": 2
+    }
+  },
+  "industries": {
+    "car_detailing": {
+      "aliases": [
+        "auto detailing",
+        "detailing",
+        "ceramic coating",
+        "ppf",
+        "tint"
+      ],
+      "recipe": "A",
+      "keyword": "car detailing",
+      "allow": "detail|ceramic|coating|tint|wrap",
+      "expected_clean": 0.45,
+      "expected_any": 0.59,
+      "n": 44,
+      "measured_by": "anas"
+    },
+    "hvac": {
+      "aliases": [
+        "ac repair",
+        "air conditioning",
+        "heating"
+      ],
+      "recipe": "A",
+      "keyword": "hvac contractor",
+      "allow": "hvac|air condition|heating|cooling",
+      "expected_clean": 0.2,
+      "expected_any": 0.35,
+      "n": 500,
+      "measured_by": "anas"
+    },
+    "roofing": {
+      "aliases": [
+        "roofer",
+        "roofers"
+      ],
+      "recipe": "A",
+      "keyword": "roofing contractor",
+      "allow": "roof",
+      "expected_clean": 0.2,
+      "expected_any": 0.35,
+      "n": 500,
+      "measured_by": "anas"
+    },
+    "plumbing": {
+      "aliases": [
+        "plumber",
+        "plumbers"
+      ],
+      "recipe": "A",
+      "keyword": "plumber",
+      "allow": "plumb",
+      "expected_clean": 0.2,
+      "expected_any": 0.35,
+      "n": 200,
+      "measured_by": "anas"
+    },
+    "electrical": {
+      "aliases": [
+        "electrician",
+        "electricians"
+      ],
+      "recipe": "A",
+      "keyword": "electrician",
+      "allow": "electric",
+      "expected_clean": 0.2,
+      "expected_any": 0.35,
+      "n": 200,
+      "measured_by": "anas"
+    },
+    "remodeling": {
+      "aliases": [
+        "remodeler",
+        "kitchen and bath",
+        "kitchen remodel",
+        "bathroom remodel",
+        "general contractor"
+      ],
+      "recipe": "A",
+      "keyword": "kitchen remodeling",
+      "allow": "remodel|renovat|kitchen|bath|contractor",
+      "expected_clean": 0.2,
+      "expected_any": 0.35,
+      "n": 1000,
+      "registry_states": [
+        "WA",
+        "OR",
+        "CA"
+      ],
+      "measured_by": "anas"
+    },
+    "pool": {
+      "aliases": [
+        "pool builder",
+        "pool contractor",
+        "pool service"
+      ],
+      "recipe": "A",
+      "keyword": "pool builder",
+      "allow": "pool",
+      "expected_clean": 0.18,
+      "expected_any": 0.35,
+      "n": 200,
+      "measured_by": "anas"
+    },
+    "landscaping": {
+      "aliases": [
+        "landscaper",
+        "lawn care",
+        "hardscape",
+        "outdoor living"
+      ],
+      "recipe": "A",
+      "keyword": "landscaping company",
+      "allow": "landscap|lawn|hardscap|outdoor",
+      "expected_clean": 0.18,
+      "expected_any": 0.35,
+      "n": 500,
+      "measured_by": "anas"
+    },
+    "painting": {
+      "aliases": [
+        "painter",
+        "painters"
+      ],
+      "recipe": "A",
+      "keyword": "painting contractor",
+      "allow": "paint",
+      "expected_clean": 0.2,
+      "expected_any": 0.35,
+      "n": 100,
+      "measured_by": "anas"
+    },
+    "fencing": {
+      "aliases": [
+        "fence",
+        "fence company"
+      ],
+      "recipe": "A",
+      "keyword": "fence contractor",
+      "allow": "fenc",
+      "expected_clean": 0.2,
+      "expected_any": 0.35,
+      "n": 100,
+      "measured_by": "anas"
+    },
+    "concrete": {
+      "aliases": [
+        "concrete contractor",
+        "paving",
+        "driveway"
+      ],
+      "recipe": "A",
+      "keyword": "concrete contractor",
+      "allow": "concrete|paving|driveway",
+      "expected_clean": 0.2,
+      "expected_any": 0.35,
+      "n": 100,
+      "measured_by": "anas"
+    },
+    "auto_repair": {
+      "aliases": [
+        "mechanic",
+        "car repair",
+        "auto shop"
+      ],
+      "recipe": "A",
+      "keyword": "auto repair shop",
+      "allow": "auto|car|repair|mechanic",
+      "expected_clean": 0.19,
+      "expected_any": 0.26,
+      "n": 42,
+      "measured_by": "anas"
+    },
+    "auto_body": {
+      "aliases": [
+        "body shop",
+        "collision"
+      ],
+      "recipe": "A",
+      "keyword": "auto body shop",
+      "allow": "body|collision|auto",
+      "expected_clean": 0.16,
+      "expected_any": 0.2,
+      "n": 45,
+      "measured_by": "anas"
+    },
+    "jewelers": {
+      "aliases": [
+        "jewelry store",
+        "jeweler"
+      ],
+      "recipe": "A",
+      "keyword": "jewelry store",
+      "allow": "jewel",
+      "expected_clean": 0.23,
+      "expected_any": 0.4,
+      "n": 300,
+      "measured_by": "anas"
+    },
+    "exotic_car_dealers": {
+      "aliases": [
+        "exotic cars",
+        "luxury car dealer",
+        "classic cars"
+      ],
+      "recipe": "A",
+      "keyword": "exotic car dealer",
+      "allow": "exotic|luxury|classic|car dealer",
+      "expected_clean": 0.21,
+      "expected_any": 0.4,
+      "n": 300,
+      "measured_by": "anas"
+    },
+    "cpa": {
+      "aliases": [
+        "accountant",
+        "accountants",
+        "accounting firm",
+        "bookkeeper"
+      ],
+      "recipe": "B",
+      "name_source": {
+        "FL": "fl_cpa",
+        "IL": "il_idfpr",
+        "PA": "pa_pals"
+      },
+      "expected_clean": 0.46,
+      "expected_any": 0.96,
+      "n": 90,
+      "notes": "FL file carries the home street — skip parcel. TX/AZ/GA/WA/TN have no CPA file with a name+address path.",
+      "measured_by": "anas"
+    },
+    "realtor": {
+      "aliases": [
+        "real estate agent",
+        "realtors",
+        "broker",
+        "brokerage"
+      ],
+      "recipe": "B",
+      "name_source": {
+        "FL": "fl_re",
+        "TX": "tx_trec",
+        "AZ": "az_adre",
+        "IL": "il_idfpr",
+        "PA": "pa_pals"
+      },
+      "expected_clean": 0.35,
+      "expected_any": 0.9,
+      "n": 135,
+      "by_state_clean": {
+        "FL": 0.28,
+        "TX": 0.56,
+        "AZ": 0.44,
+        "IL": 0.35
+      },
+      "measured_by": "anas"
+    },
+    "property_manager": {
+      "aliases": [
+        "property management",
+        "rental management"
+      ],
+      "recipe": "B",
+      "name_source": {
+        "FL": "fl_re --pm"
+      },
+      "expected_clean": 0.38,
+      "expected_any": 0.9,
+      "n": 40,
+      "notes": "PMs hold a broker licence; filter the broker file by business name (property mgmt / rental / leasing).",
+      "measured_by": "anas"
+    },
+    "dentist": {
+      "aliases": [
+        "dental",
+        "dentists",
+        "orthodontist"
+      ],
+      "recipe": "B",
+      "name_source": {
+        "*": "nppes --taxonomy Dentist"
+      },
+      "expected_clean": 0.38,
+      "expected_any": 0.48,
+      "n": 40,
+      "notes": "NPPES is national; parcel step needs a state in states.parcel.",
+      "measured_by": "anas"
+    },
+    "chiropractor": {
+      "aliases": [
+        "chiro",
+        "chiropractic"
+      ],
+      "recipe": "B",
+      "name_source": {
+        "*": "nppes --taxonomy Chiropractor"
+      },
+      "expected_clean": 0.35,
+      "expected_any": 0.48,
+      "n": 0,
+      "notes": "Assumed = dentists. Measure on first run.",
+      "measured_by": "anas"
+    },
+    "med_spa": {
+      "aliases": [
+        "medspa",
+        "aesthetics",
+        "botox",
+        "plastic surgeon",
+        "cosmetic"
+      ],
+      "recipe": "B",
+      "name_source": {
+        "*": "nppes --industry medspa"
+      },
+      "expected_clean": 0.26,
+      "expected_any": 0.56,
+      "n": 39,
+      "measured_by": "anas",
+      "notes": " | Research addition (unmeasured): before parcel+trace, try (1) NPI-1 address roster: NP 363L*, PA 363A*, RN 163W* at the spa's suite via postal_code + LOCATION (35% lower-bound hit in Tampa/Austin); (2) FL Sunbiz officer search on the injector surname, two hops through member LLCs; (3) TX Comptroller PIR officers; (4) medical director graph: drop directors who appear on 3+ spas (TN registry shows top directors supervise 3-7). Only 17% of med spas have an NPI-2, so never rely on org NPPES records."
+    },
+    "attorney": {
+      "aliases": [
+        "lawyer",
+        "law firm",
+        "personal injury",
+        "pi attorney"
+      ],
+      "recipe": "B",
+      "name_source": {
+        "*": "scrape 'personal injury attorney' → names --source firms"
+      },
+      "expected_clean": 0.37,
+      "expected_any": 0.63,
+      "n": 19,
+      "notes": "Only ~13% of firms yield a traceable partner name. Never deliver from the Google scrape itself (2% mobile). Quote higher credits.",
+      "measured_by": "anas"
+    },
+    "real_estate_investor": {
+      "aliases": [
+        "investor",
+        "landlord",
+        "fix and flip",
+        "wholesaler"
+      ],
+      "recipe": "B",
+      "name_source": {
+        "NC": "investors --min 3 --max 8"
+      },
+      "expected_clean": 0.35,
+      "expected_any": 0.8,
+      "n": 40,
+      "notes": "Other states: pull the county owner file, group by owner, keep individuals with 3-8 parcels.",
+      "measured_by": "anas"
+    },
+    "developer": {
+      "aliases": [
+        "real estate developer",
+        "builder-developer"
+      ],
+      "recipe": "B",
+      "name_source": {
+        "NC": "investors --min 6 --max 30"
+      },
+      "expected_clean": 0.3,
+      "expected_any": 0.8,
+      "n": 40,
+      "measured_by": "anas"
+    },
+    "contractor_registry": {
+      "aliases": [
+        "contractors WA",
+        "contractors OR",
+        "contractors CA"
+      ],
+      "recipe": "C",
+      "name_source": {
+        "WA": "data.wa.gov/resource/m8qx-ubtq.json",
+        "OR": "data.oregon.gov/resource/g77e-6bhs.json",
+        "CA": "CSLB download",
+        "FL": "FL DBPR extracts (see contractor_fl)",
+        "MN": "MN DLI CSVs (see contractor_mn)"
+      },
+      "expected_clean": 0.63,
+      "expected_any": 0.85,
+      "n": 754,
+      "notes": "Sort newest licence first (85% mobile on 2020s licences vs 18% on 2000s). | Research: upgrade to recipe D (add Maps contrast + buckets) once the bucket engine exists; CSLB Personnel title Sole Owner isolates 93,755 exclusive-phone people (89.8%).",
+      "measured_by": "anas"
+    },
+    "pa_licensee": {
+      "aliases": [
+        "pennsylvania realtor",
+        "pennsylvania cpa"
+      ],
+      "recipe": "C",
+      "name_source": {
+        "PA": "pa_pals"
+      },
+      "expected_clean": 0.5,
+      "expected_any": 1.0,
+      "n": 4,
+      "notes": "PALS phone field = the person's own mobile 4/4. ~28% of rows carry one; the rest go through recipe B via Philadelphia OPA.",
+      "measured_by": "anas"
+    },
+    "contractor_fl": {
+      "aliases": [
+        "florida contractors",
+        "florida roofer",
+        "florida hvac",
+        "florida plumber",
+        "florida electrician"
+      ],
+      "recipe": "D",
+      "name_source": {
+        "FL": "FL DBPR public record extracts (myfloridalicense.com), construction and electrical boards; qualifier is a person, phone on file"
+      },
+      "expected_clean": 0.45,
+      "expected_any": 0.7,
+      "n": 0,
+      "measured_by": "research_estimate",
+      "notes": "Weekly ASCII extracts, no login. Qualifier-level license with business affiliation. Emails public record 455.275."
+    },
+    "contractor_mn": {
+      "aliases": [
+        "minnesota contractors"
+      ],
+      "recipe": "D",
+      "name_source": {
+        "MN": "secure.doli.state.mn.us/ccld/data/MNDLILicRegCertExport_<Category>.csv"
+      },
+      "expected_clean": 0.35,
+      "expected_any": 0.6,
+      "n": 0,
+      "measured_by": "research_estimate",
+      "notes": "Use only Master-level licences (~10,100); phone reuse x189 on employee rows. Email column empty."
+    },
+    "contractor_permits": {
+      "aliases": [
+        "austin contractors",
+        "nyc contractors",
+        "permit contractors"
+      ],
+      "recipe": "D",
+      "name_source": {
+        "TX-Austin": "data.austintexas.gov/resource/3syk-w9eu.json (contractor_full_name, contractor_phone, contractor_trade)",
+        "NY-NYC": "data.cityofnewyork.us/resource/ipu4-2q9a.json (permittee first/last, business, phone)"
+      },
+      "expected_clean": 0.4,
+      "expected_any": 0.7,
+      "n": 0,
+      "measured_by": "research_estimate",
+      "notes": "Permit phone is the contractor's own in 1-3 person shops; 98% phone fill in Austin last 12 months. Permit velocity = ability to pay."
+    },
+    "movers_tree_haulers": {
+      "aliases": [
+        "movers",
+        "moving company",
+        "tree service",
+        "junk removal",
+        "hauling"
+      ],
+      "recipe": "C",
+      "name_source": {
+        "*": "FMCSA Motor Carrier Census data.transportation.gov/resource/az4n-8mr2.json (legal name, dba, phone, email, power units)"
+      },
+      "expected_clean": 0.4,
+      "expected_any": 0.7,
+      "n": 0,
+      "measured_by": "research_estimate",
+      "notes": "Free national register with phone and email. Filter power units <= 3. Covers 135,587 active HHG carriers, 26,562 TREE names, 14,705 LANDSCAP dba."
+    },
+    "pest_control": {
+      "aliases": [
+        "pest control",
+        "exterminator"
+      ],
+      "recipe": "C",
+      "name_source": {
+        "TX": "TX Dept of Agriculture SPCS business and applicator CSVs",
+        "CA": "CDPR Businesses.csv",
+        "FL": "FDACS pest control licences"
+      },
+      "expected_clean": 0.35,
+      "expected_any": 0.6,
+      "n": 0,
+      "measured_by": "research_estimate",
+      "notes": "Licensed in every state by the agriculture department; behaves like a contractor registry."
+    },
+    "salon_barber_ny": {
+      "aliases": [
+        "new york salon",
+        "new york barbershop",
+        "nyc salon",
+        "nail salon new york"
+      ],
+      "recipe": "B",
+      "name_source": {
+        "NY": "data.ny.gov/resource/y3u4-jbgh.json (license_holder_name is a person on 99.8%; business_name, address, issue date; no phone)"
+      },
+      "expected_clean": 0.35,
+      "expected_any": 0.75,
+      "n": 0,
+      "measured_by": "research_estimate",
+      "notes": "Best establishment register in the country: owner named on 32,384 shops. Phone comes from Maps (suite/renter rows: Maps phone is the owner cell) or trace. Skip parcel: use Maps phone first, trace second."
+    },
+    "salon_suite_tx": {
+      "aliases": [
+        "texas salon suite",
+        "sola",
+        "mini establishment",
+        "texas barber"
+      ],
+      "recipe": "D",
+      "name_source": {
+        "TX": "data.texas.gov/resource/7358-krk7.json license_type = Mini Establishment (21,616 rows, phone 99.9%, mailing_address is the owner's home on 96%)"
+      },
+      "expected_clean": 0.45,
+      "expected_any": 0.7,
+      "n": 0,
+      "measured_by": "research_estimate",
+      "notes": "owner_name equals business_name (trap): identity comes from the mailing address (reverse append) or from Maps/reviews. Mini establishments are one-person businesses; the business phone is very often the personal cell."
+    },
+    "barbershop_fl": {
+      "aliases": [
+        "florida barbershop",
+        "florida barber"
+      ],
+      "recipe": "B",
+      "name_source": {
+        "FL": "FL DBPR barbers extract lic03bb.csv (BS rows: owner name in address line 1 on most rows)"
+      },
+      "expected_clean": 0.35,
+      "expected_any": 0.7,
+      "n": 0,
+      "measured_by": "research_estimate",
+      "notes": "Owner named in the address block; practitioner (BR) rows carry home street = trace key without parcel."
+    },
+    "childcare_home": {
+      "aliases": [
+        "daycare",
+        "family child care",
+        "home daycare",
+        "childcare provider"
+      ],
+      "recipe": "C",
+      "name_source": {
+        "PA": "data.pa.gov/resource/ajn5-kaxt.json (legal_entity_name = person, responsible_person_title OWNER, phone 100%, email 99.8%)",
+        "NY": "data.ny.gov/resource/cb42-qumz.json (GFDC/FDC provider_name person 100%, phone 77%)",
+        "TX": "data.texas.gov/resource/bc5r-88dy.json (home rows, phone 99%)",
+        "DE": "data.delaware.gov/resource/iuzd-3dbt.json"
+      },
+      "expected_clean": 0.4,
+      "expected_any": 0.9,
+      "n": 0,
+      "measured_by": "research_estimate",
+      "notes": "Best A+B register found. DNC hit rate highest in the program (40-55%). Low marketing spend; use as engine proof. CA small family homes: NEVER dial (HSC 1596.86)."
+    },
+    "childcare_center": {
+      "aliases": [
+        "preschool",
+        "child care center",
+        "dance studio",
+        "music school",
+        "swim school",
+        "tutoring"
+      ],
+      "recipe": "B",
+      "name_source": {
+        "PA": "data.pa.gov/resource/ajn5-kaxt.json (Child Care Center rows)",
+        "NY": "data.ny.gov/resource/cb42-qumz.json (DCC/SACC)",
+        "TX": "data.texas.gov/resource/bc5r-88dy.json (Licensed Center)"
+      },
+      "expected_clean": 0.3,
+      "expected_any": 0.7,
+      "n": 0,
+      "measured_by": "research_estimate",
+      "notes": "Director on the record may not be the owner; resolve via SOS officer. These are the Meta ads buyers."
+    },
+    "insurance_agent_tx": {
+      "aliases": [
+        "texas insurance agent",
+        "insurance agency texas"
+      ],
+      "recipe": "B",
+      "name_source": {
+        "TX": "data.texas.gov/resource/kvqi-vsrr.json association_type = Owner (9,212) or Desig-Resp-Lic-Person (27,988); join kxv3-diwf individuals and 3yqc-fcdt agencies"
+      },
+      "expected_clean": 0.35,
+      "expected_any": 0.8,
+      "n": 0,
+      "measured_by": "research_estimate",
+      "notes": "Only public register with explicit Owner vs Employee labels. Training set for the owner classifier. No phone: parcel + trace, or Maps contrast."
+    },
+    "insurance_agent_fl": {
+      "aliases": [
+        "florida insurance agent",
+        "insurance agency florida"
+      ],
+      "recipe": "C",
+      "name_source": {
+        "FL": "myfloridacfo.com/downloads/AAS/LicenseeSearch/AllValidLicensesIndividual.csv (323 MB daily, name + phone + email + address; strip Excel =\"...\" guards)"
+      },
+      "expected_clean": 0.4,
+      "expected_any": 0.85,
+      "n": 0,
+      "measured_by": "research_estimate",
+      "notes": "Owner filter: appointments with 3+ carriers = independent agency owner; single captive appointment = captive owner-operator (still a target). Exclude employed producers under an agency license."
+    },
+    "tax_preparer": {
+      "aliases": [
+        "tax preparer",
+        "enrolled agent",
+        "tax office"
+      ],
+      "recipe": "C",
+      "name_source": {
+        "*": "https://www.irs.gov/pub/foia/foia-{state}-extract.csv (PTIN holders: name, DBA, business address, BUS_PHNE_NBR, WEBSITE, PROFESSION)"
+      },
+      "expected_clean": 0.35,
+      "expected_any": 0.8,
+      "n": 0,
+      "measured_by": "research_estimate",
+      "notes": "Free direct download, released to vendors by law, no opt out. Business phone; solo preparers' business phone is often the cell."
+    },
+    "attorney_ny": {
+      "aliases": [
+        "new york attorney",
+        "new york law firm"
+      ],
+      "recipe": "C",
+      "name_source": {
+        "NY": "data.ny.gov/resource/eqw2-r5nb.json (433,726 registrations, company_name, phone_number; filter currently registered, NY address, firm name contains surname)"
+      },
+      "expected_clean": 0.3,
+      "expected_any": 0.7,
+      "n": 0,
+      "measured_by": "research_estimate",
+      "notes": "Only verified bulk attorney list with phone. Practice-area filter via Maps categories. Replaces the Google scrape path for NY."
+    },
+    "auto_repair_ny": {
+      "aliases": [
+        "new york auto repair",
+        "new york body shop",
+        "new york mechanic"
+      ],
+      "recipe": "B",
+      "name_source": {
+        "NY": "data.ny.gov/resource/nhjr-rpi2.json (facility types RS, RSB; owner_name is a person on 11 of 12 sampled; no phone)"
+      },
+      "expected_clean": 0.3,
+      "expected_any": 0.6,
+      "n": 0,
+      "measured_by": "research_estimate",
+      "notes": "Owner already named: skip firm-website step; parcel or trace on name + shop city. Chain removal via OSM name-suggestion-index brands/shop/car_repair.json."
+    },
+    "restaurant_tx": {
+      "aliases": [
+        "texas restaurant",
+        "texas bar",
+        "texas cafe"
+      ],
+      "recipe": "B",
+      "name_source": {
+        "TX": "data.texas.gov/resource/7hf9-qc9f.json TABC licences (owner is a person on ~2/3 of BG rows; phone column empty; mail address often home)"
+      },
+      "expected_clean": 0.25,
+      "expected_any": 0.6,
+      "n": 0,
+      "measured_by": "research_estimate",
+      "notes": "Most solicited owners; highest DNC and FTSA exposure. Chain removal via OSM brands/amenity/fast_food.json."
+    },
+    "str_operator": {
+      "aliases": [
+        "short term rental",
+        "airbnb host",
+        "vacation rental operator"
+      ],
+      "recipe": "C",
+      "name_source": {
+        "LA-NOLA": "data.nola.gov/resource/en36-xvxg.json (license_holder_name, contact_name, contact_phone, contact_email 99%)",
+        "FL-Orlando": "data.cityoforlando.net/resource/ssrj-rbua.json"
+      },
+      "expected_clean": 0.45,
+      "expected_any": 0.9,
+      "n": 0,
+      "measured_by": "research_estimate",
+      "notes": "Under 5 cents per cell. Personal emails on most rows."
+    },
+    "healthcare_ao_contrast": {
+      "aliases": [
+        "chiropractor direct line",
+        "dentist direct line",
+        "podiatrist",
+        "optometrist",
+        "physical therapy",
+        "mental health practice"
+      ],
+      "recipe": "D",
+      "name_source": {
+        "*": "NPPES bulk V.2 (download.cms.gov/nppes/NPI_Files.html) NPI-2 rows: authorized_official_* fields; taxonomy per sub-vertical"
+      },
+      "expected_clean": 0.3,
+      "expected_any": 0.55,
+      "n": 682,
+      "measured_by": "research_measured_identity_only",
+      "notes": "Measured on 682 live NPI-2 rows in FL/TX/NC: AO phone differs from practice phone 36.7%; AO title owner 62.8%; AO surname in org name 29.2%; among owner-titled, AO phone differs 28%. n counts identity measurement, NOT verified cells: first verify run sets expected_clean. Exclude AO titles credentialing/billing/office manager and AO name+phone repeated on 3+ orgs (DSO). Complements Anas's dentist/chiro recipe B (parcel + trace): run D first (cheap), send bucket 3 and unmatched to B."
+    }
+  },
+  "states": {
+    "_rule": "Recipe A works in every state. Recipe B needs name_sources[industry] AND a parcel entry (or a licence file with a home street). Recipe C needs a registry with phone.",
+    "FL": {
+      "parcel": "statewide (times out some days — licence files carry the street anyway)",
+      "licence_files_with_home_street": [
+        "fl_re",
+        "fl_cpa"
+      ],
+      "registry_phone": [
+        "DBPR contractor extracts (qualifier + phone)",
+        "DFS AllValidLicensesIndividual.csv (insurance: name + phone + email)",
+        "DBPR hrfood extracts (restaurants, phone 85-90%, licensee mostly entity)",
+        "DBPR lic03bb barbershops (owner in address block)"
+      ],
+      "notes": "Best state. Direct trace from licence file. Research: Sunbiz SFTP (sftp.floridados.gov, user Public, password PubAccess1845!) gives officers for every LLC; use for two-hop med spa resolution and restaurant entities."
+    },
+    "NC": {
+      "parcel": "statewide NC OneMap",
+      "licence_files_with_home_street": [],
+      "registry_phone": [],
+      "notes": "NPPES + parcel proven for dentists, med spas, attorneys; investors grouping coded."
+    },
+    "TX": {
+      "parcel": "Harris (HCAD bulk), Dallas (mirror), Travis (StratMap; per-county files exist for all TX)",
+      "licence_files_with_home_street": [],
+      "names": [
+        "tx_trec",
+        "kvqi-vsrr TDI insurance relationships (Owner label)",
+        "7hf9-qc9f TABC (owner person ~2/3)",
+        "7358-krk7 TDLR (electrical contractor business phone; A/C zero phone; salon mini establishments phone + home mailing address)"
+      ],
+      "registry_phone": [
+        "7358-krk7 Electrical Contractor (business phone, owner_telephone is a MIRROR)",
+        "7358-krk7 Mini Establishment salons (phone 99.9%)",
+        "bc5r-88dy childcare (phone 99.6%)",
+        "Austin permits 3syk-w9eu (contractor_phone 98%)"
+      ],
+      "notes": "TREC names + HCAD owner-occupied = 56% clean. No CPA file."
+    },
+    "AZ": {
+      "parcel": "Maricopa (Assessor ArcGIS), Pima",
+      "names": [
+        "az_adre"
+      ],
+      "registry_phone": [],
+      "notes": "44% clean realtors. No CPA file. ROC contractor list only via commercial public records request (A.R.S. 39-121.03); do not scrape it into a list."
+    },
+    "IL": {
+      "parcel": "Cook (Assessor Socrata, slow ~4s/query — thread it)",
+      "names": [
+        "il_idfpr"
+      ],
+      "registry_phone": [],
+      "notes": "CPAs 50%, brokers 35%."
+    },
+    "PA": {
+      "parcel": "Philadelphia OPA (Carto)",
+      "names": [
+        "pa_pals"
+      ],
+      "registry_phone": [
+        "pa_pals (~28% of rows)",
+        "ajn5-kaxt childcare (phone 100%, email 99.8%)",
+        "PA HIC registry xlsx export (primary applicant + phone)"
+      ],
+      "notes": "Allegheny hides owner names. PALS is per-surname search, not bulk — iterate common surnames."
+    },
+    "GA": {
+      "parcel": "Fulton (2026); DeKalb (2018, stale)",
+      "names": [],
+      "registry_phone": [],
+      "notes": "No free realtor/CPA file (GREC sells one). Recipe A and investors only."
+    },
+    "TN": {
+      "parcel": "Nashville/Davidson",
+      "names": [],
+      "registry_phone": [],
+      "notes": "No licence downloads. Recipe A and investors only."
+    },
+    "WA": {
+      "parcel": "Snohomish only (King/Pierce hide owners)",
+      "names": [
+        "Corporations Data Extract finditconsumer.wa.gov/corps/alldata.aspx (GoverningPersons)",
+        "was8-3ni8 childcare centers (email 99%, phone 1%)",
+        "ucdg-xgbj DOL dealers and tow (phone 99%, entity name)"
+      ],
+      "registry_phone": [
+        "L&I contractors m8qx-ubtq"
+      ],
+      "notes": "Contractors = recipe C. Professionals: no path. Legal: L&I file is PDDL but RCW 42.56.070(8) bars commercial lists of individuals; keep per-record ledger evidence. WA LCB liquor lists: explicit no commercial use, AVOID."
+    },
+    "OR": {
+      "parcel": "unchecked",
+      "names": [],
+      "registry_phone": [
+        "CCB g77e-6bhs"
+      ],
+      "notes": "Contractors = recipe C."
+    },
+    "CA": {
+      "parcel": "none — no owner names in any public product",
+      "names": [],
+      "registry_phone": [
+        "CSLB"
+      ],
+      "notes": "Contractors = recipe C. Professionals: no path."
+    },
+    "CO": {
+      "parcel": "unchecked",
+      "names": [
+        "7s5z-vewr (CPA, RE) — name + city only, no street",
+        "4ykn-tg5h SOS entities (agent first/last name; agent = owner for micro LLCs, 5/5 lawn care sample)",
+        "a9rr-k8mu childcare (provider name, no phone)"
+      ],
+      "registry_phone": [],
+      "notes": "Needs a parcel source to be useful."
+    },
+    "NY": {
+      "parcel": "unchecked",
+      "names": [
+        "y3u4-jbgh salons/barbers (owner person 99.8%)",
+        "nhjr-rpi2 DMV repair shops (owner person)",
+        "eqw2-r5nb attorneys (firm + phone)",
+        "cb42-qumz childcare (provider + phone)",
+        "n9v6-gdp6 corporations (CEO name)",
+        "yg7h-zjbf real estate (business address only)"
+      ],
+      "registry_phone": [
+        "eqw2-r5nb attorneys",
+        "cb42-qumz childcare homes",
+        "w7w3-xahh NYC DCWP home improvement contractors (business phone)",
+        "43nn-pn8j NYC restaurants (DBA + phone)"
+      ],
+      "notes": "Research-validated identity state. No statewide contractor licence. Legal: public under 22 NYCRR 118 (attorneys), no solicitation clause seen."
+    },
+    "_other": "Run free discovery first (Socrata catalog: api.us.socrata.com/api/catalog/v1?q=license&domains=<portal>; ArcGIS: arcgis.com/sharing/rest/search?q=parcels owner <state>). Add a row here when a path is verified. Until then: recipe A only.",
+    "MN": {
+      "parcel": "unchecked",
+      "names": [],
+      "registry_phone": [
+        "DLI CCLD CSV exports (Master-level only)"
+      ],
+      "notes": "Phone reuse trap x189 on employee rows."
+    },
+    "NJ": {
+      "parcel": "unchecked",
+      "names": [
+        "DCA bulk download by profession (no phone)"
+      ],
+      "registry_phone": [],
+      "notes": "Identity only; Maps-first state that the register de-duplicates."
+    },
+    "VA": {
+      "parcel": "unchecked",
+      "names": [
+        "DPOR regulant lists (weekly, phone excluded)"
+      ],
+      "registry_phone": [],
+      "notes": "Identity only."
+    },
+    "DE": {
+      "parcel": "unchecked",
+      "names": [],
+      "registry_phone": [
+        "iuzd-3dbt childcare"
+      ],
+      "notes": "Small state, clean childcare file."
+    },
+    "SC": {
+      "parcel": "unchecked",
+      "names": [],
+      "registry_phone": [],
+      "notes": "DO NOT source LLR licensee lists: requester must certify no commercial solicitation (criminal penalty). Recipe A and SOS only."
+    },
+    "UT": {
+      "parcel": "unchecked",
+      "names": [],
+      "registry_phone": [],
+      "notes": "DO NOT source DOPL lists: R156-1-106 restricts to approved purposes. Recipe A and SOS only."
+    }
+  },
+  "guardrails": [
+    "Check job credit cap BEFORE every paid call; on cap → deliver what exists, settle, stop.",
+    "Any HTTP error or unexpected body → stop the job, log the body, mark needs_attention. Never retry with another vendor.",
+    "Auto-sample ~20 cells first; if clean rate < 50% of expected → stop and refund the hold.",
+    "Recipe B: print/log 3 full addresses before the trace fires; drop any without number + street + suffix.",
+    "Never call BatchData property search. Never scrape Google for attorneys/CPAs/med spas as the deliverable.",
+    "Dedupe against delivered (per user) and suppression (global) before delivery. Re-scrub after 31 days.",
+    "Never emit landline/VoIP. Litigator (tcpa) rows are dropped in every mode.",
+    "No SMS export path.",
+    "Dial window is 08:00 to 20:00 recipient local time (Florida cap), not 21:00.",
+    "Every delivered row carries a ledger record: source register + row id, fetch timestamp, Maps place_id + Maps phone at fetch, bucket, business-line evidence (register == Maps, or verify caller_type business), verify vendor + timestamp, DNC file version, litigator vendor + timestamp, legal gate applied.",
+    "Every dial outcome (reached_owner / gatekeeper / wrong_number / voicemail / disconnected / opt_out) is stored with a snapshot of the row's features at dial time. This is the training set for the Owner Probability Score; if it is not captured from the first list it is lost.",
+    "Recipe D: drop register phones shared by more than 3 licences (phone reuse); never treat TX TDLR owner_telephone as a second phone.",
+    "Never use voter files, DMV data, SC or UT licensee lists, WA liquor lists, NIPR, manufacturer provider locators (Alle, Aspire, device makers) as list sources.",
+    "California small family child care home phones are never dialed (HSC 1596.86)."
+  ],
+  "output_columns": [
+    "#",
+    "Cell Phone",
+    "Company",
+    "Google Maps Link",
+    "Rating",
+    "Reviews",
+    "City",
+    "State",
+    "Time Zone",
+    "Owner Name",
+    "Email",
+    "Status",
+    "Called",
+    "Outcome",
+    "Notes",
+    "Bucket",
+    "Source",
+    "Source Row Id",
+    "License Issue Date",
+    "Ledger Id"
+  ],
+  "dial_window_local": {
+    "start": "08:00",
+    "end": "20:00",
+    "_note": "20:00 not 21:00. Florida Telemarketing Act 501.616(6) caps at 8pm local; use the stricter window everywhere. Max 3 calls per 24h per recipient on the same subject (FL)."
+  }
+}

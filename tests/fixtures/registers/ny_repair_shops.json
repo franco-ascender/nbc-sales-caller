@@ -1,0 +1,79 @@
+{
+ "_about": "nhjr-rpi2 2026-09-21: 2027 expirations plus a lapsed 2021 RS and an ISP row",
+ "rows": [
+  {
+   "facility": "7130998",
+   "facility_name": "A 1 AUTO SERVICE INC",
+   "facility_street": "209 25TH STREET",
+   "facility_city": "BROOKLYN",
+   "facility_state": "NY",
+   "facility_zip_code": "11232",
+   "facility_county": "KING",
+   "owner_name": "GHASSAN AMIN",
+   "business_type": "RS",
+   "origional_issuance_date": "03/28/2023",
+   "last_renewal_date": "2025-01-04T00:00:00.000",
+   "expiration_date": "02/28/2027"
+  },
+  {
+   "facility": "1522083",
+   "facility_name": "A 1 AUTO BODY INC",
+   "facility_street": "781 ROUTE 25A",
+   "facility_city": "ROCKY POINT",
+   "facility_state": "NY",
+   "facility_zip_code": "11778",
+   "facility_county": "SUFF",
+   "owner_name": "LABEIB ISHTIAQ",
+   "business_type": "RSB",
+   "origional_issuance_date": "03/03/1981",
+   "last_renewal_date": "2025-01-07T00:00:00.000",
+   "expiration_date": "02/28/2027"
+  },
+  {
+   "facility": "7090990",
+   "facility_name": "A 1 ACTION AUTO &",
+   "facility_name_overflow": "TRUCK REPAIR INC",
+   "facility_street": "110 SUNRISE HWY",
+   "facility_city": "WEST ISLIP",
+   "facility_state": "NY",
+   "facility_zip_code": "11795",
+   "facility_county": "SUFF",
+   "owner_name": "EDWARD J TERRIBILE",
+   "owner_name_overflow": "JR",
+   "business_type": "RS",
+   "origional_issuance_date": "10/23/2001",
+   "last_renewal_date": "2025-08-26T00:00:00.000",
+   "expiration_date": "09/30/2027"
+  },
+  {
+   "facility": "2310115",
+   "facility_name": "A 1 ALL GERMAN CAR",
+   "facility_name_overflow": "CORP",
+   "facility_street": "400 W 219 ST",
+   "facility_city": "NEW YORK",
+   "facility_state": "NY",
+   "facility_zip_code": "10034",
+   "facility_county": "NEWY",
+   "owner_name": "VAN BISHKOFF",
+   "business_type": "RS",
+   "origional_issuance_date": "05/26/2016",
+   "last_renewal_date": "2019-03-12T00:00:00.000",
+   "expiration_date": "03/31/2021"
+  },
+  {
+   "facility": "2310115",
+   "facility_name": "A 1 ALL GERMAN CAR",
+   "facility_name_overflow": "CORP",
+   "facility_street": "400 W 219 ST",
+   "facility_city": "NEW YORK",
+   "facility_state": "NY",
+   "facility_zip_code": "10034",
+   "facility_county": "NEWY",
+   "owner_name": "VAN BISHKOFF",
+   "business_type": "ISP",
+   "origional_issuance_date": "09/17/1980",
+   "last_renewal_date": "2019-03-12T00:00:00.000",
+   "expiration_date": "03/31/2021"
+  }
+ ]
+}

@@ -1,0 +1,193 @@
+{
+  "industry": "tax_preparer",
+  "title": "Paid tax return preparers (IRS PTIN)",
+  "hypothesis": "A PTIN row establishes a paid-preparer candidate and a published business phone, not an owner-confirmed person or direct owner handset. A surname-in-DBA row with a unique phone is a stronger owner and direct-line candidate; franchise, firm-employee, shared-office, and unresolved rows must not be represented as owner-confirmed.",
+  "ownerSource": "IRS PTIN state extracts provide a preparer's name, DBA, business address, credential, and business phone. The implemented parser marks only whether the surname occurs in the DBA; it does not classify franchise employees, aggregate DBA/address firm size, select a firm principal, or confirm ownership.",
+  "phoneSource": "BUS_PHNE_NBR is an explicitly published business phone, normalized by the IRS PTIN adapter. It is not mobile, reachable, DNC/TCPA-clear, exclusive, or owned by the named preparer. Reuse_count at most 3 is an implemented office-line screen, but does not prove a direct line.",
+  "workflow": [
+    {
+      "id": "ptin",
+      "label": "IRS PTIN state extract",
+      "detail": "Ingest the free public PTIN CSV: paid-preparer identity, DBA, business address, credential, AFSP flag, and published business phone.",
+      "kind": "source"
+    },
+    {
+      "id": "parse",
+      "label": "Person and business-phone parse",
+      "detail": "Keep person rows and normalize BUS_PHNE_NBR; hold malformed person or unusable phone rows.",
+      "kind": "filter"
+    },
+    {
+      "id": "inputhold",
+      "label": "PTIN input hold",
+      "detail": "Hold non-person, missing-phone, toll-free, or otherwise unusable published-business-phone rows.",
+      "kind": "hold"
+    },
+    {
+      "id": "role",
+      "label": "Owner-role assessment",
+      "detail": "Keep surname-in-DBA or blank-DBA rows as owner candidates; reject known chain/franchise employee rows and hold non-surname firm rows pending a supported principal selection.",
+      "kind": "decision"
+    },
+    {
+      "id": "rolehold",
+      "label": "Employee or firm-role hold",
+      "detail": "Hold franchise/national-chain staff, multi-preparer firm rows without a selected principal, and every row whose ownership remains unsupported.",
+      "kind": "hold"
+    },
+    {
+      "id": "reuse",
+      "label": "Published phone reuse screen",
+      "detail": "Require phone reuse_count at most 3; a reused number is an office-line candidate, never a named preparer's direct line.",
+      "kind": "filter"
+    },
+    {
+      "id": "officehold",
+      "label": "Shared-office hold",
+      "detail": "Hold phones reused by more than three register rows from direct-owner claims; preserve business-phone provenance only.",
+      "kind": "hold"
+    },
+    {
+      "id": "contrast",
+      "label": "Maps contrast and bucket assignment",
+      "detail": "For the adapter's recipe-D path, match the registered business to a relevant Maps listing and bucket register-only, differing-phone, or equal-phone cases. A differing line remains only a candidate.",
+      "kind": "verify"
+    },
+    {
+      "id": "line",
+      "label": "Line and compliance gates",
+      "detail": "Require mobile classification, reachability, DNC/TCPA clearance, suppression and duplicate checks, freshness, and timezone before delivery.",
+      "kind": "verify"
+    },
+    {
+      "id": "gatehold",
+      "label": "Phone or compliance hold",
+      "detail": "Hold business/landline/VoIP, unreachable, DNC/TCPA, suppressed, duplicate, stale, or timezone-unresolved rows.",
+      "kind": "hold"
+    },
+    {
+      "id": "ownerproof",
+      "label": "Owner and direct-contact proof",
+      "detail": "Require supported ownership of the matched business and an explicit direct business-role link to the cleared phone; PTIN publication, DBA heuristic, credential, or line type alone is insufficient.",
+      "kind": "verify"
+    },
+    {
+      "id": "proofhold",
+      "label": "Ownership/contact proof hold",
+      "detail": "Hold candidates with only a PTIN, surname heuristic, blank DBA, firm role, shared office phone, or unlinked business phone.",
+      "kind": "hold"
+    },
+    {
+      "id": "deliver",
+      "label": "Future owner-confirmed delivery",
+      "detail": "Deliver only after role, contact, compliance, and separate owner/direct-contact evidence all pass.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    { "from": "ptin", "to": "parse", "label": "parse public CSV" },
+    { "from": "parse", "to": "inputhold", "label": "not a usable person/business phone" },
+    { "from": "parse", "to": "role", "label": "person with published business phone" },
+    { "from": "role", "to": "rolehold", "label": "employee, chain, firm, or unresolved role" },
+    { "from": "role", "to": "reuse", "label": "owner candidate" },
+    { "from": "reuse", "to": "officehold", "label": "phone reused more than three times" },
+    { "from": "reuse", "to": "contrast", "label": "exclusive-enough published phone" },
+    { "from": "contrast", "to": "line", "label": "bucketed business candidate" },
+    { "from": "line", "to": "gatehold", "label": "line or compliance gate fails" },
+    { "from": "line", "to": "ownerproof", "label": "contact gates pass" },
+    { "from": "ownerproof", "to": "proofhold", "label": "owner or direct-contact evidence missing" },
+    { "from": "ownerproof", "to": "deliver", "label": "owner and direct-contact evidence supported" }
+  ],
+  "failures": [
+    {
+      "risk": "A PTIN holder, credential, or published business phone is represented as an owner-confirmed mobile.",
+      "mitigation": "Keep PTIN identity, business-phone provenance, ownership evidence, and handset/compliance evidence as separate gates.",
+      "status": "proposed"
+    },
+    {
+      "risk": "H&R Block, other chains, or multi-preparer firm employees pass because the adapter only records dbaHasSurname.",
+      "mitigation": "Add an auditable chain/employee exclusion and a DBA-plus-address group rule; select a principal only with supported evidence, otherwise hold.",
+      "status": "blocked"
+    },
+    {
+      "risk": "The live brain runs PTIN as recipe C although irsPtin and the catalog specify recipe D, so it bypasses Maps contrast and bucket evidence.",
+      "mitigation": "Align tax_preparer routing with the implemented irsPtin recipe D, or explicitly change the adapter/catalog semantics and add a regression test. Do not silently treat C verification as D evidence.",
+      "status": "blocked"
+    },
+    {
+      "risk": "A phone reused by several PTIN rows is treated as a preparer's direct number.",
+      "mitigation": "Keep reuse_count greater than 3 out of direct-owner claims and retain it only as published office-phone evidence.",
+      "status": "implemented"
+    },
+    {
+      "risk": "Blank DBA is converted from a weak sole-proprietor heuristic into owner proof.",
+      "mitigation": "Use blank DBA only to prioritize an owner candidate; require separate business ownership and direct-contact support.",
+      "status": "proposed"
+    }
+  ],
+  "sources": [
+    {
+      "label": "IRS PTIN holder FOIA extracts",
+      "scope": "Nationwide person-level paid-preparer rows with DBA, business address, BUS_PHNE_NBR, credential, and AFSP indicator; business phone is explicitly published.",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md IRS PTIN holder FOIA extracts; handoff/07_RESEARCH_BUILD_SPEC.md §3a",
+      "status": "implemented"
+    },
+    {
+      "label": "PTIN adapter",
+      "scope": "Normalizes person name and business phone, stores dbaHasSurname, and declares recipe D; it has no chain, firm-principal, or ownership classifier.",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-registers.ts ptinRecord and irsPtin; tests/fixtures/registers/irs_ptin.json",
+      "status": "implemented"
+    },
+    {
+      "label": "Live tax-preparer brain route",
+      "scope": "Nationwide irs_ptin register source is configured as recipe C; C requires a register phone and goes from names to verification, unlike the D bucket route.",
+      "evidence": "VERIFIED",
+      "reference": "src/data/lead-engine-brain.json industries.tax_preparer; src/services/lead-engine-jobs.service.ts namesStep and bucketStep",
+      "status": "blocked"
+    },
+    {
+      "label": "Generic phone and delivery gates",
+      "scope": "Mobile, reachability, DNC/TCPA, suppression, duplicate, freshness, and timezone checks; these do not prove ownership or a direct business role.",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-quality.ts evaluateVerifiedBusiness; src/lib/lead-engine-gates.ts evaluateJobGates",
+      "status": "implemented"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "The five-case saved PTIN fixture establishes a preparer identity and published business phone while correctly preserving only the DBA-surname heuristic.",
+      "test": "Five-case local fixture/code audit on 2026-09-24: first five data rows of tests/fixtures/registers/irs_ptin.json through irsPtin. Command: node --experimental-strip-types --test --test-name-pattern='irs_ptin' tests/lead-engine-registers.test.ts. No network, paid provider, contact lookup, or private/residential data used.",
+      "observed": "Five parsed person rows had normalized published business phones. Three DBA values contained the preparer surname (Kobert, Bantekas, Swett); H & R Block and Schreiner/Weskamp/Schmerge did not. The parser did not reject the chain row or classify employee versus firm principal. This is adapter evidence only, not an ownership, handset, reachability, DNC/TCPA, or delivery measurement.",
+      "change": "Treat dbaHasSurname as an owner-candidate signal only; add role and firm/chain holds before an owner label, and align the brain route with the adapter's recipe-D contrast before relying on bucket evidence."
+    }
+  ],
+  "measurement": {
+    "kind": "fixture",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Five saved IRS PTIN fixture rows parsed: five person identities and five normalized published business phones; three surname-in-DBA candidates and two non-surname firm/chain rows. Fixture/code audit only; no live source, phone, owner, handset, compliance, or delivery measurement.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Local five-row fixture/code audit only; no source fetch, provider, append, trace, Maps scrape, or phone-verification call ran.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean owner contact was measured. The brain's historical estimates use a different denominator and do not establish owner-contact cost."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "PTIN ingestion preserves a published-business-phone field, normalized format, surname-in-DBA flag, and phone reuse screen. It does not implement employee/franchise exclusion, firm-principal selection, owner confirmation, direct-owner-contact proof, or adapter/brain recipe alignment. The current recipe-C route can verify a registered business phone without the adapter's recipe-D Maps contrast.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-registers.ts",
+      "src/services/lead-engine-jobs.service.ts",
+      "src/lib/lead-engine-buckets.ts",
+      "src/lib/lead-engine-quality.ts",
+      "src/lib/lead-engine-gates.ts"
+    ]
+  },
+  "nextMeasurement": "After root aligns routing and adds an owner-role classifier, run a lawful 5–20 row aggregate sample only from the catalog-verified PTIN endpoint. Separate PTIN people, usable published business phones, chain/employee exclusions, firm-principal-supported candidates, reuse at most 3, bucket, mobile, reachable, DNC/TCPA-clear, owner-supported, direct-contact-supported, and delivered denominators; do not use residential/property sources, paid lookups, or prohibited lists."
+}

@@ -1,0 +1,250 @@
+{
+  "industry": "roofing",
+  "title": "Roofing: licensed-trade identity with business-contact contrast",
+  "hypothesis": "An active, roofing-scoped contractor register can establish a named principal or qualifying-person candidate, but neither its published phone nor a Maps number is owner-confirmed until exclusivity, contrast, contact gates, and independent owner evidence support that classification.",
+  "ownerSource": "State contractor records: WA L&I primary principal for roofing specialties, CA CSLB C-39 personnel with title distinctions, FL DBPR roofing qualifiers, and IL roofing qualifying parties. Each is a candidate source whose legal and role constraints vary by state.",
+  "phoneSource": "A register phone where the source publishes one, contrasted with the Maps business number. It remains a business or candidate contact until mobile, live, DNC, suppression/dedupe, and owner-evidence gates pass.",
+  "workflow": [
+    {
+      "id": "legal",
+      "label": "State legal gate",
+      "detail": "Allow only a legally eligible register route; prohibited states use the permitted fallback policy.",
+      "kind": "decision"
+    },
+    {
+      "id": "mapsfallback",
+      "label": "Maps business-contact fallback",
+      "detail": "Use core roofing discovery only where the state register route is unavailable but Maps fallback is permitted.",
+      "kind": "source"
+    },
+    {
+      "id": "holdlegal",
+      "label": "Hold restricted source",
+      "detail": "Do not ingest or use a prohibited commercial-list source.",
+      "kind": "hold"
+    },
+    {
+      "id": "register",
+      "label": "Active roofing register",
+      "detail": "Require an active roofing class or specialty such as WA ROOF, CA C-39, or an explicit FL roofing class.",
+      "kind": "source"
+    },
+    {
+      "id": "role",
+      "label": "Ownership-role assessment",
+      "detail": "Sole Owner, partner, member, or individual registrant is stronger evidence; qualifier, RMO, and RME require different treatment.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdrole",
+      "label": "Hold insufficient role",
+      "detail": "RME and unsupported qualifier/large-operator roles cannot be delivered as owner contacts.",
+      "kind": "hold"
+    },
+    {
+      "id": "contrast",
+      "label": "Maps contrast and roofing fit",
+      "detail": "Match an active core-roofing listing; reject adjacent-only, unrelated contractor, brand, and stale matches.",
+      "kind": "filter"
+    },
+    {
+      "id": "phone",
+      "label": "Exclusive register phone?",
+      "detail": "A phone shared across businesses or missing from the register is not a direct candidate; a different Maps phone is contrast evidence only.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdphone",
+      "label": "Hold non-exclusive or absent phone",
+      "detail": "Do not infer a private number or label a business line as a direct owner contact.",
+      "kind": "hold"
+    },
+    {
+      "id": "verify",
+      "label": "Contact and suppression gates",
+      "detail": "Apply mobile line type, live status, DNC, global dedupe, and required owner-evidence checks.",
+      "kind": "verify"
+    },
+    {
+      "id": "holdverify",
+      "label": "Hold failed contact",
+      "detail": "Park office, non-mobile, unreachable, suppressed, or unsupported-owner cases.",
+      "kind": "hold"
+    },
+    {
+      "id": "deliver",
+      "label": "Deliver supported classification",
+      "detail": "Deliver only after all required gates pass; owner-confirmed mobile needs independent owner evidence.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    {
+      "from": "legal",
+      "to": "register",
+      "label": "eligible state register"
+    },
+    {
+      "from": "legal",
+      "to": "mapsfallback",
+      "label": "register unavailable; permitted fallback"
+    },
+    {
+      "from": "legal",
+      "to": "holdlegal",
+      "label": "restricted or prohibited source"
+    },
+    {
+      "from": "mapsfallback",
+      "to": "contrast",
+      "label": "core roofing candidate"
+    },
+    {
+      "from": "register",
+      "to": "role",
+      "label": "active roofing class/specialty"
+    },
+    {
+      "from": "register",
+      "to": "holdrole",
+      "label": "non-roofing, stale, or inactive row"
+    },
+    {
+      "from": "role",
+      "to": "contrast",
+      "label": "candidate role retained"
+    },
+    {
+      "from": "role",
+      "to": "holdrole",
+      "label": "RME or unsupported qualifier"
+    },
+    {
+      "from": "contrast",
+      "to": "phone",
+      "label": "active core-roofing match"
+    },
+    {
+      "from": "contrast",
+      "to": "holdrole",
+      "label": "adjacent-only, brand, or stale match"
+    },
+    {
+      "from": "phone",
+      "to": "verify",
+      "label": "exclusive candidate contact"
+    },
+    {
+      "from": "phone",
+      "to": "holdphone",
+      "label": "missing, shared, or unproven contact"
+    },
+    {
+      "from": "verify",
+      "to": "deliver",
+      "label": "all gates and owner evidence pass"
+    },
+    {
+      "from": "verify",
+      "to": "holdverify",
+      "label": "contact or owner-evidence gate fails"
+    }
+  ],
+  "failures": [
+    {
+      "risk": "Maps-first roofing begins with an advertised office line rather than owner identity.",
+      "mitigation": "Use a legally eligible, trade-scoped register as identity source and Maps as contrast/activity evidence.",
+      "status": "proposed"
+    },
+    {
+      "risk": "A WA source filter cannot select roofing because the adapter persists only entity type in business_type.",
+      "mitigation": "Persist normalized specialty/class data usable by the jobs filter, or make the adapter specialty-scoped.",
+      "status": "blocked"
+    },
+    {
+      "risk": "Qualifier, RMO, or RME is represented as company owner.",
+      "mitigation": "Preserve role codes; reject RME and require independent owner evidence for unsupported qualifier/RMO cases.",
+      "status": "proposed"
+    },
+    {
+      "risk": "Gutters, siding, restoration, general contracting, or a roofing franchise enters the independent-roofer route.",
+      "mitigation": "Require class/specialty or core roofing relevance; apply brand, phone reuse, size, and activity filters.",
+      "status": "partial"
+    },
+    {
+      "risk": "A register business phone is called a direct owner mobile.",
+      "mitigation": "Require phone exclusivity, Maps contrast, mobile/live/DNC/dedupe gates, and independent owner evidence.",
+      "status": "partial"
+    }
+  ],
+  "sources": [
+    {
+      "label": "WA L&I Contractor License Data General",
+      "scope": "Washington active roofing-specialty contractors",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group A WA L&I row; handoff/07_RESEARCH_BUILD_SPEC.md sections 2 and 5; https://data.wa.gov/resource/m8qx-ubtq.json",
+      "status": "implemented"
+    },
+    {
+      "label": "CA CSLB License Master plus Personnel",
+      "scope": "California C-39 roofing licenses and personnel roles Adapter components exist; industry-specific integration remains proposed.",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group A CSLB row; handoff/07_RESEARCH_BUILD_SPEC.md CA row; src/lib/lead-engine-registers.ts cslb",
+      "status": "proposed"
+    },
+    {
+      "label": "FL DBPR contractor extracts",
+      "scope": "Florida roofing qualifier candidates Adapter components exist; industry-specific integration remains proposed.",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group A FL DBPR row; src/lib/lead-engine-registers.ts flDbprConstruction",
+      "status": "proposed"
+    },
+    {
+      "label": "IL IDFPR Professional Licensing",
+      "scope": "Illinois roofing contractor and qualifying-party identity-only rows",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group A IL IDFPR roofing row; handoff/07_RESEARCH_BUILD_SPEC.md IL row",
+      "status": "proposed"
+    },
+    {
+      "label": "Live roofing recipe-A route",
+      "scope": "Published roofing business-contact discovery",
+      "evidence": "VERIFIED",
+      "reference": "src/data/lead-engine-brain.json industries.roofing; src/lib/lead-engine-brain.ts route; src/lib/lead-engine-industries.ts",
+      "status": "implemented"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "The Maps-first roofing profile could serve as the owner-contact starting point.",
+      "test": "Free aggregate-only WA L&I query of 20 active rows whose first specialty contained ROOF on 2026-09-24.",
+      "observed": "20/20 had primaryprincipalname and phonenumber; only 1/20 had Individual business type. The sample establishes field coverage, not owner or handset ownership.",
+      "change": "Treat the register as trade/identity and contact-candidate evidence, introduce role and exclusivity branches, and do not label a register or Maps phone owner-confirmed without independent evidence."
+    }
+  ],
+  "measurement": {
+    "kind": "free_source_sample",
+    "sampleSize": 20,
+    "observedAt": "2026-09-24",
+    "result": "WA L&I m8qx-ubtq active rows with specialtycode1desc containing ROOF: 20/20 active, 20/20 specialty present, 20/20 primaryprincipalname present, 20/20 phonenumber present, and 1/20 Individual business type. Aggregate-only observation; no contact values retained. It does not measure mobile status, reachability, DNC, handset ownership, owner confirmation, or delivery.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Free public-source field-coverage observation only",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean delivered owner contact was measured. Historical roofing brain rates and the Miami Maps observation use different denominators and are not a per-clean cost for this workflow."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "WA, CA, and FL contractor adapters exist, and roofing relevance is recognized, but roofing itself remains recipe A with no register mapping. WA trade data is not persisted into the field consumed by source filtering, so a roofing mapping cannot yet select the right register rows.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-registers.ts",
+      "src/services/lead-engine-jobs.service.ts",
+      "src/lib/lead-engine-industries.ts"
+    ]
+  },
+  "nextMeasurement": "Add synthetic WA roofing and non-roofing rows, then verify a roofing job selects only the trade-scoped row, preserves principal as a candidate role, and cannot deliver an owner label without independent evidence. After authorization, measure mobile, live, DNC-cleared, reached-owner, and delivered outcomes with separate denominators."
+}

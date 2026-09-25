@@ -1,0 +1,247 @@
+{
+  "industry": "cpa",
+  "title": "CPAs, accounting firms, and tax preparers",
+  "hypothesis": "The live CPA recipe-B route can create an active credentialed-person candidate and, after generic gates, a callable contact. It cannot establish that the person owns a CPA business or that the contact is a direct owner handset without independent owner evidence and an explicit direct business-role link to that phone.",
+  "ownerSource": "Implemented person-level CPA register mappings are Florida fl_cpa, Illinois il_idfpr:cpa, and Pennsylvania pa_pals:accountancy. They establish credential candidates, not business ownership. A future owner label requires independent owner/founder evidence matched to the same business.",
+  "phoneSource": "The implemented recipe-B path obtains a contact only after its address/trace and generic verification stages. A trace-derived number is not a published business contact or direct owner handset absent explicit linked evidence.",
+  "workflow": [
+    {
+      "id": "register",
+      "label": "Mapped CPA register",
+      "detail": "Read the mapped FL, IL, or PA person-level CPA register; recipe A Maps delivery is forbidden for CPAs.",
+      "kind": "source"
+    },
+    {
+      "id": "credential",
+      "label": "Active individual credential filter",
+      "detail": "Keep active individual CPA rows in scope; hold inactive, expired, out-of-state, entity, non-CPA, or firm-only rows.",
+      "kind": "filter"
+    },
+    {
+      "id": "licensehold",
+      "label": "Credential out of scope",
+      "detail": "Hold failed status, entity, firm-only, non-CPA, or unavailable-source rows.",
+      "kind": "hold"
+    },
+    {
+      "id": "candidate",
+      "label": "Credentialed person candidate",
+      "detail": "Treat a person-level CPA credential as a candidate, not proof of business ownership.",
+      "kind": "decision"
+    },
+    {
+      "id": "address",
+      "label": "Current recipe-B address and trace path",
+      "detail": "Use the configured home/address path; Florida skips parcel because the license file carries a street. This path does not prove a business contact.",
+      "kind": "source"
+    },
+    {
+      "id": "contact",
+      "label": "Contact candidate",
+      "detail": "Keep any trace-derived number distinct from published-business-contact and handset evidence.",
+      "kind": "source"
+    },
+    {
+      "id": "gates",
+      "label": "Line and compliance gates",
+      "detail": "Require mobile classification, reachability, DNC/TCPA clearance, suppression, duplicate, freshness, and timezone checks.",
+      "kind": "verify"
+    },
+    {
+      "id": "gatehold",
+      "label": "Contact gate hold",
+      "detail": "Hold non-mobile, unreachable, DNC/TCPA, suppressed, duplicate, stale, or timezone-unresolved rows.",
+      "kind": "hold"
+    },
+    {
+      "id": "owner",
+      "label": "Independent owner and direct-contact evidence",
+      "detail": "A future owner-labelled row needs supported owner/founder evidence for the matched business and an explicit direct business-role link to this phone.",
+      "kind": "verify"
+    },
+    {
+      "id": "ownerhold",
+      "label": "Ownership unresolved",
+      "detail": "Hold employee, staff, firm-only, multi-preparer, front-desk, conflicting, or unlinked evidence; do not infer handset ownership.",
+      "kind": "hold"
+    },
+    {
+      "id": "deliver",
+      "label": "Future owner-confirmed delivery",
+      "detail": "Deliver an owner-confirmed CPA contact only after all contact/compliance gates and the separate ownership/contact proof pass.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    {
+      "from": "register",
+      "to": "credential",
+      "label": "parse mapped source"
+    },
+    {
+      "from": "credential",
+      "to": "licensehold",
+      "label": "not an active individual CPA"
+    },
+    {
+      "from": "credential",
+      "to": "candidate",
+      "label": "active individual CPA"
+    },
+    {
+      "from": "candidate",
+      "to": "address",
+      "label": "credential candidate"
+    },
+    {
+      "from": "address",
+      "to": "contact",
+      "label": "current route returns a number candidate"
+    },
+    {
+      "from": "contact",
+      "to": "gates",
+      "label": "verify contact"
+    },
+    {
+      "from": "gates",
+      "to": "gatehold",
+      "label": "any line or compliance gate fails"
+    },
+    {
+      "from": "gates",
+      "to": "owner",
+      "label": "contact gates pass"
+    },
+    {
+      "from": "owner",
+      "to": "ownerhold",
+      "label": "missing, conflicting, or unlinked evidence"
+    },
+    {
+      "from": "owner",
+      "to": "deliver",
+      "label": "owner and direct-contact evidence supported"
+    }
+  ],
+  "failures": [
+    {
+      "risk": "An active individual CPA credential is represented as proof that the person owns an accounting business.",
+      "mitigation": "Keep the credential as an owner candidate and require independent owner/founder evidence matched to the business.",
+      "status": "proposed"
+    },
+    {
+      "risk": "A trace-derived mobile is represented as a published business line or direct owner handset.",
+      "mitigation": "Require explicit direct business-role linkage to the same phone before any owner label; retain trace provenance separately.",
+      "status": "blocked"
+    },
+    {
+      "risk": "Florida AD firm rows are absent while AC individual rows proceed.",
+      "mitigation": "Report the individual-only source scope and add a verified firm-to-responsible-licensee join only after owner semantics are confirmed.",
+      "status": "proposed"
+    },
+    {
+      "risk": "Generic recipe-B delivery occurs without the existing owner-evidence assessment.",
+      "mitigation": "Require a supported assessOwnerEvidence result before owner-labelled CPA delivery and hold unresolved evidence.",
+      "status": "blocked"
+    },
+    {
+      "risk": "Generic mobile and compliance checks are treated as ownership verification.",
+      "mitigation": "Keep line, reachability, DNC/TCPA, suppression, duplicate, freshness, and timezone checks separate from ownership and handset proof.",
+      "status": "implemented"
+    }
+  ],
+  "sources": [
+    {
+      "label": "Live CPA brain route",
+      "scope": "Recipe B mappings: FL fl_cpa, IL il_idfpr:cpa, PA pa_pals:accountancy; CPA Maps delivery forbidden",
+      "evidence": "VERIFIED",
+      "reference": "src/data/lead-engine-brain.json industries.cpa; src/lib/lead-engine-jobs.ts quoteJob; src/lib/lead-engine-gates.ts NEVER_MAPS_DELIVERABLE",
+      "status": "implemented"
+    },
+    {
+      "label": "Florida DBPR CPA adapter",
+      "scope": "Current, active, future-expiring individual AC rows with licensee street; AD firms omitted",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-registers.ts flCpaRecord and flCpa; tests/fixtures/registers/fl_cpa.json",
+      "status": "implemented"
+    },
+    {
+      "label": "Illinois IDFPR CPA adapter",
+      "scope": "Active, non-business individual licensed certified public accountant segment filtered as CPA",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-registers.ts IL_IDFPR_PROFESSIONS and ilIdfpr",
+      "status": "implemented"
+    },
+    {
+      "label": "Pennsylvania PALS accountancy route",
+      "scope": "PALS parser accepts active Accountancy and Real Estate rows; live CPA brain filter selects Accountancy",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-registers.ts paPals; src/data/lead-engine-brain.json industries.cpa.register_source",
+      "status": "implemented"
+    },
+    {
+      "label": "IRS PTIN FOIA extract",
+      "scope": "Catalogued national tax-preparer source with reported business phone and DBA fields; not mapped as the live CPA brain route and not sampled here",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md IRS PTIN holder FOIA extracts; src/lib/lead-engine-registers.ts irsPtin",
+      "status": "proposed"
+    },
+    {
+      "label": "Owner-evidence assessment",
+      "scope": "Independent direct-business-contact and owner/founder assessment helper exists but has no CPA delivery caller",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-research.ts assessOwnerEvidence; src/services/lead-engine-jobs.service.ts settleVerified",
+      "status": "blocked"
+    },
+    {
+      "label": "Generic contact and delivery gates",
+      "scope": "Mobile, reachability, DNC/TCPA, suppression, duplicate, freshness, and timezone controls",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-quality.ts evaluateVerifiedBusiness; src/lib/lead-engine-gates.ts evaluateJobGates; src/services/lead-engine-jobs.service.ts settleVerified",
+      "status": "implemented"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "The implemented Florida CPA adapter only admits eligible individual AC rows and holds inactive or firm rows before a person-level candidate is created.",
+      "test": "Five-row local fixture/code audit on 2026-09-24 using tests/fixtures/registers/fl_cpa.json through flCpa. Command: node --experimental-strip-types --test --test-name-pattern='fl_cpa|il_idfpr' tests/lead-engine-registers.test.ts. No network, credential, provider, contact-data, or paid call ran.",
+      "observed": "Three current active future-expiring AC rows were kept; one inactive AC row was held as secondary_status_inactive; one AD firm row was omitted. The focused fl_cpa and il_idfpr tests both passed. This measures adapter behavior only, not ownership, phones, reachability, DNC/TCPA, handsets, or delivery.",
+      "change": "Require a CPA owner-evidence gate before any owner-labelled export, expose Florida's individual-only scope, and keep all current generic contact gates separate from ownership proof."
+    },
+    {
+      "hypothesis": "Root integration regression check, 2026-09-24",
+      "test": "Focused synthetic regression checks in tests/lead-engine-industry-corrections.test.ts, lead-engine-reviews.test.ts, lead-engine-gates-jobs.test.ts and lead-engine-jobs.test.ts. No paid provider call.",
+      "observed": "Export status no longer infers ownership or a home trace from recipe B. Current phone clearance and source-role identity remain distinct from independently supported ownership; the proposed owner-evidence pipeline is not yet wired.",
+      "change": "Shared runtime correction integrated. Original source samples are retained with their original denominators; no phone-yield improvement is claimed."
+    }
+  ],
+  "measurement": {
+    "kind": "fixture",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Five local Florida CPA fixture rows: three eligible individual AC rows kept, one inactive AC row held, and one AD firm row omitted. Focused FL and IL adapter tests passed. Fixture/code audit only; no live source, phone, owner, handset, compliance, or delivery measurement.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Local five-row fixture/code audit only; no source fetch, provider, append, trace, review, or phone-verification call ran.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean owner contact was measured. Historical brain benchmarks use a different denominator and do not establish clean-contact cost."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "Export status no longer infers ownership or a home trace from recipe B. Current phone clearance and source-role identity remain distinct from independently supported ownership; the proposed owner-evidence pipeline is not yet wired. Original review: CPA has implemented FL, IL, and PA register mappings, a Maps-delivery prohibition, and generic recipe-B contact gates. The runtime can deliver a recipe-B verified row without calling assessOwnerEvidence, so it does not implement owner-confirmed CPA delivery or direct owner-handset proof.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-registers.ts",
+      "src/lib/lead-engine-jobs.ts",
+      "src/services/lead-engine-jobs.service.ts",
+      "src/lib/lead-engine-quality.ts",
+      "src/lib/lead-engine-gates.ts",
+      "src/lib/lead-engine-research.ts"
+    ]
+  },
+  "nextMeasurement": "After wiring the owner-evidence gate, run a lawful 5–20 row aggregate public-business-contact study only from a catalog-verified endpoint. Separate active credentialed, business-matched, independent-owner-supported, published-business-contact, mobile, reachable, DNC/TCPA-clear, suppression/duplicate-clear, direct-owner-contact-supported, and delivered denominators; do not use residential/property sources to find unpublished personal phones or use DMV, South Carolina, or Utah forbidden sources."
+}

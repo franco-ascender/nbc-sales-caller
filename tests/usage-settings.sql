@@ -1,0 +1,22 @@
+do $$declare a uuid='06000000-0000-4000-8000-000000000001';s uuid='06000000-0000-4000-8000-000000000002';o uuid='06000000-0000-4000-8000-000000000003';n bigint;r jsonb;begin
+ insert into auth.users(id,email) values(a,'i06-admin@example.invalid'),(s,'i06-student@example.invalid');
+ insert into public.nbc_members(id,display_name,role) values(a,'I06 ADMIN TEST','admin'),(s,'I06 STUDENT TEST','student');
+ select balance into n from public.nbc_credit_wallets where member_id=s;if n<>0 then raise exception 'wallet_not_zero';end if;
+ perform public.nbc_usage_record(s,'test','fixture','Caller',null,null,null,60,null,'unknown',now());
+ perform public.nbc_usage_record(s,'test','fixture','Caller',10,20,5,60,10000,'llm_only',now());
+ perform public.nbc_usage_record(s,'test','fixture','Caller',10,20,5,60,10000,'llm_only',now());
+ select count(*) into n from public.nbc_usage_events where member_id=s;if n<>1 then raise exception 'duplicated_usage';end if;
+ select input_tokens+output_tokens+cached_tokens into n from public.nbc_usage_events where member_id=s;if n<>35 then raise exception 'usage_enrichment_failed';end if;
+ r=public.nbc_admin_usage(a,0,'i06-student');if (r->>'total')::integer<>1 then raise exception 'mapping_failed';end if;
+ begin perform public.nbc_admin_usage(s);raise exception 'student_admin_access';exception when insufficient_privilege then null;end;
+ perform public.nbc_save_profile(s,'Updated student','gold','Example','UTC','Goal','Questions');
+ if not exists(select 1 from public.nbc_members where id=s and display_name='Updated student' and role='student') then raise exception 'profile_failed';end if;
+ insert into public.nbc_credit_orders(id,member_id,package_id,credits,amount_cents,currency,checkout_session) values(o,s,'starter',1000,1000,'usd','cs_test_sql');
+ begin perform public.nbc_paid_topup(o,'cs_test_sql','pi_test',999,'usd','evt_bad');raise exception 'wrong_amount_allowed';exception when invalid_parameter_value then null;end;
+ perform public.nbc_paid_topup(o,'cs_test_sql','pi_test',1000,'usd','evt_good');
+ perform public.nbc_paid_topup(o,'cs_test_sql','pi_test',1000,'usd','evt_duplicate');
+ select balance into n from public.nbc_credit_wallets where member_id=s;if n<>1000 then raise exception 'duplicate_credit_posting';end if;
+ select count(*) into n from public.nbc_credit_entries where member_id=s;if n<>1 then raise exception 'duplicate_ledger_entry';end if;
+ if has_function_privilege('authenticated','public.nbc_paid_topup(uuid,text,text,integer,text,text)','EXECUTE') then raise exception 'public_topup_rpc';end if;
+ if has_table_privilege('authenticated','public.nbc_usage_events','SELECT') then raise exception 'public_usage_table';end if;
+end $$;

@@ -1,0 +1,5 @@
+{
+  "crons": [
+    { "path": "/api/lead-engine/registers/cron", "schedule": "15 7 * * *" }
+  ]
+}

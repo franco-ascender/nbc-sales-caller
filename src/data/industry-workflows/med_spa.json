@@ -1,0 +1,232 @@
+{
+  "industry": "med_spa",
+  "title": "Med spas and aesthetic cash-pay healthcare",
+  "hypothesis": "Resolve a public business-contact owner candidate person-first: match an NP, PA, or RN to the exact spa suite, corroborate through a state entity source where available, exclude shared medical directors and corporate brands, then hold until ownership and normal contact gates are measured.",
+  "ownerSource": "NPPES NPI-1 clinician roster at the exact practice address and suite; state entity officers are corroboration where verified.",
+  "phoneSource": "Explicitly published business-contact numbers only. NPPES LOCATION or AO fields are candidates; differing MAILING phones are not eligible without independent business-use evidence. No private phone enrichment.",
+  "workflow": [
+    {
+      "id": "start",
+      "label": "Independent spa input",
+      "detail": "Use a lawfully obtained business discovery/register row with name, address, ZIP, and state.",
+      "kind": "source"
+    },
+    {
+      "id": "brand",
+      "label": "Brand and agent filter",
+      "detail": "Reject known franchise, telehealth, corporate-brand, and registered-agent-service candidates before contact work.",
+      "kind": "filter"
+    },
+    {
+      "id": "blocked",
+      "label": "Blocked brand or agent",
+      "detail": "Do not treat the excluded corporate or registered-agent identity as an owner contact.",
+      "kind": "hold"
+    },
+    {
+      "id": "roster",
+      "label": "NPPES NPI-1 roster",
+      "detail": "Query NP, PA, and RN LOCATION records for the five-digit ZIP; API pagination can truncate at its documented ceiling.",
+      "kind": "source"
+    },
+    {
+      "id": "suite",
+      "label": "Exact-address decision",
+      "detail": "Require exact house number, ZIP, high normalized-address score, and no conflicting suite.",
+      "kind": "decision"
+    },
+    {
+      "id": "no_match",
+      "label": "No clinician match",
+      "detail": "Hold for another lawful identity source; NPPES absence does not mean the cash-pay spa is absent.",
+      "kind": "hold"
+    },
+    {
+      "id": "director",
+      "label": "Medical-director graph",
+      "detail": "Classify a Tennessee director named on three or more registry facilities as director_only.",
+      "kind": "filter"
+    },
+    {
+      "id": "director_hold",
+      "label": "Director-only candidate",
+      "detail": "Never deliver a supervising director as the spa owner without independent owner evidence.",
+      "kind": "hold"
+    },
+    {
+      "id": "corroborate",
+      "label": "Entity corroboration",
+      "detail": "Use a verified state officer/member source when available; Florida two-hop and Texas PIR evidence are not yet implemented as verified production sources.",
+      "kind": "verify"
+    },
+    {
+      "id": "candidate_hold",
+      "label": "Owner candidate hold",
+      "detail": "Retain role, source, and evidence; a clinician or officer is not owner-confirmed merely from a match.",
+      "kind": "hold"
+    },
+    {
+      "id": "contact_gate",
+      "label": "Contact and compliance gate",
+      "detail": "A published business-contact field still needs authorized line-type, reachability, ownership, and DNC evaluation.",
+      "kind": "verify"
+    },
+    {
+      "id": "deliver",
+      "label": "Deliver only after gates",
+      "detail": "No current measured path qualifies an owner candidate for delivery.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    {
+      "from": "start",
+      "to": "brand",
+      "label": "normalize name"
+    },
+    {
+      "from": "brand",
+      "to": "blocked",
+      "label": "brand or agent match"
+    },
+    {
+      "from": "brand",
+      "to": "roster",
+      "label": "independent candidate"
+    },
+    {
+      "from": "roster",
+      "to": "suite",
+      "label": "clinician records"
+    },
+    {
+      "from": "suite",
+      "to": "no_match",
+      "label": "no exact match"
+    },
+    {
+      "from": "suite",
+      "to": "director",
+      "label": "exact-suite candidate"
+    },
+    {
+      "from": "director",
+      "to": "director_hold",
+      "label": "director on 3+ facilities"
+    },
+    {
+      "from": "director",
+      "to": "corroborate",
+      "label": "not director_only"
+    },
+    {
+      "from": "corroborate",
+      "to": "candidate_hold",
+      "label": "candidate evidence"
+    },
+    {
+      "from": "candidate_hold",
+      "to": "contact_gate",
+      "label": "future authorized evaluation"
+    },
+    {
+      "from": "contact_gate",
+      "to": "deliver",
+      "label": "ownership and compliance pass"
+    }
+  ],
+  "failures": [
+    {
+      "risk": "NPPES NPI-2 coverage omits many cash-pay spas and returns adjacent aesthetic practices.",
+      "mitigation": "Use it as corroborative identity evidence, never as the med-spa universe or a negative screen.",
+      "status": "implemented"
+    },
+    {
+      "risk": "A clinician at the building is an employee or a clinician at another suite.",
+      "mitigation": "Require exact house number, ZIP, normalized address threshold, and reject conflicting suite values; retain candidate status.",
+      "status": "implemented"
+    },
+    {
+      "risk": "A supervising medical director is mistaken for the owner.",
+      "mitigation": "Hold names occurring at three or more Tennessee registry facilities as director_only.",
+      "status": "implemented"
+    },
+    {
+      "risk": "Texas officer data is inferred from an unverified HTML layout.",
+      "mitigation": "Keep the adapter fixture/code-audit only and do not assert live officer coverage.",
+      "status": "blocked"
+    },
+    {
+      "risk": "The resolved candidate never reaches job output.",
+      "mitigation": "Wire the live resolver into the runner and persist its evidence before considering contact delivery.",
+      "status": "proposed"
+    }
+  ],
+  "sources": [
+    {
+      "label": "CMS NPPES Registry API",
+      "scope": "National NPI-1 roster and NPI-2 organization/AO fields",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group D; src/services/lead-engine-medspa.service.ts",
+      "status": "implemented"
+    },
+    {
+      "label": "Tennessee Medical Spa Registry director graph",
+      "scope": "Tennessee facility/director exclusion signal",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group D; src/data/lead-engine-tn-medspa-directors.json",
+      "status": "implemented"
+    },
+    {
+      "label": "Florida Sunbiz two-hop member resolution",
+      "scope": "Florida person-to-entity corroboration",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group D; handoff/07_RESEARCH_BUILD_SPEC.md section 5.4",
+      "status": "proposed"
+    },
+    {
+      "label": "Texas Comptroller PIR",
+      "scope": "Texas per-entity officer corroboration",
+      "evidence": "REPORTED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group D; src/services/lead-engine-medspa.service.ts",
+      "status": "blocked"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "The narrow NPI-2 aesthetic path exposes titled business-contact candidates.",
+      "test": "Free live NPPES Registry API request: Florida NPI-2 organization_name=*aesthetic*, limit=20, on 2026-09-24.",
+      "observed": "20/20 returned records had AO name, AO title, AO telephone, and LOCATION telephone fields; 19/20 titles matched the current owner-title expression and 0/20 matched the staff-title exclusion. This is field coverage only.",
+      "change": "Keep NPI-2 as corroboration and retain all candidates behind ownership/contact gates; do not claim owner or handset truth."
+    },
+    {
+      "hypothesis": "Root integration regression check, 2026-09-24",
+      "test": "Focused synthetic regression checks in tests/lead-engine-industry-corrections.test.ts, lead-engine-reviews.test.ts, lead-engine-gates-jobs.test.ts and lead-engine-jobs.test.ts. No paid provider call.",
+      "observed": "NPPES med-spa admissions now require an explicit owner/leadership title. Clinical-only director/doctor/DDS/DMD titles are held. Earlier 19/20 title matches describe the old broad expression, not the corrected filter. The resolver is still not wired; generic phone gates exist but independent owner proof remains unintegrated.",
+      "change": "Shared runtime correction integrated. Original source samples are retained with their original denominators; no phone-yield improvement is claimed."
+    }
+  ],
+  "measurement": {
+    "kind": "free_source_sample",
+    "sampleSize": 20,
+    "observedAt": "2026-09-24",
+    "result": "NPPES Florida NPI-2 *aesthetic* sample: 20/20 AO name/title/AO-phone/LOCATION-phone field presence; 19/20 old owner-title matches (before root correction); no owner, mobile, reachable, or DNC outcome measured.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Free public NPPES endpoint sample only; no paid discovery, append, or verification was invoked.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "A cost per clean owner contact cannot be calculated without measured ownership and contact outcomes."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "NPPES med-spa admissions now require an explicit owner/leadership title. Clinical-only director/doctor/DDS/DMD titles are held. Earlier 19/20 title matches describe the old broad expression, not the corrected filter. The resolver is still not wired; generic phone gates exist but independent owner proof remains unintegrated. Original review: Pure resolution and a free NPPES live resolver exist with tests, but resolveMedSpaOwnerLive has no runtime caller. Florida two-hop corroboration, verified Texas PIR retrieval, NPPES bulk repetition checks, and delivery gates are absent.",
+    "runtimeFiles": [
+      "src/lib/lead-engine-medspa.ts",
+      "src/services/lead-engine-medspa.service.ts",
+      "src/lib/lead-engine-registers.ts"
+    ]
+  },
+  "nextMeasurement": "After the resolver is wired, use a consented 5-20 independent-spa sample to record separate discovered, exact-suite candidate, independently corroborated owner, and authorized line-outcome denominators."
+}

@@ -1,0 +1,70 @@
+{
+ "_about": "FL parcel layer answer for SMITH JOHN, 2026-09-21",
+ "body": {
+  "objectIdFieldName": "OBJECTID",
+  "uniqueIdField": {
+   "name": "OBJECTID",
+   "isSystemMaintained": true
+  },
+  "globalIdFieldName": "",
+  "geometryType": "esriGeometryPolygon",
+  "exceededTransferLimit": true,
+  "features": [
+   {
+    "attributes": {
+     "OWN_NAME": "SMITH JOHN D",
+     "PHY_ADDR1": "16330 N STATE RD 121",
+     "PHY_CITY": "GAINESVILLE",
+     "PHY_ZIPCD": 32653,
+     "OWN_ADDR1": "16330 N STATE RD 121",
+     "OWN_CITY": "GAINESVILLE",
+     "OWN_ZIPCD": 32653
+    }
+   },
+   {
+    "attributes": {
+     "OWN_NAME": "SMITH JOHN RUSSELL",
+     "PHY_ADDR1": "12928 NW COUNTY RD 231",
+     "PHY_CITY": "GAINESVILLE",
+     "PHY_ZIPCD": 32609,
+     "OWN_ADDR1": "12928 NW COUNTY ROAD 231",
+     "OWN_CITY": "GAINESVILLE",
+     "OWN_ZIPCD": 32609
+    }
+   },
+   {
+    "attributes": {
+     "OWN_NAME": "SMITH JOHN R",
+     "PHY_ADDR1": "13102 NW COUNTY RD 231",
+     "PHY_CITY": "GAINESVILLE",
+     "PHY_ZIPCD": 32609,
+     "OWN_ADDR1": "12928 NORTH COUNTY RD 231",
+     "OWN_CITY": "GAINESVILLE",
+     "OWN_ZIPCD": 32609
+    }
+   },
+   {
+    "attributes": {
+     "OWN_NAME": "SMITH JOHN",
+     "PHY_ADDR1": "3822 NE 159TH PL",
+     "PHY_CITY": "GAINESVILLE",
+     "PHY_ZIPCD": 32609,
+     "OWN_ADDR1": "3822 NE 159TH PL",
+     "OWN_CITY": "GAINESVILLE",
+     "OWN_ZIPCD": 32609
+    }
+   },
+   {
+    "attributes": {
+     "OWN_NAME": "SMITH JOHN",
+     "PHY_ADDR1": "21413  RAILROAD AVE",
+     "PHY_CITY": "HIGH SPRINGS",
+     "PHY_ZIPCD": 32643,
+     "OWN_ADDR1": "23206 NW COUNTY RD 2054",
+     "OWN_CITY": "ALACHUA",
+     "OWN_ZIPCD": 32615
+    }
+   }
+  ]
+ }
+}

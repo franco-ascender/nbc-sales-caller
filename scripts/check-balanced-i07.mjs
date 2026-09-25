@@ -1,0 +1,48 @@
+import {loadEnvFile} from 'node:process';import{readFileSync,writeFileSync}from'node:fs';import{createRequire}from'node:module';import assert from'node:assert/strict';
+loadEnvFile('.env.local');const [origin,mode='fixture']=process.argv.slice(2);if(!origin||!['fixture','live'].includes(mode))throw Error('Supply origin fixture|live');const out='artifacts/lanes/I07',stage=JSON.parse(readFileSync(out+'/staging.json')).path;const require=createRequire(stage+'/package.json');const{chromium,expect}=require('@playwright/test');const browser=await chromium.launch({channel:'chrome',headless:true});const checks=[],errors=[];
+const day=n=>new Date(Date.UTC(new Date().getUTCFullYear(),new Date().getUTCMonth(),new Date().getUTCDate()-n)).toISOString();
+const sessions=[2,4,1,5,3,6,4].flatMap((count,d)=>Array.from({length:count},(_,i)=>({id:`s${d}-${i}`,channel:i%2?'phone':'web',status:'completed',duration_seconds:180,created_at:day(d)})));sessions.push({id:'demo',is_demo:true,status:'completed',channel:'web',duration_seconds:9999,created_at:day(0)});
+const leads=Array.from({length:80},(_,i)=>({id:`l${i}`,stage:['new','queued','contacted','qualified','booked','won','lost','do_not_call'][i%8],name:'DEMO'}));const inventoryId='11111111-1111-4111-8111-111111111111';
+const document={id:inventoryId,name:'DEMO Academy',revision:1,manifest:{version:1,courses:[{id:'course',title:'DEMO Sales foundations',modules:[{id:'module',title:'DEMO Opening',lessons:[{id:'lesson1',title:'DEMO Build better sales conversations: the complete discovery call framework',videoUrl:'https://www.youtube.com/watch?v=M7lc1UVf-VE'},{id:'lesson2',title:'DEMO Ask better questions',videoUrl:'https://academy.example.com/lesson'}]}]}]}};
+try{
+for(const [device,viewport] of [['reference',{width:1608,height:1000}],['desktop',{width:1440,height:1000}],['tablet',{width:1024,height:1000}],['small-tablet',{width:768,height:1000}],['mobile',{width:390,height:844}],['small-mobile',{width:320,height:740}]]){
+const ctx=await browser.newContext({viewport,hasTouch:device==='mobile'});let actor='11111111-1111-4111-8111-111111111111',crmError=false,empty=false;
+ {
+  await ctx.route('**/auth/v1/**',r=>r.fulfill(r.request().url().includes('/logout')?{status:204}:{json:r.request().url().includes('/token')?{access_token:'DEMO-access-token',refresh_token:'DEMO-refresh-token',token_type:'bearer',expires_in:86400,user:{id:actor,aud:'authenticated',role:'authenticated',email:'demo@example.invalid',app_metadata:{},user_metadata:{}}}:{id:actor}}));
+  await ctx.route('**/api/workspace/session',r=>r.fulfill({json:{user:{id:actor,name:'DEMO Member',role:'admin'}}}));
+  await ctx.route('**/api/calendar',r=>r.fulfill({json:{events:[],timezone:'UTC',externalStatus:'not_connected',checkedAt:new Date().toISOString()}}));
+  await ctx.route('**/api/members/summary',r=>r.fulfill({json:{completed:true,available:240}}));
+  await ctx.route('**/api/members',r=>r.fulfill({json:{member:{id:actor},subject:{id:actor},people:[],onboarding:{completed_at:day(1),timezone:'UTC'},events:[],messages:[],tickets:[],credits:{available:240,reserved:0,entries:[]}}}));
+  await ctx.route('**/api/caller/leads',r=>r.fulfill(crmError?{status:503,json:{error:'DEMO unavailable'}}:{json:{configured:true,leads:empty?[]:leads}}));
+  await ctx.route('**/api/caller/sessions',r=>r.fulfill({json:{sessions:empty?[]:sessions}}));
+  await ctx.route('**/api/academy/inventories?*',r=>r.fulfill({json:{inventories:[{id:inventoryId,name:'DEMO Academy',revision:1}],nextOffset:null}}));
+  await ctx.route('**/api/academy/inventories/'+inventoryId,r=>r.fulfill({json:{inventory:document}}));
+  await ctx.route('https://www.youtube-nocookie.com/**',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><html><body style="color:white;background:#111">DEMO player fixture — no external playback</body></html>'}));
+ }
+
+const p=await ctx.newPage();p.setDefaultTimeout(15000);p.on('pageerror',e=>errors.push(e.message));
+await p.goto(origin);await p.getByLabel('Email address',{exact:true}).fill('demo@example.invalid');await p.getByLabel('Password',{exact:true}).fill('DEMO-password');await p.getByRole('button',{name:'Enter NBC Sales',exact:true}).click();await p.getByRole('heading',{name:'Overview.',exact:true}).waitFor();await expect(p.getByRole('button',{name:'Refresh dashboard',exact:true})).toBeEnabled();await expect(p.locator('[data-widget]')).toHaveCount(11);await expect(p.locator('[data-widget="leads"] strong')).toHaveText('80');await expect(p.locator('[data-widget="conversations"] strong')).toHaveText('25');await expect(p.locator('html')).toHaveAttribute('data-theme','light');
+
+if(device==='reference'){const hide=p.getByRole('button',{name:'Hide sidebar',exact:true});await hide.first().click();}
+await p.waitForTimeout(400);
+const geometry=()=>p.locator('[data-widget]').evaluateAll(nodes=>{
+ const rects=nodes.map(n=>({id:n.dataset.widget,r:n.getBoundingClientRect()}));
+ return {cards:rects.map(({id,r})=>({id,x:r.x,y:r.y,width:r.width,height:r.height})),bounded:rects.every(({r})=>r.left>=0&&r.right<=innerWidth+1),overlap:rects.some(({r},i)=>rects.some(({r:s},j)=>i!==j&&r.right>s.left+1&&r.left<s.right-1&&r.bottom>s.top+1&&r.top<s.bottom-1))};
+});
+const checkLesson=async()=>{
+ const result=await p.locator('[data-widget="lesson"]').evaluate(card=>{
+  const video=card.querySelector('iframe,video,button[aria-label="Choose an Academy lesson"],button[aria-label^="Play lesson:"]');
+  const action=Array.from(card.querySelectorAll('button')).find(b=>/^(Choose|Change) lesson/.test(b.textContent));
+  const title=card.querySelector('h3');const r=card.getBoundingClientRect(),v=video.getBoundingClientRect(),a=action.getBoundingClientRect(),t=title.getBoundingClientRect();
+  return {ratio:v.width/v.height,videoWidth:v.width,videoHeight:v.height,visible:a.bottom<=r.bottom-8&&t.top>=r.top&&v.bottom<=r.bottom-8,cardHeight:r.height};
+ });
+ assert(Math.abs(result.ratio-16/9)<.03);assert(result.visible,JSON.stringify(result));return result;
+};
+const lesson=await checkLesson();let g=await geometry();assert(g.bounded&&!g.overlap);assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+await p.screenshot({path:out+`/balanced-${device}.png`,fullPage:true,animations:'disabled'});
+await p.getByRole('button',{name:'Choose lesson',exact:true}).click();await p.getByLabel('Academy collection').selectOption(inventoryId);await p.getByRole('button').filter({hasText:'DEMO Build better sales conversations: the complete discovery call framework'}).click();await p.getByRole('button',{name:'Play lesson: DEMO Build better sales conversations: the complete discovery call framework',exact:true}).click();await p.locator('[data-widget="lesson"] iframe').waitFor();await checkLesson();
+await p.evaluate(()=>scrollTo(0,0));await p.screenshot({path:out+`/player-${device}.png`,fullPage:true,animations:'disabled'});
+checks.push({device,lesson,geometry:g,player:true});await ctx.close();
+}
+assert.deepEqual(errors,[]);writeFileSync(out+'/balanced-browser-checks.json',JSON.stringify({at:new Date().toISOString(),origin,passed:true,fixture:true,checks},null,2)+'\n');console.log({passed:true,checks:checks.length});
+}finally{await browser.close();}

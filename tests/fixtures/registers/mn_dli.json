@@ -1,0 +1,22 @@
+{
+ "source": "mn_dli",
+ "fetchedAt": "2026-09-21",
+ "url": "https://secure.doli.state.mn.us/ccld/data/MNDLILicRegCertExport_Electrical.csv (bytes 0-6000, first lines: Registered Electrical Employer rows)",
+ "text": "Bus_Pers,License_Type,License_Subtype,Name,DBA_Name,Addr1,Addr2,City,St,Zip,Phone_No,Email_Address,Lic_Number,Status,Orig_Date,Exp_Date,Enforcement_Action,Renewal_in_Progress\n\"Business\",\"Electrical\",\"Registered Electrical Employer\",\"UNIVERSITY OF MINNESOTA DULUTH\",\"\",\"1049 UNIVERSITY DR\",\"241 DADB\",\"DULUTH\",\"MN\",\"55812\",\"\",\"\",\"ER665255\",\"Issued\",\"04/09/2013\",\"04/09/2027\",\"0\",\"\"\n\"Business\",\"Electrical\",\"Registered Electrical Employer\",\"LONZA INC\",\"\",\"1101 NW 3RD STREET\",\"\",\"COHASSET\",\"MN\",\"55721\",\"\",\"\",\"ER669685\",\"VOLUNTARY TERMINATION\",\"07/03/2013\",\"07/03/2021\",\"0\",\"\"\n\"Business\",\"Electrical\",\"Registered Electrical Employer\",\"GUSTAVUS ADOLPHUS COLLEGE\",\"\",\"800 W COLLEGE AVE\",\"\",\"ST PETER\",\"MN\",\"56082\",\"5079337504\",\"\",\"ER670297\",\"Issued\",\"07/25/2013\",\"07/25/2027\",\"0\",\"\"\n\"Business\",\"Electrical\",\"Registered Electrical Employer\",\"NEW FLYER OF AMERICA INC\",\"\",\"214 5TH AVE SW\",\"\",\"CROOKSTON\",\"MN\",\"56716\",\"2182777100\",\"\",\"ER670787\",\"Issued\",\"08/06/2013\",\"08/06/2027\",\"0\",\"\"\n\"Business\",\"Electrical\",\"Registered Electrical Employer\",\"STREATER LLC\",\"\",\"411 SOUTH 1ST AVE\",\"\",\"ALBERT LEA\",\"MN\",\"56007\",\"\",\"\",\"ER665343\",\"EXPIRED\",\"04/10/2013\",\"04/10/2021\",\"0\",\"\"\n",
+ "htmlErrorText": "<!doctype html>\r\n<html class=\"no-js\" lang=\"en-US\">\r\n<head id=\"Head1\" runat=\"server\">\r\n    <meta charset=\"utf-8\">\r\n    <meta http-equiv=\"x-ua-compatible\" content=\"ie=edge\">\r\n    <title>Minnesota Department of Labor and Industry: Error</title>\r\n    <meta name=\"description\" content=\"\">\r\n    <meta name=",
+ "masterUrl": "MNDLILicRegCertExport_Electrical.csv and _Plumbing.csv (selected real lines, header from Electrical)",
+ "masterText": "Bus_Pers,License_Type,License_Subtype,Name,DBA_Name,Addr1,Addr2,City,St,Zip,Phone_No,Email_Address,Lic_Number,Status,Orig_Date,Exp_Date,Enforcement_Action,Renewal_in_Progress\n\"Personal\",\"Electrical\",\"Class A Master Electrician\",\"PETER A VANHAVERMAET\",\"\",\"E17971 RIDGE RD\",\"\",\"Hillsboro\",\"WI\",\"54634\",\"6083434484\",\"\",\"AM004024\",\"Issued\",\"11/21/1986\",\"02/28/2027\",\"0\",\"\"\n\"Personal\",\"Electrical\",\"Class A Master Electrician\",\"BRUCE T MIELKE\",\"\",\"1180 JOES LAKE ROAD\",\"\",\"Cambridge\",\"MN\",\"55008\",\"7639233686\",\"\",\"AM007519\",\"Issued\",\"05/10/2004\",\"02/28/2027\",\"0\",\"\"\n\"Business\",\"Electrical\",\"Registered Electrical Employer\",\"UNIVERSITY OF MINNESOTA DULUTH\",\"\",\"1049 UNIVERSITY DR\",\"241 DADB\",\"DULUTH\",\"MN\",\"55812\",\"\",\"\",\"ER665255\",\"Issued\",\"04/09/2013\",\"04/09/2027\",\"0\",\"\"\n\"Personal\",\"Electrical\",\"Registered Unlicensed Electrician\",\"STEPHEN P BRANDT\",\"\",\"719 VALLEY RD\",\"\",\"Two Harbors\",\"MN\",\"55616\",\"2187864385\",\"\",\"RE683797\",\"Issued\",\"07/18/2014\",\"05/31/2027\",\"0\",\"\"\n",
+ "subtypeCounts": {
+  "electrical": {
+   "Class A Master Electrician": 7275,
+   "Registered Unlicensed Electrician": 52459,
+   "Class A Electrical Contractor": 3725
+  },
+  "plumbing": {
+   "Master Plumber": 3646,
+   "Restricted Master Plumber": 361,
+   "Registered Unlicensed Plumber": 17687
+  }
+ },
+ "note": "MNDLILicRegCertExport_ResidentialBuildingContractor.csv (named in the catalog) answered HTTP 200 with an HTML error page on 2026-09-21, the same page kept in htmlErrorText; only Electrical and Plumbing answered with the CSV header."
+}

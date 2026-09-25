@@ -1,0 +1,23 @@
+// Opt-in integration checks against already-created review records; no provider calls.
+import { loadEnvFile } from 'node:process';
+import { readFileSync,writeFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import assert from 'node:assert/strict';
+import { createClient } from '@supabase/supabase-js';
+import { createLeadEngineStore } from '../src/services/lead-engine-store.ts';
+import { createLeadResearchStore } from '../src/services/lead-engine-scrape-store.ts';
+if(process.env.L01_LIVE_REVIEW!=='1')throw Error('Explicit live review flag required');
+loadEnvFile('.env.local');
+const out=process.env.L01_REVIEW_ARTIFACT_DIR;if(!out)throw Error('Explicit artifact directory required');
+const ids=JSON.parse(readFileSync(out+'/review-records.json'));
+const db=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.SUPABASE_SECRET_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+const row=await db.from('lead_engine_plans').select('operator_id').eq('id',ids.planId).single();assert.ifError(row.error);
+const owner=row.data.operator_id,foreign=randomUUID(),plans=createLeadEngineStore(db),research=createLeadResearchStore(db),checks=[];
+assert.equal((await plans.get(owner,ids.planId)).id,ids.planId);checks.push('Real saved plan retrieved through production store');
+await assert.rejects(plans.get(foreign,ids.planId),e=>e.status===404);checks.push('Foreign owner cannot retrieve existing plan');
+await assert.rejects(plans.dryRun(foreign,ids.planId,randomUUID()),e=>e.status===404);checks.push('Foreign owner cannot prepare dry-run');
+await assert.rejects(plans.create(foreign,{version:1,planId:ids.planId,input:ids.input}),e=>e.status===404);checks.push('Existing plan ID cannot be replayed under another owner');
+assert.equal((await plans.list(foreign,0)).plans.length,0);assert.equal((await research.folders(foreign)).length,0);assert.equal((await research.lists(foreign,0,null)).lists.length,0);checks.push('Production stores filter plans/folders/lists by owner');
+await assert.rejects(research.createFolder(foreign,ids.folderId,ids.folderName),e=>e.status===409);checks.push('Foreign owner cannot reuse existing folder ID');
+const before=await db.from('lead_engine_folders').select('name').eq('id',ids.folderId).single();assert.ifError(before.error);assert.equal(before.data.name,ids.folderName);checks.push('Rejected operations leave saved folder intact');
+writeFileSync(out+'/live-ownership.json',JSON.stringify({at:new Date().toISOString(),passed:true,checks,mocks:false,providerCalls:0,foreignAccountCreated:false},null,2)+'\n');console.log({passed:true,checks:checks.length});

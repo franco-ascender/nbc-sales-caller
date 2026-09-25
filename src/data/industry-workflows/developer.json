@@ -1,0 +1,72 @@
+{
+  "industry": "developer",
+  "title": "Real-estate developer business candidates held from owner-contact delivery",
+  "hypothesis": "A public business presence can support a real-estate development-business candidate only when its development activity is specific and independently distinguished from construction, brokerage, property management, investor marketing, and software development. It cannot establish current ownership or a direct owner contact without separate evidence.",
+  "ownerSource": "No developer-specific owner source is implemented. A business listing, permit applicant, officer, project representative, or investor-count result is candidate/role evidence only and cannot be treated as current beneficial ownership.",
+  "phoneSource": "No catalog-verified developer-specific public business-contact endpoint is implemented. The current generic Maps fallback supplies at most a public business-listing phone candidate; it is not evidence of a mobile handset or direct owner contact.",
+  "workflow": [
+    { "id": "public", "label": "Public business or activity record", "detail": "Read only a lawful public business presence or separately permitted public activity record; no property, residential, append, or skip-trace path.", "kind": "source" },
+    { "id": "fit", "label": "Specific real-estate development signal?", "detail": "Require development/developer language plus a real-estate development-business or project context.", "kind": "decision" },
+    { "id": "holdfit", "label": "Hold wrong or vague cohort", "detail": "Hold software developers, generic builders, brokerages, property managers, investor marketing, and construction-only businesses.", "kind": "hold" },
+    { "id": "owner", "label": "Current owner evidence?", "detail": "Require independently supported current ownership; a company, officer, applicant, or representative role is not enough.", "kind": "decision" },
+    { "id": "holdowner", "label": "Hold business candidate", "detail": "Keep candidate/role-only records out of owner-confirmed delivery.", "kind": "hold" },
+    { "id": "contact", "label": "Published direct business contact?", "detail": "A future approved route must identify an explicitly published business contact linked to the supported owner; do not derive one from property or residential data.", "kind": "decision" },
+    { "id": "holdcontact", "label": "Hold absent or indirect contact", "detail": "Do not use private-phone discovery, parcel records, skip trace, or an unrelated company switchboard as a substitute.", "kind": "hold" },
+    { "id": "gates", "label": "Contact and compliance gates", "detail": "Require line type, reachability, DNC/TCPA, suppression, duplicate, freshness, and timezone checks.", "kind": "verify" },
+    { "id": "holdgates", "label": "Hold failed gates", "detail": "Hold non-mobile, unreachable, suppressed, duplicate, stale, or compliance-failed contacts.", "kind": "hold" },
+    { "id": "deliver", "label": "Future supported delivery", "detail": "Deliver only a supported owner-confirmed business contact after all evidence and contact gates pass.", "kind": "deliver" }
+  ],
+  "edges": [
+    { "from": "public", "to": "fit", "label": "evaluate activity" },
+    { "from": "fit", "to": "holdfit", "label": "wrong or vague cohort" },
+    { "from": "fit", "to": "owner", "label": "specific development-business candidate" },
+    { "from": "owner", "to": "holdowner", "label": "role-only or unsupported" },
+    { "from": "owner", "to": "contact", "label": "current owner supported" },
+    { "from": "contact", "to": "holdcontact", "label": "no direct published business contact" },
+    { "from": "contact", "to": "gates", "label": "approved direct-business-contact candidate" },
+    { "from": "gates", "to": "holdgates", "label": "gate fails" },
+    { "from": "gates", "to": "deliver", "label": "all evidence and gates pass" }
+  ],
+  "failures": [
+    { "risk": "A generic listing is treated as a real-estate development business although it may be software, construction-only, brokerage, property management, or investor marketing.", "mitigation": "Require specific development language plus a real-estate development-business/project context; hold ambiguous or excluded cohorts.", "status": "proposed" },
+    { "risk": "A listing, permit applicant, officer, or project representative is labelled the current owner.", "mitigation": "Keep these as role or business-candidate evidence and require independent current-owner support before an owner-confirmed label.", "status": "blocked" },
+    { "risk": "The missing developer register mapping silently permits a generic Maps delivery route.", "mitigation": "Add developer to NEVER_MAPS_DELIVERABLE so quoteJob blocks delivery until a lawful developer-specific public-business-contact route exists.", "status": "proposed" },
+    { "risk": "The NC investor-count instruction is expanded into county-owner, parcel, residential, skip-trace, append, or private-phone discovery.", "mitigation": "Keep all property/residential/private-contact routes out of this workflow; absence of an eligible contact source is a hold.", "status": "blocked" },
+    { "risk": "A public company phone is called the owner's mobile or direct handset.", "mitigation": "Require explicit direct-business-contact evidence plus line, reachability, DNC/TCPA, suppression, duplicate, freshness, and timezone gates.", "status": "blocked" }
+  ],
+  "sources": [
+    { "label": "Developer brain entry", "scope": "Recipe B with aliases and NC investor-count text; no register_source in any state", "evidence": "VERIFIED", "reference": "src/data/lead-engine-brain.json industries.developer; src/lib/lead-engine-brain.ts registerSourceFor", "status": "implemented" },
+    { "label": "Generic Maps fallback", "scope": "Public business-listing discovery when developer has no usable register mapping; does not prove developer fit, owner status, or direct contact", "evidence": "VERIFIED", "reference": "src/lib/lead-engine-jobs.ts quoteJob and scrapeKeyword; src/services/lead-engine-jobs.service.ts advanceJob", "status": "implemented" },
+    { "label": "Developer-specific public business-contact source", "scope": "A lawful source tying a real-estate development business, a current owner, and an explicitly published business contact", "evidence": "UNKNOWN", "reference": "No VERIFIED developer-specific endpoint in handoff/04_SOURCE_CATALOG.md or handoff/07_RESEARCH_BUILD_SPEC.md", "status": "blocked" },
+    { "label": "NC investor-count instruction", "scope": "Historical name-source text for investors with 6-30 properties; not a mapped register or eligible developer contact source", "evidence": "REPORTED", "reference": "src/data/lead-engine-brain.json industries.developer.name_source.NC; handoff/06_anas_brain_v1.json developer", "status": "blocked" },
+    { "label": "Maps delivery guard", "scope": "Existing never-Maps list controls whether quoteJob can fall back to recipe A", "evidence": "VERIFIED", "reference": "src/lib/lead-engine-gates.ts NEVER_MAPS_DELIVERABLE; src/lib/lead-engine-jobs.ts quoteJob", "status": "proposed" }
+  ],
+  "iterations": [
+    { "hypothesis": "The live recipe-B developer route reads a developer name source before it can reach delivery.", "test": "Five-case local code audit on 2026-09-24 calling route, registerSourceFor, and quoteJob for NC real-estate developer, NC builder-developer, TX real-estate developer, FL builder-developer, and CA developer. No network, provider, credential, property/residential lookup, phone value, paid call, or personal contact data was used.", "observed": "All five aliases resolved to developer and brain recipe B. NC exposed only the textual investor instruction; TX, FL, and CA exposed no name source. registerSourceFor returned null in every case, and quoteJob selected recipe A with no blockers because developer is absent from NEVER_MAPS_DELIVERABLE. This measures routing only, not development-business coverage, ownership, phone type, reachability, DNC/TCPA, or delivery.", "change": "Treat the implementation as blocked for owner-contact delivery. Add developer to the Maps-delivery guard and hold the route until an eligible public business-contact source and owner-evidence gate are implemented; do not remediate with property or private-phone discovery." }
+  ],
+  "measurement": {
+    "kind": "code_audit",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Five local developer route/quote cases all had no mapped register source and fell back from brain recipe B to recipe A without blockers. Code audit only: no source rows, phone values, personal contacts, line checks, ownership checks, DNC/TCPA checks, reachability, or delivery were measured.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Local five-case code audit only; no provider, scrape, append, trace, phone verification, or paid step ran.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean owner contact was measured. Historical developer brain figures remain under their existing Anas denominator and do not establish a per-clean cost."
+  },
+  "implementation": {
+    "status": "blocked",
+    "summary": "Developer is configured as recipe B but has no mapped register source. quoteJob therefore falls back to generic Maps discovery, which can produce a public business-listing candidate without proving real-estate development fit, current ownership, or a direct owner contact. No developer-specific public business-contact source or owner-evidence delivery gate is implemented.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-jobs.ts",
+      "src/lib/lead-engine-gates.ts",
+      "src/services/lead-engine-jobs.service.ts"
+    ]
+  },
+  "nextMeasurement": "After a lawful catalog-verified public business-contact source and current-owner evidence rule are implemented, run a 5-20 row aggregate source sample with separate denominators for source rows, specific development-business matches, supported owner candidates, published-business-contact candidates, line type, reachability, DNC/TCPA clearance, suppression/duplicate clearance, direct-contact support, and delivered rows. Do not use property, residential, skip-trace, append, or private-phone sources; perCleanUsd remains null until approved outcome evidence exists."
+}

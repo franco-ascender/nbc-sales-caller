@@ -1,0 +1,2 @@
+import {apiError} from '@/services/integration.service';import {requireWorkspaceAdmin} from '@/services/workspace-auth';import {voiceCapabilities} from '@/services/caller-voices.service';
+export async function GET(request:Request):Promise<Response>{try{await requireWorkspaceAdmin(request);return Response.json(await voiceCapabilities(),{headers:{'Cache-Control':'no-store'}});}catch(error){return apiError(error);}}

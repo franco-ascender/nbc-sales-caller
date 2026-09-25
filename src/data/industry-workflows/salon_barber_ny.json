@@ -1,0 +1,178 @@
+{
+  "industry": "salon_barber_ny",
+  "title": "New York salons and barbershops",
+  "hypothesis": "Use the NY DOS establishment register to identify a named license holder at an active salon or barbershop. Treat an establishment or barbershop-owner holder as license-role owner evidence, a renter as an independent chair-business candidate rather than the shop owner, and an individual practitioner as neither. Only an explicitly published shop contact, independently linked to the same person in an owner/founder role, can advance to the normal authorized contact gates.",
+  "ownerSource": "NY DOS Appearance Enhancement and Barber Business and Area Renter Licensees (`ny_salons` / `y3u4-jbgh`): DOSAEBUSINESS and DOSBARSHOPOWNER are parsed as Owner; DOSAERENTER and DOSBARRENTER are parsed as Suite Renter.",
+  "phoneSource": "No phone is in the NY DOS register. The safe alternative is an explicitly published shop business contact that is independently linked to the named license holder; no residential lookup, property match, private-phone append, or inferred chair-renter handset is eligible.",
+  "workflow": [
+    {
+      "id": "start",
+      "label": "Active NY DOS establishment row",
+      "detail": "Read an in-scope `ny_salons` row with a future expiration, person-form license holder, business name, and shop address.",
+      "kind": "source"
+    },
+    {
+      "id": "license",
+      "label": "License-role decision",
+      "detail": "Classify the four business and renter license types; an individual cosmetology or barber credential is outside this source and does not establish employment or ownership.",
+      "kind": "decision"
+    },
+    {
+      "id": "employee_hold",
+      "label": "Employee or practitioner hold",
+      "detail": "Do not use a practitioner-only record, stylist, or barber as the business owner merely because the person works at the address.",
+      "kind": "hold"
+    },
+    {
+      "id": "holder",
+      "label": "Establishment-holder candidate",
+      "detail": "DOSAEBUSINESS and DOSBARSHOPOWNER identify the license holder for that establishment; preserve this as license-role evidence, not direct-phone proof.",
+      "kind": "filter"
+    },
+    {
+      "id": "renter",
+      "label": "Chair-renter candidate",
+      "detail": "DOSAERENTER and DOSBARRENTER identify a renter's own service business candidate; never relabel the renter as the salon or suite-operator owner.",
+      "kind": "filter"
+    },
+    {
+      "id": "shop_contact",
+      "label": "Published shop-contact check",
+      "detail": "Use only a lawfully obtained, explicitly published business contact at the same shop; a shared reception, booking, or suite-operator number is a business-contact alternative, not a direct owner line.",
+      "kind": "verify"
+    },
+    {
+      "id": "contact_hold",
+      "label": "Contact or role unresolved",
+      "detail": "Hold when there is no public shop contact, the contact is shared, or independent owner/founder evidence does not link the holder or renter to that number.",
+      "kind": "hold"
+    },
+    {
+      "id": "role_check",
+      "label": "Independent owner-role check",
+      "detail": "Require current independent owner/founder evidence for the same business and an explicit direct-business-contact link. License-holder evidence alone does not prove handset ownership.",
+      "kind": "verify"
+    },
+    {
+      "id": "gates",
+      "label": "Authorized contact gates",
+      "detail": "Only after role and public-contact support, evaluate line type, reachability, DNC/TCPA, suppression, and timezone under separately authorized processes.",
+      "kind": "verify"
+    },
+    {
+      "id": "deliver",
+      "label": "Deliver after all gates",
+      "detail": "No current NY salon/barber path has measured owner-contact outcomes or qualifies a private phone for delivery.",
+      "kind": "deliver"
+    },
+    {
+      "id": "private_hold",
+      "label": "Private-address route blocked",
+      "detail": "Do not parcel-match the business address or trace a residence to obtain a private phone for this industry.",
+      "kind": "hold"
+    }
+  ],
+  "edges": [
+    { "from": "start", "to": "license", "label": "parse active holder" },
+    { "from": "license", "to": "employee_hold", "label": "practitioner or employment-only evidence" },
+    { "from": "license", "to": "holder", "label": "business or barbershop-owner license" },
+    { "from": "license", "to": "renter", "label": "area or barber renter license" },
+    { "from": "holder", "to": "shop_contact", "label": "seek public business contact" },
+    { "from": "renter", "to": "shop_contact", "label": "seek renter's public service contact" },
+    { "from": "holder", "to": "private_hold", "label": "private-address trace proposed" },
+    { "from": "renter", "to": "private_hold", "label": "private-address trace proposed" },
+    { "from": "shop_contact", "to": "contact_hold", "label": "missing, shared, or unlinked contact" },
+    { "from": "shop_contact", "to": "role_check", "label": "published contact matched" },
+    { "from": "role_check", "to": "contact_hold", "label": "owner-role evidence unresolved" },
+    { "from": "role_check", "to": "gates", "label": "direct owner-contact support" },
+    { "from": "gates", "to": "deliver", "label": "authorized gates pass" }
+  ],
+  "failures": [
+    {
+      "risk": "A cosmetologist, stylist, or barber is treated as a shop owner because they work at the same address.",
+      "mitigation": "Keep the individual-license dataset outside this workflow and hold practitioner/employment-only records; require the establishment license role or independent owner/founder evidence.",
+      "status": "implemented"
+    },
+    {
+      "risk": "A chair renter is presented as the owner of the salon, suite building, or operator.",
+      "mitigation": "Retain renter status as Suite Renter and only consider the renter's own independently evidenced business; do not promote the renter to shop owner.",
+      "status": "implemented"
+    },
+    {
+      "risk": "The named license holder is assumed to own a mobile or to be reachable on a shared booking/reception number.",
+      "mitigation": "Treat every public number as a business-contact candidate until current independent owner/founder and explicit direct-contact evidence support the same person and normal contact gates pass.",
+      "status": "proposed"
+    },
+    {
+      "risk": "Recipe B parcel matching and skip tracing turn a shop record into a residential/private-phone lookup.",
+      "mitigation": "Add an industry-specific pre-parcel hold for `salon_barber_ny`; do not call parcel or trace for these rows. Route only a published shop contact into an authorized future evaluation.",
+      "status": "proposed"
+    },
+    {
+      "risk": "A suite or multi-chair address makes a shared operator line appear direct to every listed holder.",
+      "mitigation": "Hold shared or operator contacts and require a contact explicitly published for, and independently connected to, the individual business owner before delivery.",
+      "status": "proposed"
+    }
+  ],
+  "sources": [
+    {
+      "label": "NY DOS Appearance Enhancement and Barber Business and Area Renter Licensees",
+      "scope": "Active NY business, barbershop-owner, area-renter, and barber-renter rows; name, business, address, issue and expiration dates; no phone.",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group E; src/lib/lead-engine-registers.ts `nySalons` and `NY_SALON_TYPES`",
+      "status": "implemented"
+    },
+    {
+      "label": "NY DOS individual appearance enhancement licensees",
+      "scope": "Practitioner name pool without business address or ownership/employment role.",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group E",
+      "status": "blocked"
+    },
+    {
+      "label": "Published shop business contact with independent owner/founder support",
+      "scope": "A future lawful business-contact route for a matched shop or renter business; no free verified endpoint is wired for this recipe.",
+      "evidence": "UNKNOWN",
+      "reference": "src/lib/lead-engine-research.ts `assessOwnerEvidence`; src/services/lead-engine-jobs.service.ts",
+      "status": "proposed"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "The NY parser preserves the four materially different license roles without converting a business-name holder into a person.",
+      "test": "Five-case local fixture/code audit of `tests/fixtures/registers/ny_salons.json` through `nySalons`, plus the focused test's synthetic renter and expired-row branches, on 2026-09-24.",
+      "observed": "All five saved active fixture rows parsed as person-form DOSAEBUSINESS Owner rows with no phone. The focused assertions also classify DOSAERENTER as Suite Renter and hold an expired row. This is parser behavior only, not a live coverage or contact measurement.",
+      "change": "Keep establishment-holder and renter labels distinct in the review; reject employee/practitioner inference and do not describe a license holder as owner-confirmed mobile."
+    },
+    {
+      "hypothesis": "The live recipe can use the register without private-address discovery.",
+      "test": "Code audit of `pullNames`, `parcelStep`, and `traceStep` for the live recipe-B mapping on 2026-09-24.",
+      "observed": "`salon_barber_ny` maps to `ny_salons` with recipe B. The runner stores the person as `owner_name`, then routes phoneless rows to parcel resolution and BatchData skip tracing; it has no public-shop-contact branch or owner-evidence hold.",
+      "change": "Propose a pre-parcel hold for this industry and a future public-contact/owner-evidence route; no paid or private lookup was run."
+    }
+  ],
+  "measurement": {
+    "kind": "fixture",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Five saved active NY salon fixture rows parsed as person-form establishment holders with no phone; synthetic test branches classify a renter as Suite Renter and an expired row as held. No live source call, owner-contact, mobile, reachability, or DNC outcome was measured.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Local fixture and code audit only; no paid discovery, private-phone append, parcel lookup, trace, or phone verification was invoked.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No cost per clean owner contact is measurable without separately authorized public-contact, owner-role, and contact-outcome observations."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "The live `ny_salons` adapter filters active in-scope license types, parses person holders, labels establishment holders as Owner and renters as Suite Renter, and retains no register phone. However, `salon_barber_ny` is live recipe B: the jobs service writes the holder to `owner_name` and directs phoneless rows to residential parcel matching and paid tracing. It does not implement a public-shop-contact branch, shared-line hold, or independent owner-evidence gate.",
+    "runtimeFiles": [
+      "src/lib/lead-engine-registers.ts",
+      "src/data/lead-engine-brain.json",
+      "src/services/lead-engine-jobs.service.ts",
+      "src/lib/lead-engine-research.ts"
+    ]
+  },
+  "nextMeasurement": "After the pre-parcel hold and a lawful public-shop-contact route are implemented, run a consented 5-20 row aggregate study that separately records active establishment holders, renters, practitioner holds, published shop contacts, shared contacts, independently supported owner contacts, and authorized line outcomes. Do not use residential/property data or private-phone appends."
+}

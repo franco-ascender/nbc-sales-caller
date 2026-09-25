@@ -1,0 +1,56 @@
+{
+  "industry": "contractor_permits",
+  "title": "Permit contractors: Austin activity candidates with source and trade holds",
+  "hypothesis": "A current building permit can establish a named Permit Contractor candidate, an explicit contractor trade, recent activity, and a published business-contact candidate, but it cannot prove ownership or a direct owner mobile. Source availability, trade fit, role, phone exclusivity, contact/compliance, and independent owner evidence must all pass before delivery.",
+  "ownerSource": "Austin permit contractor_full_name parsed as Permit Contractor only. NYC legacy DOB permits are catalogued but not implemented in the runtime and therefore cannot supply a current candidate route.",
+  "phoneSource": "Austin contractor_phone is a city-published contractor business-contact candidate. It remains unverified for person ownership, mobile line type, reachability, DNC, and exclusivity.",
+  "workflow": [
+    {"id":"source","label":"Permit-source availability","detail":"Use only an implemented, legally eligible city permit adapter; Austin TX is mapped today, while NYC is catalogued but has no adapter or NY mapping.","kind":"decision"},
+    {"id":"austin","label":"Austin recent permit","detail":"Select last-twelve-month Austin rows with contractor_phone and retain permit number, named contractor, company, trade, ZIP, and issue date.","kind":"source"},
+    {"id":"holdsource","label":"Hold unwired or unavailable source","detail":"Do not ingest NYC or another city merely because it appears in catalog or name-source text without a working adapter and mapping.","kind":"hold"},
+    {"id":"trade","label":"Explicit trade fit","detail":"Branch on contractor_trade. Retain only a campaign's matching core trade; generic, mismatched, or adjacent work needs a separate review route.","kind":"filter"},
+    {"id":"holdtrade","label":"Hold mismatched trade","detail":"Do not silently call mechanical, electrical, general, or another trade the requested contractor specialty.","kind":"hold"},
+    {"id":"role","label":"Permit role assessment","detail":"Persist the named person as Permit Contractor candidate; a filer, employee, qualifier, or contractor contact is not owner proof.","kind":"decision"},
+    {"id":"holdrole","label":"Hold unsupported owner claim","detail":"Keep source activity evidence but do not label the named permit contact an owner without independent evidence.","kind":"hold"},
+    {"id":"contact","label":"Published contact exclusivity","detail":"Assess the contractor phone for global reuse, business/brand signals, and existing suppression or dedupe before verification.","kind":"decision"},
+    {"id":"holdcontact","label":"Hold shared or unsuitable contact","detail":"Hold missing, shared dispatch, franchise, high-volume, suppressed, or otherwise unproven business contacts.","kind":"hold"},
+    {"id":"verify","label":"Contact and owner-evidence gates","detail":"Require mobile line type, live status, DNC, suppression/dedupe, and independent owner evidence.","kind":"verify"},
+    {"id":"holdverify","label":"Hold failed verification","detail":"Park non-mobile, unreachable, DNC, duplicate, or unsupported-owner cases.","kind":"hold"},
+    {"id":"deliver","label":"Deliver supported classification","detail":"Deliver only after every gate passes; a permit name and phone alone never establish an owner-confirmed mobile.","kind":"deliver"}
+  ],
+  "edges": [
+    {"from":"source","to":"austin","label":"implemented Austin TX adapter"},
+    {"from":"source","to":"holdsource","label":"NYC or another route not implemented"},
+    {"from":"austin","to":"trade","label":"recent named contractor permit"},
+    {"from":"austin","to":"holdtrade","label":"missing or unusable trade"},
+    {"from":"trade","to":"role","label":"core trade matches campaign"},
+    {"from":"trade","to":"holdtrade","label":"generic, adjacent, or mismatched trade"},
+    {"from":"role","to":"contact","label":"candidate role retained"},
+    {"from":"role","to":"holdrole","label":"owner claim unsupported"},
+    {"from":"contact","to":"verify","label":"exclusive candidate business contact"},
+    {"from":"contact","to":"holdcontact","label":"shared, high-volume, suppressed, or absent contact"},
+    {"from":"verify","to":"deliver","label":"all contact and owner-evidence gates pass"},
+    {"from":"verify","to":"holdverify","label":"contact or owner evidence fails"}
+  ],
+  "failures": [
+    {"risk":"A Permit Contractor is labelled as the business owner.","mitigation":"Retain the Permit Contractor role and require independent owner evidence before owner labeling.","status":"partial"},
+    {"risk":"A mixed-trade permit source silently supplies a mismatched contractor specialty.","mitigation":"Require an explicit contractor_trade match for each trade campaign and hold generic, adjacent, or mismatched rows.","status":"partial"},
+    {"risk":"Austin contractor_phone is called a direct owner mobile.","mitigation":"Treat it as city-published business-contact evidence and require global exclusivity, line type, live, DNC, suppression/dedupe, and owner evidence.","status":"partial"},
+    {"risk":"NYC is displayed as an available route although runtime has no NYC adapter or NY register mapping.","mitigation":"Hold NYC until a dedicated adapter, parser fixture, and register_source.NY mapping are implemented; otherwise remove the name-source claim.","status":"blocked"},
+    {"risk":"Austin parser consumes contractor_city even though its select omits it.","mitigation":"Add contractor_city only and cover populated city parsing with a fixture assertion; continue omitting contractor_address1 to avoid residential-address ingestion.","status":"proposed"}
+  ],
+  "sources": [
+    {"label":"Live contractor_permits brain route","scope":"Recipe D with TX mapped to Austin permits and NYC listed as a non-runnable name-source entry","evidence":"VERIFIED","reference":"src/data/lead-engine-brain.json industries.contractor_permits; src/lib/lead-engine-jobs.ts registerSourceFor","status":"implemented"},
+    {"label":"Austin Issued Construction Permits","scope":"Austin contractor identity, trade, activity, and published business-contact candidates","evidence":"VERIFIED","reference":"handoff/04_SOURCE_CATALOG.md Austin row; src/lib/lead-engine-registers.ts austinPermits; https://data.austintexas.gov/resource/3syk-w9eu.json","status":"implemented"},
+    {"label":"Austin permit parser fixture","scope":"Mixed mechanical and general-contractor parser field-shape audit","evidence":"VERIFIED","reference":"tests/fixtures/registers/austin_permits.json; tests/lead-engine-registers.test.ts Austin permits test","status":"implemented"},
+    {"label":"NYC DOB legacy BIS permits","scope":"Catalogued NYC contractor/person/contact candidate source","evidence":"VERIFIED","reference":"handoff/04_SOURCE_CATALOG.md NYC DOB Permit Issuance row; src/data/lead-engine-brain.json industries.contractor_permits.name_source.NY-NYC","status":"blocked"}
+  ],
+  "iterations": [
+    {"hypothesis":"Austin contractor fields had been removed, so the implemented adapter should be disabled.","test":"Root reproduced the adapter's exact seven-field Austin selection with issue_date after 2025-09-24, contractor_phone IS NOT NULL, and limit 5.","observed":"HTTP 200 returned five rows with all seven selected fields represented. This contradicts schema removal inferred from sparse unfiltered rows and does not measure ownership or phone outcomes.","change":"Keep the Austin adapter; use a required-field regression check rather than disabling it from the unfiltered observation."},
+    {"hypothesis":"The Austin parser correctly retains candidate semantics for current permit rows.","test":"Five-case local fixture/code audit of austinPermitRow on 2026-09-24, checking person, Permit Contractor role, trade, and normalized contact-candidate presence without retaining values.","observed":"All five fixture cases parsed the named person, Permit Contractor role, trade, and contact candidate. The fixture contains mechanical and general trades, so it does not demonstrate trade fit or owner status.","change":"Require explicit trade branching and preserve Permit Contractor as candidate-only evidence before downstream verification."}
+  ],
+  "measurement": {"kind":"code_audit","sampleSize":5,"observedAt":"2026-09-24","result":"Five local Austin fixture cases passed the pure parser audit for named-person, Permit Contractor, trade, and contact-candidate fields. Root separately verified the exact current Austin seven-field adapter selection with HTTP 200 and limit 5. No identities or contact values were retained; no mobile, ownership, DNC, reachability, or delivery outcome was measured.","verifiedPhones":0},
+  "cost": {"basis":"Local fixture/code audit plus a free public-source schema reproduction; no paid discovery, append, or verification","perInputUsd":0,"perCleanUsd":null,"note":"No clean delivered owner-contact outcome was measured. Historical brain estimates use a different denominator and remain unchanged."},
+  "implementation": {"status":"partial","summary":"Austin is the only implemented contractor-permit adapter and preserves named Permit Contractor, trade, and contact-candidate fields. It lacks campaign-specific trade routing, global contact exclusivity evidence, and parser-selected city. NYC is named in the brain but has no adapter or NY mapping.","runtimeFiles":["src/data/lead-engine-brain.json","src/lib/lead-engine-registers.ts","src/lib/lead-engine-jobs.ts","src/services/lead-engine-jobs.service.ts","tests/fixtures/registers/austin_permits.json"]},
+  "nextMeasurement":"Add five synthetic route cases for matching trade, mismatched trade, generic trade, shared contact, and absent owner evidence; prove that only matching trade reaches contact verification and no permit-only case gains an owner label. Build and verify a separate NYC adapter before activating an NY route."
+}

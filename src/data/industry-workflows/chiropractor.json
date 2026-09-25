@@ -1,0 +1,49 @@
+{
+  "industry": "chiropractor",
+  "title": "Chiropractor: NPPES practice identity with public business-contact safeguard",
+  "hypothesis": "An active NPPES NPI-2 record with primary taxonomy Chiropractor can identify a chiropractic practice and an Authorized Official candidate. Its published LOCATION phone can start a business-contact workflow, but neither an Authorized Official nor an AO phone establishes ownership, handset ownership, or a private-contact right.",
+  "ownerSource": "NPPES NPI-2 Authorized Official fields provide an identity and role candidate for an active primary-taxonomy chiropractic organization. The role is not owner confirmation and needs independent corroboration.",
+  "phoneSource": "Use only the NPPES LOCATION telephone as a proposed published practice-contact candidate. Do not promote the Authorized Official telephone to an owner phone, and do not discover a number from mailing/licence/property addresses, parcel matching, skip tracing, or appends.",
+  "workflow": [
+    { "id": "nppes", "label": "NPPES chiropractic organization", "detail": "Read an active NPI-2 record whose primary taxonomy is Chiropractor and retain practice identity plus Authorized Official role candidate.", "kind": "source" },
+    { "id": "fit", "label": "Active primary-taxonomy check", "detail": "Require active status, primary Chiropractic taxonomy, and a person-form Authorized Official; exclude explicit staff titles.", "kind": "filter" },
+    { "id": "holdfit", "label": "Hold invalid or staff record", "detail": "Inactive, taxonomy-mismatched, personless, and credentialing/billing/office-management records cannot support an owner candidate.", "kind": "hold" },
+    { "id": "location", "label": "Published LOCATION phone?", "detail": "Use an explicitly published NPPES LOCATION telephone only as a practice business-contact candidate; AO phone is not a substitute.", "kind": "decision" },
+    { "id": "holdphone", "label": "Hold without public business contact", "detail": "Keep identity evidence only. Do not parcel-match, trace, append, or derive a private number from any address.", "kind": "hold" },
+    { "id": "verify", "label": "Business-contact gates", "detail": "Apply permitted line-type, live, DNC/TCPA, suppression, duplicate, and freshness checks to the published practice contact.", "kind": "verify" },
+    { "id": "owner", "label": "Independent owner and handset evidence?", "detail": "Require corroborated ownership and an explicit direct-business-role link to the same contact; AO title or a practice line alone fails this test.", "kind": "decision" },
+    { "id": "holdowner", "label": "Hold as business contact", "detail": "Retain the permitted practice-contact classification without an owner-confirmed or owner-mobile label.", "kind": "hold" },
+    { "id": "deliver", "label": "Deliver supported contact", "detail": "Deliver only after all applicable contact gates and independent ownership/handset evidence support the stated classification.", "kind": "deliver" }
+  ],
+  "edges": [
+    { "from": "nppes", "to": "fit", "label": "evaluate source row" },
+    { "from": "fit", "to": "holdfit", "label": "inactive, mismatched, staff, or incomplete" },
+    { "from": "fit", "to": "location", "label": "eligible practice identity candidate" },
+    { "from": "location", "to": "holdphone", "label": "no published LOCATION phone" },
+    { "from": "location", "to": "verify", "label": "published practice phone" },
+    { "from": "verify", "to": "holdphone", "label": "contact or compliance gate fails" },
+    { "from": "verify", "to": "owner", "label": "business-contact gates pass" },
+    { "from": "owner", "to": "holdowner", "label": "owner or handset evidence absent" },
+    { "from": "owner", "to": "deliver", "label": "independent owner and handset evidence supports classification" }
+  ],
+  "failures": [
+    { "risk": "An Authorized Official is treated as the current practice owner.", "mitigation": "Keep AO identity and role as a candidate only; require independent current ownership evidence.", "status": "proposed" },
+    { "risk": "An AO phone is treated as a personal owner handset or as the published practice contact.", "mitigation": "Use only NPPES LOCATION phone for the proposed business-contact route and require separate owner/handset evidence.", "status": "proposed" },
+    { "risk": "A chiropractic row without AO phone enters residential parcel lookup and paid skip tracing through recipe B.", "mitigation": "Hold chiropractor recipe-B jobs before parcel and trace, then use a LOCATION-phone-only public-business-contact route.", "status": "blocked" },
+    { "risk": "Corporate, repeated-AO, or franchise records are called independent owner contacts.", "mitigation": "Screen corporate/repeated-AO evidence and require independent owner corroboration before owner-confirmed classification.", "status": "proposed" },
+    { "risk": "A published practice line is labelled a direct owner mobile.", "mitigation": "Retain a business-contact classification unless independent evidence explicitly links the same contact to an owner/founder business role.", "status": "proposed" }
+  ],
+  "sources": [
+    { "label": "NPPES NPI-2 chiropractic adapter", "scope": "Active NPI-2 Chiropractic organization query by state/ZIP prefix; primary-taxonomy, AO identity, AO telephone, and LOCATION telephone parsing.", "evidence": "VERIFIED", "reference": "src/lib/lead-engine-registers.ts NPPES_TAXONOMIES, nppesUrl, nppesOrganization, nppes", "status": "implemented" },
+    { "label": "Live chiropractor brain mapping", "scope": "Chiropractor currently maps to recipe B and nppes:chiropractor, which can continue into parcel and paid trace processing.", "evidence": "VERIFIED", "reference": "src/data/lead-engine-brain.json industries.chiropractor; src/services/lead-engine-jobs.service.ts advanceJob", "status": "implemented" },
+    { "label": "NPPES public practice-contact route", "scope": "Active primary-taxonomy chiropractic rows with a published LOCATION telephone only; no private-number discovery.", "evidence": "VERIFIED", "reference": "handoff/04_SOURCE_CATALOG.md CMS Provider Data Catalog row; handoff/07_RESEARCH_BUILD_SPEC.md Appendix C stages 1-2 and 9", "status": "proposed" },
+    { "label": "Owner-evidence assessment", "scope": "Current business-site direct-contact evidence plus independent registry owner/founder corroboration.", "evidence": "VERIFIED", "reference": "src/lib/lead-engine-research.ts assessOwnerEvidence", "status": "proposed" }
+  ],
+  "iterations": [
+    { "hypothesis": "The mapped NPPES chiropractic source can safely support recipe-B owner-contact processing.", "test": "Five synthetic NPI-2 inputs were passed to nppesOrganization(item, 'Chiropractor') on 2026-09-24: active Owner title with no AO phone; active Owner title with AO phone; inactive; Credentialing Manager; and active Dentist taxonomy.", "observed": "The two active Chiropractic Owner cases were kept; the no-AO-phone case had phone10 null, the AO-phone case used AO phone10, inactive was status_not_active, staff was staff_title_excluded, and Dentist was primary_taxonomy_mismatch. Recipe B sends no-phone rows toward parcel and trace. This is local parser/routing evidence only.", "change": "Hold chiropractor recipe-B work before private parcel/trace steps. Implement a public-business-contact route that uses only NPPES LOCATION phone and preserves AO evidence as non-owner identity evidence." }
+  ],
+  "measurement": { "kind": "fixture", "sampleSize": 5, "observedAt": "2026-09-24", "result": "Five synthetic NPPES NPI-2 parser cases: two active primary-Chiropractor owner-title rows kept (one no AO phone, one AO phone); inactive, explicit credentialing staff, and primary-Dentist cases rejected. The audit measured parser behavior only; no network, contact values, phone verification, ownership, reachability, DNC, or delivery measurement occurred.", "verifiedPhones": 0 },
+  "cost": { "basis": "Local five-case parser audit; proposed NPPES public directory identity/contact source is free", "perInputUsd": 0, "perCleanUsd": null, "note": "No clean contact or contact-gate outcome was measured. Historical recipe-B expectations and research estimates use different denominators and do not establish a chiropractor per-clean cost." },
+  "implementation": { "status": "partial", "summary": "The NPPES adapter correctly rejects inactive, taxonomy-mismatched, and explicit staff-title rows, but the live chiropractor recipe-B mapping can use private parcel and paid trace processing. LOCATION phone is parsed only into payload while AO phone becomes phone10; no chiropractor public-business-contact-only route or owner-evidence delivery gate is wired.", "runtimeFiles": ["src/data/lead-engine-brain.json", "src/lib/lead-engine-registers.ts", "src/lib/lead-engine-brain.ts", "src/lib/lead-engine-parcel.ts", "src/services/lead-engine-jobs.service.ts", "src/lib/lead-engine-research.ts"] },
+  "nextMeasurement": "After the public-contact correction, run five synthetic route cases—LOCATION-only, AO-only, both-different, no phone, and credentialing title—and assert only LOCATION phone enters business-contact gates, AO-only/no-phone rows hold, staff rejects, and no parcel or trace call is possible. Then run a lawful aggregate 5-20 row public NPPES observation with separate active, taxonomy-qualified, LOCATION-phone, corporate-held, contact-gate, independently owner-supported, and delivered-business-contact denominators."
+}

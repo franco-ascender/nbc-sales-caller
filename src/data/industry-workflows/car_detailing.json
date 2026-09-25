@@ -1,0 +1,241 @@
+{
+  "industry": "car_detailing",
+  "title": "Independent car-detailing business-contact review",
+  "hypothesis": "A published Maps number for an independent, core car-detailing business can begin a business-contact workflow. Neither a mobile-detailing claim, a Maps phone, nor an SOS agent/officer establishes business ownership, ownership of a handset, or permission to contact a person.",
+  "ownerSource": "No owner-confirming detailing source is implemented. The catalog's SOS-plus-Maps suggestion supplies only a role-labeled agent or officer candidate after a business match and must not be used for personal-phone or address enrichment.",
+  "phoneSource": "Implemented recipe-A Maps discovery for the car-detailing keyword; the published number remains a business-contact candidate until the existing line, live, DNC/TCPA, suppression, and duplicate gates pass.",
+  "workflow": [
+    {
+      "id": "maps",
+      "label": "Discover published car-detailing business",
+      "detail": "Start with the live recipe-A Maps route. A listing and advertised number are business evidence only.",
+      "kind": "source"
+    },
+    {
+      "id": "fit",
+      "label": "Core detailing fit?",
+      "detail": "Require detailing, detail, ceramic coating, paint correction, or mobile-detailing evidence. Car wash, tint, wrap, and auto-repair-only results do not prove a detailing business.",
+      "kind": "filter"
+    },
+    {
+      "id": "holdfit",
+      "label": "Hold adjacent or ambiguous result",
+      "detail": "Do not relabel a car wash, tint/wrap, repair shop, dealer, or generic automotive listing as detailing without core detailing evidence.",
+      "kind": "hold"
+    },
+    {
+      "id": "brand",
+      "label": "Independent operator segment?",
+      "detail": "Keep franchise, chain, and multi-location listings out of the owner-candidate branch pending a separately reviewed workflow.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdbrand",
+      "label": "Hold brand or multi-location listing",
+      "detail": "A branded local outlet can be a business contact but is not an owner-confirmed contact from its brand pattern.",
+      "kind": "hold"
+    },
+    {
+      "id": "phone",
+      "label": "Published business number present?",
+      "detail": "Do not infer a person phone from a mobile-service claim, agent/officer name, business address, or a different public listing number.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdphone",
+      "label": "Hold missing business contact",
+      "detail": "Keep an identity candidate without a published business number out of phone processing.",
+      "kind": "hold"
+    },
+    {
+      "id": "verify",
+      "label": "Business-contact gates",
+      "detail": "Require mobile classification, reachability, DNC/TCPA clearance, suppression, and duplicate checks on the published number. These do not prove ownership of the business or handset.",
+      "kind": "verify"
+    },
+    {
+      "id": "holdverify",
+      "label": "Hold failed contact gate",
+      "detail": "Hold non-mobile, unreachable, DNC/TCPA, suppressed, duplicate, or otherwise unverified rows.",
+      "kind": "hold"
+    },
+    {
+      "id": "owner",
+      "label": "Independent owner and handset evidence?",
+      "detail": "A matched SOS agent/officer, a business name, a mobile line, or a review mention alone is insufficient. Preserve any role as candidate evidence only.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdowner",
+      "label": "Hold as business contact",
+      "detail": "Do not label or deliver an owner-confirmed mobile without separately recorded ownership and handset evidence.",
+      "kind": "hold"
+    },
+    {
+      "id": "deliver",
+      "label": "Deliver approved owner-confirmed contact",
+      "detail": "Only a future workflow that records independent owner evidence and every contact/compliance gate may use this classification.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    {
+      "from": "maps",
+      "to": "fit",
+      "label": "listing"
+    },
+    {
+      "from": "fit",
+      "to": "brand",
+      "label": "core detailing match"
+    },
+    {
+      "from": "fit",
+      "to": "holdfit",
+      "label": "adjacent-only or no core match"
+    },
+    {
+      "from": "brand",
+      "to": "phone",
+      "label": "independent candidate"
+    },
+    {
+      "from": "brand",
+      "to": "holdbrand",
+      "label": "brand or multi-location match"
+    },
+    {
+      "from": "phone",
+      "to": "verify",
+      "label": "published business number"
+    },
+    {
+      "from": "phone",
+      "to": "holdphone",
+      "label": "no published number"
+    },
+    {
+      "from": "verify",
+      "to": "owner",
+      "label": "all contact gates pass"
+    },
+    {
+      "from": "verify",
+      "to": "holdverify",
+      "label": "a contact gate fails"
+    },
+    {
+      "from": "owner",
+      "to": "deliver",
+      "label": "independent owner and handset evidence"
+    },
+    {
+      "from": "owner",
+      "to": "holdowner",
+      "label": "candidate-only evidence"
+    }
+  ],
+  "failures": [
+    {
+      "risk": "Car washes are admitted as core detailing because the detailing profile includes car wash in its core terms.",
+      "mitigation": "Move car wash from the detailing core list to adjacent (or remove it), then require a detail/ceramic/paint-correction/mobile-detailing signal before the car-detailing route continues.",
+      "status": "blocked"
+    },
+    {
+      "risk": "Tint, wrap, PPF, auto-repair, dealer, or car-wash-only listings are described as detailing businesses.",
+      "mitigation": "Hold adjacent-only listings until a core detailing signal is present; do not treat the brain allow pattern as owner or relevance proof.",
+      "status": "partial"
+    },
+    {
+      "risk": "A mobile-detailing advertisement is described as a direct owner cell.",
+      "mitigation": "Treat the Maps number as a published business contact and retain mobile/service claims as unverified; require line, live, DNC/TCPA, suppression, dedupe, owner, and handset gates.",
+      "status": "partial"
+    },
+    {
+      "risk": "An SOS agent or officer is represented as the owner, or a filing address is used to find a personal phone.",
+      "mitigation": "Use any SOS role only as matched identity-candidate evidence, prohibit address/person-phone enrichment, and require independent ownership and handset evidence.",
+      "status": "proposed"
+    },
+    {
+      "risk": "A detailing franchise or multi-location brand is treated as a one-person operator.",
+      "mitigation": "Segment known automotive brands and hold franchise/multi-location matches before forming an owner hypothesis.",
+      "status": "partial"
+    }
+  ],
+  "sources": [
+    {
+      "label": "Live car-detailing recipe-A route",
+      "scope": "National Maps-first published-business-contact discovery using keyword car detailing and allow pattern detail|ceramic|coating|tint|wrap",
+      "evidence": "VERIFIED",
+      "reference": "src/data/lead-engine-brain.json industries.car_detailing; src/lib/lead-engine-brain.ts route",
+      "status": "implemented"
+    },
+    {
+      "label": "Detailing relevance and brand classifier",
+      "scope": "Core/adjacent relevance and limited franchise tags used by discovery filtering",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-industries.ts PROFILES detailing and FRANCHISE_BRANDS",
+      "status": "implemented"
+    },
+    {
+      "label": "Automotive catalog: car washes, detailing, tinting, glass, and mobile mechanics",
+      "scope": "No-license SOS-plus-Maps candidate path; SOS agent/officer and Maps number are not owner or handset proof",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group G Automotive row; handoff/07_RESEARCH_BUILD_SPEC.md sections G1 and G2",
+      "status": "proposed"
+    },
+    {
+      "label": "Mobile-trade ownership/phone claim",
+      "scope": "The build spec reports a Maps-first mobile-detailing premise and an expected mobile share by analogy",
+      "evidence": "REPORTED",
+      "reference": "handoff/07_RESEARCH_BUILD_SPEC.md section H2 and Group G yield arithmetic",
+      "status": "blocked"
+    },
+    {
+      "label": "Delivery contact gates",
+      "scope": "Mobile, reachable, DNC/TCPA-clear, suppression, dedupe, and freshness checks",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-quality.ts evaluateVerifiedBusiness; src/lib/lead-engine-gates.ts evaluateJobGates",
+      "status": "implemented"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "The existing detailing relevance profile separates car-detailing businesses from adjacent automotive listings.",
+      "test": "Five-case fixture/code audit on 2026-09-24 using classifyRelevance and franchiseBrand with no external calls or contact data: Precision Auto Detailing, Mobile Ceramic Coating, Neighborhood Car Wash, Tint World North, and Downtown Auto Repair.",
+      "observed": "Detailing and ceramic coating classified core; tint and auto repair classified adjacent; Neighborhood Car Wash also classified core; Tint World was not brand-tagged. This checks classifier outputs only, not listing coverage, line type, owner identity, reachability, DNC, or delivery.",
+      "change": "Treat the car-wash core result as a concrete relevance defect. Move car wash to adjacent or remove it and add a regression fixture; do not infer an owner or handset from the remaining classifications."
+    },
+    {
+      "hypothesis": "Root integration regression check, 2026-09-24",
+      "test": "Focused synthetic regression checks in tests/lead-engine-industry-corrections.test.ts, lead-engine-reviews.test.ts, lead-engine-gates-jobs.test.ts and lead-engine-jobs.test.ts. No paid provider call.",
+      "observed": "Car-wash-only listings no longer qualify as core detailing. The parser requires a core match for this narrow cohort; detailing, ceramic coating and paint correction remain eligible.",
+      "change": "Shared runtime correction integrated. Original source samples are retained with their original denominators; no phone-yield improvement is claimed."
+    }
+  ],
+  "measurement": {
+    "kind": "fixture",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Five synthetic classifier cases: Precision Auto Detailing core; Mobile Ceramic Coating core; Neighborhood Car Wash core; Tint World North adjacent and untagged; Downtown Auto Repair adjacent. Code audit only, with no live endpoint, phone, identity, or delivery measurement.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Fixture/code audit only",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean delivered owner contact was measured. The car-detailing brain's historical Anas rates use a different denominator and are not a per-clean cost for this workflow."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "Car-wash-only listings no longer qualify as core detailing. The parser requires a core match for this narrow cohort; detailing, ceramic coating and paint correction remain eligible. Original review: Car detailing is recognized and runs the Maps-first recipe-A route with published-business-contact and delivery gates. It has no owner-confirming adapter or separately recorded owner/handset evidence. The current detailing classifier incorrectly admits car washes as core, and its limited automotive franchise list does not tag the audited Tint World fixture.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-industries.ts",
+      "src/lib/lead-engine-quality.ts",
+      "src/lib/lead-engine-gates.ts"
+    ]
+  },
+  "nextMeasurement": "After the classifier correction, add five synthetic discovery fixtures covering core detailing, ceramic coating, car-wash-only, tint/wrap-only, and auto-repair-only rows; verify only core detailing proceeds and that franchise tagging is reviewed. A later authorized outcome pilot must separately measure published-contact line type, DNC/TCPA, reachability, reached owner, ownership evidence, handset evidence, and delivery."
+}

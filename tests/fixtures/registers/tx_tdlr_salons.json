@@ -1,0 +1,180 @@
+{
+ "source": "tx_tdlr_salons",
+ "fetchedAt": "2026-09-21",
+ "url": "https://data.texas.gov/resource/7358-krk7.json?$where=license_type='Mini Establishment'&$limit=8",
+ "rows": [
+  {
+   "license_type": "Mini Establishment",
+   "license_number": "776199",
+   "business_county": "HARRIS",
+   "business_name": "TRACY LY NGUYEN",
+   "business_address_line1": "511 S MASON ROAD",
+   "business_city_state_zip": "KATY TX 77450-2491",
+   "business_telephone": "8328772739",
+   "license_expiration_date_mmddccyy": "01/31/2027",
+   "owner_name": "TRACY LY NGUYEN",
+   "mailing_address_line1": "511 S MASON RD",
+   "mailing_address_city_state_zip": "KATY TX 77450-2491",
+   "mailing_address_county": "HARRIS",
+   "owner_telephone": "8328772739",
+   "license_subtype": "ME",
+   "continuing_education_flag": "N"
+  },
+  {
+   "license_type": "Mini Establishment",
+   "license_number": "818527",
+   "business_county": "COLLIN",
+   "business_name": "M&M ESTUDIO",
+   "business_address_line1": "405 WILLIAMS ST",
+   "business_city_state_zip": "WYLIE TX 75098",
+   "business_telephone": "4692266352",
+   "license_expiration_date_mmddccyy": "08/25/2025",
+   "owner_name": "M&M ESTUDIO",
+   "mailing_address_county": "COLLIN",
+   "owner_telephone": "4692266352",
+   "license_subtype": "ME",
+   "continuing_education_flag": "N",
+   "business_mailing": {
+    "type": "Point",
+    "coordinates": [
+     -96.51472,
+     33.02299
+    ]
+   }
+  },
+  {
+   "license_type": "Mini Establishment",
+   "license_number": "842215",
+   "business_county": "TARRANT",
+   "business_name": "HAIR-SLAY BY LADY J",
+   "business_address_line1": "3701 S COOPER ST STE 153",
+   "business_city_state_zip": "ARLINGTON TX 76015",
+   "business_telephone": "2148921487",
+   "license_expiration_date_mmddccyy": "07/14/2025",
+   "owner_name": "HAIR-SLAY BY LADY J",
+   "mailing_address_county": "TARRANT",
+   "owner_telephone": "2148921487",
+   "license_subtype": "ME",
+   "continuing_education_flag": "N",
+   "business_mailing": {
+    "type": "Point",
+    "coordinates": [
+     -77.08629,
+     38.8905
+    ]
+   }
+  },
+  {
+   "license_type": "Mini Establishment",
+   "license_number": "866150",
+   "business_county": "HARRIS",
+   "business_name": "SALON BOSS",
+   "business_address_line1": "7506 E FM 1960",
+   "business_city_state_zip": "HUMBLE TX 77346",
+   "business_telephone": "7138053041",
+   "license_expiration_date_mmddccyy": "04/22/2026",
+   "owner_name": "SALON BOSS",
+   "mailing_address_county": "HARRIS",
+   "owner_telephone": "7138053041",
+   "license_subtype": "ME",
+   "continuing_education_flag": "N",
+   "business_mailing": {
+    "type": "Point",
+    "coordinates": [
+     -95.26937,
+     30.00041
+    ]
+   }
+  },
+  {
+   "license_type": "Mini Establishment",
+   "license_number": "868880",
+   "business_county": "FORT BEND",
+   "business_name": "BT STUDIO",
+   "business_address_line1": "26077 NELSON WAY UNIT 703",
+   "business_city_state_zip": "KATY TX 77494-6686",
+   "business_telephone": "5126261434",
+   "license_expiration_date_mmddccyy": "07/24/2028",
+   "owner_name": "BT STUDIO",
+   "mailing_address_line1": "32353 GIBONEY RD",
+   "mailing_address_city_state_zip": "HEMPSTEAD TX 77445",
+   "mailing_address_county": "FORT BEND",
+   "owner_telephone": "5126261434",
+   "license_subtype": "ME",
+   "continuing_education_flag": "N"
+  },
+  {
+   "license_type": "Mini Establishment",
+   "license_number": "835793",
+   "business_county": "TARRANT",
+   "business_name": "VIVID HAIR BY DAWN",
+   "business_address_line1": "7720 RUFE SNOW",
+   "business_city_state_zip": "NORTH RICHLAND HILLS TX 76148",
+   "business_telephone": "8177217202",
+   "license_expiration_date_mmddccyy": "11/28/2026",
+   "owner_name": "VIVID HAIR BY DAWN",
+   "mailing_address_line1": "401 VICKI PL",
+   "mailing_address_city_state_zip": "HURST TX 76053-4417",
+   "mailing_address_county": "TARRANT",
+   "owner_telephone": "8177217202",
+   "license_subtype": "ME",
+   "continuing_education_flag": "N",
+   "business_mailing": {
+    "type": "Point",
+    "coordinates": [
+     -97.22687,
+     32.83863
+    ]
+   }
+  },
+  {
+   "license_type": "Mini Establishment",
+   "license_number": "771043",
+   "business_county": "MCLENNAN",
+   "business_name": "AMANDA WEBER",
+   "business_address_line1": "1428 WOODED ACRES",
+   "business_address_line2": "# 100",
+   "business_city_state_zip": "WACO TX 76710",
+   "business_telephone": "2547445641",
+   "license_expiration_date_mmddccyy": "07/06/2028",
+   "owner_name": "AMANDA WEBER",
+   "mailing_address_line1": "1445 AUSTIN HINES DR",
+   "mailing_address_city_state_zip": "CHINA SPRING TX 76633-3404",
+   "mailing_address_county": "MCLENNAN",
+   "owner_telephone": "2547445641",
+   "license_subtype": "ME",
+   "continuing_education_flag": "N",
+   "business_mailing": {
+    "type": "Point",
+    "coordinates": [
+     -97.1495,
+     31.57182
+    ]
+   }
+  },
+  {
+   "license_type": "Mini Establishment",
+   "license_number": "833734",
+   "business_county": "TARRANT",
+   "business_name": "SHEAR GRACE",
+   "business_address_line1": "2231 E SOUTHLAKE BLVD",
+   "business_city_state_zip": "SOUTHLAKE TX 76092",
+   "business_telephone": "5853137041",
+   "license_expiration_date_mmddccyy": "09/02/2028",
+   "owner_name": "SHEAR GRACE",
+   "mailing_address_line1": "12632 EXCELSIOR LN",
+   "mailing_address_city_state_zip": "FORT WORTH TX 76244-5753",
+   "mailing_address_county": "TARRANT",
+   "owner_telephone": "5853137041",
+   "license_subtype": "ME",
+   "continuing_education_flag": "N",
+   "business_mailing": {
+    "type": "Point",
+    "coordinates": [
+     -97.13121,
+     32.94256
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,61 @@
+{
+ "_about": "NC parcel layer answer for SMITH JOHN, 2026-09-21",
+ "body": {
+  "displayFieldName": "ownname",
+  "fieldAliases": {
+   "ownname": "Full Owner Name",
+   "siteadd": "Full Site Address",
+   "scity": "Site Address City",
+   "szip": "Site Address Zip\n",
+   "parusecode": "Tax Parcel Use Code"
+  },
+  "features": [
+   {
+    "attributes": {
+     "ownname": "SMITH, JOHN J",
+     "siteadd": "106 WILSON ST",
+     "scity": "",
+     "szip": "",
+     "parusecode": "Z52"
+    }
+   },
+   {
+    "attributes": {
+     "ownname": "SMITH, JOHNNY WAYNE JR",
+     "siteadd": "",
+     "scity": "",
+     "szip": "",
+     "parusecode": "AR"
+    }
+   },
+   {
+    "attributes": {
+     "ownname": "SMITH, JOHNNY W",
+     "siteadd": "1117 NCHS RD",
+     "scity": "",
+     "szip": "",
+     "parusecode": "AR"
+    }
+   },
+   {
+    "attributes": {
+     "ownname": "SMITH, JOHNNY WAYNE JR",
+     "siteadd": "",
+     "scity": "",
+     "szip": "",
+     "parusecode": "AR"
+    }
+   },
+   {
+    "attributes": {
+     "ownname": "SMITH, JOHN",
+     "siteadd": "",
+     "scity": "",
+     "szip": "",
+     "parusecode": ""
+    }
+   }
+  ],
+  "exceededTransferLimit": true
+ }
+}

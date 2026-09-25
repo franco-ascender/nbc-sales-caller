@@ -1,0 +1,239 @@
+{
+  "industry": "auto_body",
+  "title": "Independent auto-body and collision business-contact review",
+  "hypothesis": "An independently operated auto-body or collision-repair listing with a published business number can enter the existing business-contact workflow. Its number, a collision claim, and a person found in any public business record do not establish current ownership or an owner-confirmed mobile.",
+  "ownerSource": "No owner-confirming auto-body adapter is implemented. The catalog reports New Jersey MVC auto-body facility licensing, but access and fields are UNKNOWN, so it cannot supply owner evidence in this workflow.",
+  "phoneSource": "The implemented recipe-A route starts with a published Maps business number. It remains a business-contact candidate until the existing line-type, live, DNC/TCPA, suppression, and duplicate gates pass.",
+  "workflow": [
+    {
+      "id": "maps",
+      "label": "Discover published auto-body business",
+      "detail": "Start with the live recipe-A auto-body shop query. A listing and advertised number are business evidence only.",
+      "kind": "source"
+    },
+    {
+      "id": "fit",
+      "label": "Core collision-repair fit?",
+      "detail": "Require auto body, body shop, collision repair, collision center, or collision service evidence. Auto glass, mechanical repair, detailing, dealer, parts, towing, and generic automotive evidence alone do not pass.",
+      "kind": "filter"
+    },
+    {
+      "id": "holdfit",
+      "label": "Hold adjacent or ambiguous result",
+      "detail": "Do not relabel an adjacent automotive service as collision repair without a core auto-body or collision signal.",
+      "kind": "hold"
+    },
+    {
+      "id": "brand",
+      "label": "Independent business check",
+      "detail": "Send known automotive chain or franchise matches to review before an owner hypothesis is formed.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdbrand",
+      "label": "Hold brand or multi-location listing",
+      "detail": "A branded local outlet can have a published business contact, but its brand pattern does not confirm a local owner or handset.",
+      "kind": "hold"
+    },
+    {
+      "id": "phone",
+      "label": "Published business number present?",
+      "detail": "Do not infer a person number from an auto-body listing, collision service claim, or public identity record.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdphone",
+      "label": "Hold missing business contact",
+      "detail": "Keep identity evidence without a published business number out of phone processing.",
+      "kind": "hold"
+    },
+    {
+      "id": "verify",
+      "label": "Business-contact gates",
+      "detail": "Require mobile classification, reachability, DNC/TCPA clearance, suppression, duplicate, and freshness checks on the published number. These do not prove ownership of the business or handset.",
+      "kind": "verify"
+    },
+    {
+      "id": "holdverify",
+      "label": "Hold failed contact gate",
+      "detail": "Hold non-mobile, unreachable, DNC/TCPA, suppressed, duplicate, stale, or otherwise unverified contacts.",
+      "kind": "hold"
+    },
+    {
+      "id": "owner",
+      "label": "Independent owner and handset evidence?",
+      "detail": "A business name, a collision listing, a mobile line, or a registry role alone is insufficient. Preserve any person only as candidate evidence.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdowner",
+      "label": "Hold as business contact",
+      "detail": "Do not label or deliver an owner-confirmed mobile without separately recorded ownership and handset evidence.",
+      "kind": "hold"
+    },
+    {
+      "id": "deliver",
+      "label": "Deliver approved owner-confirmed contact",
+      "detail": "Only a workflow recording independent owner evidence and every contact/compliance gate may use this classification.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    {
+      "from": "maps",
+      "to": "fit",
+      "label": "listing"
+    },
+    {
+      "from": "fit",
+      "to": "brand",
+      "label": "core auto-body or collision match"
+    },
+    {
+      "from": "fit",
+      "to": "holdfit",
+      "label": "adjacent-only, generic, or no core match"
+    },
+    {
+      "from": "brand",
+      "to": "phone",
+      "label": "independent candidate"
+    },
+    {
+      "from": "brand",
+      "to": "holdbrand",
+      "label": "chain or multi-location match"
+    },
+    {
+      "from": "phone",
+      "to": "verify",
+      "label": "published business number"
+    },
+    {
+      "from": "phone",
+      "to": "holdphone",
+      "label": "no published number"
+    },
+    {
+      "from": "verify",
+      "to": "owner",
+      "label": "all contact gates pass"
+    },
+    {
+      "from": "verify",
+      "to": "holdverify",
+      "label": "a contact gate fails"
+    },
+    {
+      "from": "owner",
+      "to": "deliver",
+      "label": "independent owner and handset evidence"
+    },
+    {
+      "from": "owner",
+      "to": "holdowner",
+      "label": "candidate-only evidence"
+    }
+  ],
+  "failures": [
+    {
+      "risk": "Standalone collision-repair listings are rejected before the brain allow regex because `classifyRelevance` has no `auto_body` profile, while the broad `body|collision|auto` allow regex accepts unrelated automotive results.",
+      "mitigation": "Add an `auto body` profile with core terms `auto body`, `body shop`, `collision repair`, `collision center`, and `collision service`; make auto glass, mechanical repair, detailing, dealer, parts, towing, and generic automotive adjacent. Replace the brain allow expression with a collision/body-specific pattern after adding the regression cases.",
+      "status": "proposed"
+    },
+    {
+      "risk": "A collision chain, franchise, or multi-location body shop is represented as a locally owner-operated business.",
+      "mitigation": "Keep the existing automotive chain exclusion ahead of owner classification and hold branded matches for separately supported local-ownership evidence.",
+      "status": "implemented"
+    },
+    {
+      "risk": "A published shop line or a person named by an unavailable registry is represented as an owner-confirmed mobile.",
+      "mitigation": "Treat published numbers as business-contact candidates and registry people as candidates only; require independent current ownership and handset evidence after every phone/compliance gate.",
+      "status": "implemented"
+    },
+    {
+      "risk": "New Jersey MVC auto-body licensing is used as an implemented source despite catalog access and fields being unknown.",
+      "mitigation": "Keep the NJ MVC item blocked until an authorized, documented public endpoint establishes its access, permitted use, fields, and owner/contact semantics.",
+      "status": "blocked"
+    }
+  ],
+  "sources": [
+    {
+      "label": "Live auto-body recipe-A route",
+      "scope": "National Maps-first published-business-contact discovery using keyword auto body shop",
+      "evidence": "VERIFIED",
+      "reference": "src/data/lead-engine-brain.json industries.auto_body; src/lib/lead-engine-brain.ts route",
+      "status": "implemented"
+    },
+    {
+      "label": "Auto-body runtime relevance and allow gate",
+      "scope": "Discovery classifier plus the brain allow regex and automotive chain filter",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-scrape.ts parseDiscoveryCandidate; src/services/lead-engine-jobs.service.ts ingestRows; src/lib/lead-engine-industries.ts classifyRelevance; src/lib/lead-engine-brands.ts isChain",
+      "status": "implemented"
+    },
+    {
+      "label": "Automotive chain table",
+      "scope": "Known automotive collision and repair brands excluded before paid processing",
+      "evidence": "VERIFIED",
+      "reference": "src/data/lead-engine-brands.json groups.auto; src/lib/lead-engine-brands.ts isChain",
+      "status": "implemented"
+    },
+    {
+      "label": "NJ MVC auto-body facility licensing",
+      "scope": "Potential New Jersey auto-body facility identity source; list access and fields remain unknown",
+      "evidence": "REPORTED",
+      "reference": "handoff/04_SOURCE_CATALOG.md Group G; handoff/07_RESEARCH_BUILD_SPEC.md Automotive coverage",
+      "status": "blocked"
+    },
+    {
+      "label": "Delivery contact gates",
+      "scope": "Mobile, reachable, DNC/TCPA-clear, suppression, duplicate, and freshness checks",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-quality.ts evaluateVerifiedBusiness; src/lib/lead-engine-gates.ts evaluateJobGates",
+      "status": "implemented"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "The implemented discovery gates consistently classify core auto-body and collision listings while excluding adjacent automotive listings and collision chains.",
+      "test": "Five-case fixture/code audit on 2026-09-24 using parseDiscoveryCandidate, the live auto_body brain allow regex, and isChain with no external calls or contact data: Precision Auto Body, Independent Collision Center, Metro Auto Glass, Downtown Auto Repair, and Caliber Collision Albany.",
+      "observed": "Precision Auto Body classified core with no rejection. Independent Collision Center, Metro Auto Glass, Downtown Auto Repair, and Caliber Collision Albany each had null fit tier and `no_positive_relevance`, although the `body|collision|auto` allow regex accepted all five. isChain marked only Caliber Collision Albany as `caliber collision`; its earlier relevance rejection therefore preempted the chain drop. This tests runtime classification only, not listing coverage, phone line type, owner identity, reachability, DNC, or delivery.",
+      "change": "The hypothesis failed for standalone collision listings and exposed an overbroad secondary allow gate. Add the proposed auto-body profile and tighten the allow expression, with these five fixtures retained as a regression test; do not infer an owner or handset from any passing fixture."
+    },
+    {
+      "hypothesis": "Root integration regression check, 2026-09-24",
+      "test": "Focused synthetic regression checks in tests/lead-engine-industry-corrections.test.ts, lead-engine-reviews.test.ts, lead-engine-gates-jobs.test.ts and lead-engine-jobs.test.ts. No paid provider call.",
+      "observed": "A dedicated collision/body-shop profile admits collision-center synonyms and rejects auto-repair/glass/parts-only rows before verification. Historical brain figures and allow field were not changed.",
+      "change": "Shared runtime correction integrated. Original source samples are retained with their original denominators; no phone-yield improvement is claimed."
+    }
+  ],
+  "measurement": {
+    "kind": "fixture",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Five synthetic runtime cases: Precision Auto Body core and accepted; Independent Collision Center null/no_positive_relevance; Metro Auto Glass null/no_positive_relevance; Downtown Auto Repair null/no_positive_relevance; Caliber Collision Albany null/no_positive_relevance and chain-tagged `caliber collision`. The live brain allow regex accepted all five. Code audit only, with no live endpoint, phone, identity, or delivery measurement.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Fixture/code audit only",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean delivered owner contact was measured. The auto-body brain's historical Anas rates use a different denominator and are not a per-clean cost for this workflow."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "A dedicated collision/body-shop profile admits collision-center synonyms and rejects auto-repair/glass/parts-only rows before verification. Historical brain figures and allow field were not changed. Original review: Auto body is recognized and runs the Maps-first recipe-A route with a published-business-contact and delivery-gate path. The discovery classifier has no auto_body profile, so collision-only results are rejected despite the brain's collision allow term; the same allow regex also admits adjacent automotive text. No owner-confirming auto-body adapter is implemented.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-scrape.ts",
+      "src/services/lead-engine-jobs.service.ts",
+      "src/lib/lead-engine-industries.ts",
+      "src/lib/lead-engine-brands.ts",
+      "src/lib/lead-engine-quality.ts",
+      "src/lib/lead-engine-gates.ts"
+    ]
+  },
+  "nextMeasurement": "After the relevance and allow correction, run the five synthetic cases as regression coverage: core body/collision fixtures must proceed, auto glass and mechanical repair fixtures must be adjacent or rejected, and Caliber Collision must be chain-filtered after relevance. A later authorized outcome study must separately measure trade fit, current owner confirmation, line type, DNC/TCPA, reachability, and delivery."
+}

@@ -1,0 +1,30 @@
+.page{max-width:1250px;margin:auto;display:grid;gap:22px;color:var(--ink)}.page>header{display:flex;justify-content:space-between;align-items:center;gap:15px}.page>header span{font-size:9px;letter-spacing:1.5px;color:var(--muted)}.page h1{font:600 34px var(--font-display),sans-serif;letter-spacing:-1px;margin:10px 0}.page p{color:var(--muted);font-size:12px;line-height:1.8;margin:8px 0}.page button,.page a{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid var(--line);border-radius:11px;background:var(--glass-surface);color:var(--ink);font-size:12px;text-decoration:none;min-height:40px}.connection{background:var(--soft);border:1px solid var(--line);border-radius:11px;padding:12px 16px;margin:0!important}.agenda{background:var(--glass-surface);border:1px solid var(--line);border-radius:19px;padding:24px;backdrop-filter:blur(18px);box-shadow:inset 0 1px var(--glass-edge),var(--glass-shadow)}.sectionTitle{display:flex;justify-content:space-between;align-items:center;gap:12px}.sectionTitle h2{font-size:19px;font-weight:600;margin:0}.sectionTitle>span{font-size:11px;color:var(--muted)}.agenda ul{list-style:none;padding:0;margin:20px 0 0}.agenda li{display:flex;align-items:center;gap:18px;border-top:1px solid var(--line);padding:20px 0}.date{width:53px;min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--sage);border-radius:12px;font-size:22px;font-weight:600;color:var(--brand-blue);flex-shrink:0}.date small{font-size:10px;font-weight:500;margin-top:3px}.agenda li>div{flex:1;min-width:0}.agenda h3{font-size:15px;font-weight:550;line-height:1.5;margin:0;overflow-wrap:anywhere}.agenda li p{font-size:11px;margin-bottom:0}.waiting{font-size:11px;color:var(--muted)}.empty{padding:65px 15px;text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center;color:var(--muted)}.empty h3{color:var(--ink)}.empty p{margin:0;max-width:360px}.manage{padding:17px 21px;background:var(--glass-surface);border:1px solid var(--line);border-radius:14px}.manage>summary{cursor:pointer;font-size:12px;color:var(--muted)}.manage[open]>summary{margin-bottom:25px}.error{color:#bb4141!important}@media(max-width:720px){.page h1{font-size:29px}.agenda{padding:19px 16px}.agenda li{gap:12px;flex-wrap:wrap}.agenda li>div{min-width:calc(100% - 80px)}.agenda li>a,.waiting{margin-left:65px}.page>header{align-items:flex-start}.page>header button{font-size:0;padding:10px}.page>header button svg{font-size:initial}}
+
+/* KCAL01: calendar stays visible before any sessions are scheduled. */
+.monthPanel{background:var(--glass-surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--glass-shadow)}
+.monthToolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 24px}
+.monthNavigation,.monthOptions{display:flex;align-items:center;gap:14px}
+.monthNavigation h2{font:600 21px/1.4 var(--font-body),sans-serif;letter-spacing:-.4px;min-width:190px;text-align:center;margin:0}
+.monthNavigation button{padding:7px;border-color:transparent;background:transparent}
+.monthOptions>span{font-size:11px;color:var(--muted)}
+.monthGrid{width:100%;border-collapse:collapse;table-layout:fixed}
+.monthGrid th{padding:12px 5px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:11px;color:var(--muted);font-weight:500;background:var(--soft)}
+.monthGrid td{width:14.285%;border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:0;vertical-align:top}
+.monthGrid td:last-child{border-right:0}
+.monthGrid tr:last-child td{border-bottom:0}
+.page .day{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:5px;width:100%;height:115px;min-width:0;padding:9px;border:0;border-radius:0;background:transparent;text-align:left}
+.page .day:hover{background:var(--soft)}
+.page .day.selectedDay{background:var(--sage);box-shadow:inset 0 0 0 2px var(--brand-blue)}
+.dayNumber,.todayNumber{display:inline-flex;align-items:center;justify-content:center;align-self:flex-start;width:28px;height:28px;font-size:12px;flex-shrink:0}
+.todayNumber{background:var(--brand-blue);color:#fff;border-radius:50%;font-weight:600}
+.outsideMonth .dayNumber{color:var(--muted);opacity:.55}
+.eventChip{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;padding:4px 6px;border-radius:5px;background:var(--brand-blue);color:#fff;font-size:10px;line-height:1.2}
+.moreEvents{font-size:10px;color:var(--muted);padding-left:4px}
+.mobileCount{display:none}
+.monthFootnote{border-top:1px solid var(--line);padding:13px 20px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);line-height:1.5}
+.dayEmpty{display:flex;align-items:center;gap:16px;padding:24px 0 5px;color:var(--muted)}
+.dayEmpty h3{color:var(--ink);font-size:14px}
+.dayEmpty p{margin-bottom:0}
+.page button:focus-visible,.page a:focus-visible{outline:2px solid var(--brand-blue);outline-offset:2px}
+.page button:disabled{opacity:.5;cursor:wait}
+@media(max-width:720px){.monthToolbar{padding:14px 10px;gap:8px;flex-wrap:wrap}.monthNavigation{gap:2px}.monthNavigation h2{font-size:18px;min-width:155px}.monthOptions{gap:8px}.monthOptions>span{display:none}.monthOptions>button{padding:7px 10px;font-size:11px}.monthGrid th{font-size:10px;padding:10px 0}.page .day{height:76px;padding:5px 2px;gap:4px}.dayNumber,.todayNumber{font-size:11px;width:25px;height:25px}.eventChip,.moreEvents{display:none}.mobileCount{display:block;font-size:10px;color:var(--brand-blue);text-align:center;font-weight:600}.mobileCount span{display:none}.monthFootnote{font-size:10px;padding:12px}.dayEmpty{align-items:flex-start}.dayEmpty>svg{flex-shrink:0}}

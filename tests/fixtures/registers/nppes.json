@@ -1,0 +1,685 @@
+{
+ "source": "nppes",
+ "fetchedAt": "2026-09-21",
+ "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&enumeration_type=NPI-2&address_purpose=LOCATION&state=FL&postal_code=331*&taxonomy_description=Dentist&limit=6&skip=0",
+ "body": {
+  "result_count": 6,
+  "results": [
+   {
+    "addresses": [
+     {
+      "address_1": "636 NW 183RD ST",
+      "address_purpose": "MAILING",
+      "address_type": "DOM",
+      "city": "MIAMI",
+      "country_code": "US",
+      "country_name": "United States",
+      "fax_number": "305-653-5807",
+      "postal_code": "331694470",
+      "state": "FL",
+      "telephone_number": "305-652-8338"
+     },
+     {
+      "address_1": "636 NW 183RD ST",
+      "address_purpose": "LOCATION",
+      "address_type": "DOM",
+      "city": "MIAMI",
+      "country_code": "US",
+      "country_name": "United States",
+      "fax_number": "305-653-5807",
+      "postal_code": "331694470",
+      "state": "FL",
+      "telephone_number": "305-652-8338"
+     }
+    ],
+    "basic": {
+     "authorized_official_credential": "D.M.D.",
+     "authorized_official_first_name": "TODD",
+     "authorized_official_last_name": "SMITH",
+     "authorized_official_middle_name": "A.",
+     "authorized_official_name_prefix": "Dr.",
+     "authorized_official_name_suffix": "--",
+     "authorized_official_telephone_number": "3056528338",
+     "authorized_official_title_or_position": "dentist",
+     "enumeration_date": "2007-02-14",
+     "last_updated": "2008-06-13",
+     "organization_name": "183 DENTAL GROUP, PA",
+     "organizational_subpart": "NO",
+     "status": "A"
+    },
+    "created_epoch": "1171470236000",
+    "endpoints": [],
+    "enumeration_type": "NPI-2",
+    "identifiers": [
+     {
+      "code": "05",
+      "desc": "MEDICAID",
+      "identifier": "073388100",
+      "issuer": null,
+      "state": "FL"
+     }
+    ],
+    "last_updated_epoch": "1213363810000",
+    "number": "1104969039",
+    "other_names": [],
+    "practiceLocations": [],
+    "taxonomies": [
+     {
+      "code": "1223G0001X",
+      "desc": "Dentist, General Practice",
+      "license": "DN 12408",
+      "primary": true,
+      "state": "FL",
+      "taxonomy_group": "193400000X - Single Specialty Group"
+     }
+    ]
+   },
+   {
+    "addresses": [
+     {
+      "address_1": "14050 SW 84TH ST",
+      "address_2": "SUITE 103",
+      "address_purpose": "MAILING",
+      "address_type": "DOM",
+      "city": "MIAMI",
+      "country_code": "US",
+      "country_name": "United States",
+      "postal_code": "331834440",
+      "state": "FL",
+      "telephone_number": "305-383-9944"
+     },
+     {
+      "address_1": "14050 SW 84TH ST",
+      "address_2": "SUITE 103",
+      "address_purpose": "LOCATION",
+      "address_type": "DOM",
+      "city": "MIAMI",
+      "country_code": "US",
+      "country_name": "United States",
+      "postal_code": "331834440",
+      "state": "FL",
+      "telephone_number": "305-383-9944"
+     }
+    ],
+    "basic": {
+     "authorized_official_credential": "dds",
+     "authorized_official_first_name": "SUZANNE",
+     "authorized_official_last_name": "ABERGEL-NAHON",
+     "authorized_official_name_prefix": "--",
+     "authorized_official_name_suffix": "--",
+     "authorized_official_telephone_number": "3053839944",
+     "authorized_official_title_or_position": "dr",
+     "enumeration_date": "2012-12-03",
+     "last_updated": "2012-12-03",
+     "organization_name": "A NEW SMILE DENTAL CENTER",
+     "organizational_subpart": "NO",
+     "status": "A"
+    },
+    "created_epoch": "1354562215000",
+    "endpoints": [],
+    "enumeration_type": "NPI-2",
+    "identifiers": [],
+    "last_updated_epoch": "1354562215000",
+    "number": "1023353083",
+    "other_names": [],
+    "practiceLocations": [],
+    "taxonomies": [
+     {
+      "code": "1223G0001X",
+      "desc": "Dentist, General Practice",
+      "license": "19276",
+      "primary": false,
+      "state": "FL",
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     },
+     {
+      "code": "1223G0001X",
+      "desc": "Dentist, General Practice",
+      "license": "14960",
+      "primary": false,
+      "state": "FL",
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     },
+     {
+      "code": "1223G0001X",
+      "desc": "Dentist, General Practice",
+      "license": "18367",
+      "primary": false,
+      "state": "FL",
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     },
+     {
+      "code": "1223G0001X",
+      "desc": "Dentist, General Practice",
+      "license": "13098",
+      "primary": false,
+      "state": "FL",
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     },
+     {
+      "code": "1223P0106X",
+      "desc": "Dentist, Oral and Maxillofacial Pathology",
+      "license": "18755",
+      "primary": false,
+      "state": "FL",
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     },
+     {
+      "code": "1223G0001X",
+      "desc": "Dentist, General Practice",
+      "license": "11206",
+      "primary": true,
+      "state": "FL",
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     }
+    ]
+   },
+   {
+    "addresses": [
+     {
+      "address_1": "2901 S BAYSHORE DR APT 4F",
+      "address_purpose": "MAILING",
+      "address_type": "DOM",
+      "city": "MIAMI",
+      "country_code": "US",
+      "country_name": "United States",
+      "postal_code": "331336001",
+      "state": "FL",
+      "telephone_number": "305-476-0230"
+     },
+     {
+      "address_1": "11865 SW 26TH ST STE G10",
+      "address_purpose": "LOCATION",
+      "address_type": "DOM",
+      "city": "MIAMI",
+      "country_code": "US",
+      "country_name": "United States",
+      "postal_code": "331752471",
+      "state": "FL",
+      "telephone_number": "305-222-1150"
+     }
+    ],
+    "basic": {
+     "authorized_official_credential": "D.M.D.",
+     "authorized_official_first_name": "ABEL",
+     "authorized_official_last_name": "DE ANNA",
+     "authorized_official_middle_name": "O",
+     "authorized_official_name_prefix": "Dr.",
+     "authorized_official_name_suffix": "--",
+     "authorized_official_telephone_number": "3052221150",
+     "authorized_official_title_or_position": "president",
+     "enumeration_date": "2008-10-02",
+     "last_updated": "2008-10-02",
+     "organization_name": "A O D DENTAL CLINIC",
+     "organizational_subpart": "NO",
+     "status": "A"
+    },
+    "created_epoch": "1222995343000",
+    "endpoints": [],
+    "enumeration_type": "NPI-2",
+    "identifiers": [],
+    "last_updated_epoch": "1222995343000",
+    "number": "1568613966",
+    "other_names": [],
+    "practiceLocations": [],
+    "taxonomies": [
+     {
+      "code": "1223G0001X",
+      "desc": "Dentist, General Practice",
+      "license": "7784",
+      "primary": true,
+      "state": "FL",
+      "taxonomy_group": "193400000X - Single Specialty Group"
+     }
+    ]
+   },
+   {
+    "addresses": [
+     {
+      "address_1": "14277 SW 42ND ST",
+      "address_purpose": "MAILING",
+      "address_type": "DOM",
+      "city": "MIAMI",
+      "country_code": "US",
+      "country_name": "United States",
+      "fax_number": "305-222-9119",
+      "postal_code": "331756408",
+      "state": "FL",
+      "telephone_number": "305-222-9219"
+     },
+     {
+      "address_1": "14277 SW 42ND ST",
+      "address_purpose": "LOCATION",
+      "address_type": "DOM",
+      "city": "MIAMI",
+      "country_code": "US",
+      "country_name": "United States",
+      "fax_number": "305-222-9119",
+      "postal_code": "331756408",
+      "state": "FL",
+      "telephone_number": "305-222-9219"
+     }
+    ],
+    "basic": {
+     "authorized_official_first_name": "MARTA",
+     "authorized_official_last_name": "AYALA",
+     "authorized_official_telephone_number": "3052229219",
+     "authorized_official_title_or_position": "office manager",
+     "certification_date": "2022-03-31",
+     "enumeration_date": "2022-03-17",
+     "last_updated": "2022-03-31",
+     "organization_name": "A PLUS DENTIST",
+     "organizational_subpart": "NO",
+     "status": "A"
+    },
+    "created_epoch": "1647531539000",
+    "endpoints": [
+     {
+      "address_1": "14277 SW 42nd St",
+      "address_type": "DOM",
+      "affiliation": "N",
+      "city": "Miami",
+      "contentTypeDescription": "",
+      "country_code": "US",
+      "country_name": "United States",
+      "endpoint": "adentist14277@gmail.com",
+      "endpointDescription": "Dental office",
+      "endpointType": "CONNECT",
+      "endpointTypeDescription": "CONNECT URL",
+      "postal_code": "331756408",
+      "state": "FL",
+      "useDescription": ""
+     }
+    ],
+    "enumeration_type": "NPI-2",
+    "identifiers": [],
+    "last_updated_epoch": "1648744566000",
+    "number": "1912655036",
+    "other_names": [],
+    "practiceLocations": [],
+    "taxonomies": [
+     {
+      "code": "1223G0001X",
+      "desc": "Dentist, General Practice",
+      "license": null,
+      "primary": true,
+      "state": null,
+      "taxonomy_group": "193400000X - Single Specialty Group"
+     }
+    ]
+   },
+   {
+    "addresses": [
+     {
+      "address_1": "11400 N KENDALL DR",
+      "address_2": "SUITE 207",
+      "address_purpose": "MAILING",
+      "address_type": "DOM",
+      "city": "MIAMI",
+      "country_code": "US",
+      "country_name": "United States",
+      "fax_number": "305-595-0826",
+      "postal_code": "33176",
+      "state": "FL",
+      "telephone_number": "305-271-7777"
+     },
+     {
+      "address_1": "11400 N KENDALL DR",
+      "address_2": "SUITE 207",
+      "address_purpose": "LOCATION",
+      "address_type": "DOM",
+      "city": "MIAMI",
+      "country_code": "US",
+      "country_name": "United States",
+      "fax_number": "305-595-0826",
+      "postal_code": "33176",
+      "state": "FL",
+      "telephone_number": "305-271-7777"
+     }
+    ],
+    "basic": {
+     "authorized_official_credential": "D.D.S. P.A.",
+     "authorized_official_first_name": "ELVIN",
+     "authorized_official_last_name": "SILVESTRY",
+     "authorized_official_name_prefix": "Dr.",
+     "authorized_official_name_suffix": "--",
+     "authorized_official_telephone_number": "3052717777",
+     "authorized_official_title_or_position": "President",
+     "enumeration_date": "2009-05-22",
+     "last_updated": "2009-05-22",
+     "organization_name": "A&E DENTAL P.A.",
+     "organizational_subpart": "NO",
+     "status": "A"
+    },
+    "created_epoch": "1243006089000",
+    "endpoints": [],
+    "enumeration_type": "NPI-2",
+    "identifiers": [
+     {
+      "code": "01",
+      "desc": "Other (non-Medicare)",
+      "identifier": "865643",
+      "issuer": "United Concordia/Tri Care",
+      "state": null
+     }
+    ],
+    "last_updated_epoch": "1243006089000",
+    "number": "1790910529",
+    "other_names": [
+     {
+      "code": "5",
+      "organization_name": "A&E DENTAL ASSOCIATES",
+      "type": "Other Name"
+     }
+    ],
+    "practiceLocations": [],
+    "taxonomies": [
+     {
+      "code": "122300000X",
+      "desc": "Dentist",
+      "license": null,
+      "primary": false,
+      "state": null,
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     },
+     {
+      "code": "1223E0200X",
+      "desc": "Dentist, Endodontics",
+      "license": null,
+      "primary": false,
+      "state": null,
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     },
+     {
+      "code": "1223G0001X",
+      "desc": "Dentist, General Practice",
+      "license": null,
+      "primary": false,
+      "state": null,
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     },
+     {
+      "code": "1223P0106X",
+      "desc": "Dentist, Oral and Maxillofacial Pathology",
+      "license": null,
+      "primary": false,
+      "state": null,
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     },
+     {
+      "code": "1223P0300X",
+      "desc": "Dentist, Periodontics",
+      "license": null,
+      "primary": false,
+      "state": null,
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     },
+     {
+      "code": "1223P0700X",
+      "desc": "Dentist, Prosthodontics",
+      "license": null,
+      "primary": false,
+      "state": null,
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     },
+     {
+      "code": "1223S0112X",
+      "desc": "Dentist, Oral and Maxillofacial Surgery",
+      "license": null,
+      "primary": false,
+      "state": null,
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     },
+     {
+      "code": "1223X0008X",
+      "desc": "Dentist, Oral and Maxillofacial Radiology",
+      "license": null,
+      "primary": false,
+      "state": null,
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     },
+     {
+      "code": "1223X0400X",
+      "desc": "Dentist, Orthodontics and Dentofacial Orthopedics",
+      "license": null,
+      "primary": false,
+      "state": null,
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     },
+     {
+      "code": "122400000X",
+      "desc": "Denturist",
+      "license": null,
+      "primary": false,
+      "state": null,
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     },
+     {
+      "code": "124Q00000X",
+      "desc": "Dental Hygienist",
+      "license": null,
+      "primary": true,
+      "state": null,
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     }
+    ]
+   },
+   {
+    "addresses": [
+     {
+      "address_1": "12750 NW 17TH ST UNIT 212",
+      "address_purpose": "MAILING",
+      "address_type": "DOM",
+      "city": "MIAMI",
+      "country_code": "US",
+      "country_name": "United States",
+      "postal_code": "331821422",
+      "state": "FL",
+      "telephone_number": "786-542-5974"
+     },
+     {
+      "address_1": "12750 NW 17TH ST UNIT 212",
+      "address_purpose": "LOCATION",
+      "address_type": "DOM",
+      "city": "MIAMI",
+      "country_code": "US",
+      "country_name": "United States",
+      "postal_code": "331821422",
+      "state": "FL",
+      "telephone_number": "786-542-5974"
+     }
+    ],
+    "basic": {
+     "authorized_official_credential": "DMD",
+     "authorized_official_first_name": "GLENDA",
+     "authorized_official_last_name": "ARRABAL",
+     "authorized_official_middle_name": "L",
+     "authorized_official_telephone_number": "7865425974",
+     "authorized_official_title_or_position": "Doctor",
+     "certification_date": "2025-02-10",
+     "enumeration_date": "2025-02-10",
+     "last_updated": "2025-02-10",
+     "organization_name": "A&R FAMILY DENTAL PRACTICE, LLC",
+     "organizational_subpart": "NO",
+     "status": "A"
+    },
+    "created_epoch": "1739212206000",
+    "endpoints": [],
+    "enumeration_type": "NPI-2",
+    "identifiers": [],
+    "last_updated_epoch": "1739212206000",
+    "number": "1144035999",
+    "other_names": [],
+    "practiceLocations": [],
+    "taxonomies": [
+     {
+      "code": "1223G0001X",
+      "desc": "Dentist, General Practice",
+      "license": null,
+      "primary": true,
+      "state": null,
+      "taxonomy_group": "193400000X - Single Specialty Group"
+     },
+     {
+      "code": "261QD0000X",
+      "desc": "Clinic/Center, Dental",
+      "license": null,
+      "primary": false,
+      "state": null,
+      "taxonomy_group": ""
+     }
+    ]
+   }
+  ]
+ },
+ "chiropractorBody": {
+  "result_count": 5,
+  "results": [
+   {
+    "addresses": [
+     {
+      "address_1": "1055 WASHINGTON AVE",
+      "address_purpose": "MAILING",
+      "address_type": "DOM",
+      "city": "MIAMI BEACH",
+      "country_code": "US",
+      "country_name": "United States",
+      "fax_number": "305-532-5942",
+      "postal_code": "331395017",
+      "state": "FL",
+      "telephone_number": "305-534-9009"
+     },
+     {
+      "address_1": "1055 WASHINGTON AVE",
+      "address_purpose": "LOCATION",
+      "address_type": "DOM",
+      "city": "MIAMI BEACH",
+      "country_code": "US",
+      "country_name": "United States",
+      "fax_number": "305-532-5942",
+      "postal_code": "331395017",
+      "state": "FL",
+      "telephone_number": "305-534-9009"
+     }
+    ],
+    "basic": {
+     "authorized_official_credential": "M.D.",
+     "authorized_official_first_name": "J.R.",
+     "authorized_official_last_name": "RODRIGUEZ",
+     "authorized_official_name_prefix": "Dr.",
+     "authorized_official_name_suffix": "--",
+     "authorized_official_telephone_number": "3055349009",
+     "authorized_official_title_or_position": "Doctor",
+     "enumeration_date": "2013-06-18",
+     "last_updated": "2013-06-18",
+     "organization_name": "1055 WASHINGTON AVENUE, INC",
+     "organizational_subpart": "NO",
+     "status": "A"
+    },
+    "created_epoch": "1371607213000",
+    "endpoints": [],
+    "enumeration_type": "NPI-2",
+    "identifiers": [],
+    "last_updated_epoch": "1371607213000",
+    "number": "1598104986",
+    "other_names": [],
+    "practiceLocations": [],
+    "taxonomies": [
+     {
+      "code": "111N00000X",
+      "desc": "Chiropractor",
+      "license": "ch10107",
+      "primary": false,
+      "state": "FL",
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     },
+     {
+      "code": "207R00000X",
+      "desc": "Internal Medicine",
+      "license": "me50089",
+      "primary": true,
+      "state": "FL",
+      "taxonomy_group": "193400000X - Multiple Single Specialty Group"
+     }
+    ]
+   },
+   {
+    "addresses": [
+     {
+      "address_1": "20475 BISCAYNE BLVD.",
+      "address_2": "#G6",
+      "address_purpose": "MAILING",
+      "address_type": "DOM",
+      "city": "AVENTURA",
+      "country_code": "US",
+      "country_name": "United States",
+      "fax_number": "305-682-8347",
+      "postal_code": "33180",
+      "state": "FL",
+      "telephone_number": "305-937-3700"
+     },
+     {
+      "address_1": "20475 BISCAYNE BLVD.",
+      "address_2": "#G6",
+      "address_purpose": "LOCATION",
+      "address_type": "DOM",
+      "city": "AVENTURA",
+      "country_code": "US",
+      "country_name": "United States",
+      "fax_number": "305-682-8347",
+      "postal_code": "33180",
+      "state": "FL",
+      "telephone_number": "305-937-3700"
+     }
+    ],
+    "basic": {
+     "authorized_official_credential": "D.C.",
+     "authorized_official_first_name": "DAVID",
+     "authorized_official_last_name": "MURANSKY",
+     "authorized_official_middle_name": "SAUL",
+     "authorized_official_name_prefix": "Dr.",
+     "authorized_official_name_suffix": "--",
+     "authorized_official_telephone_number": "3059373700",
+     "authorized_official_title_or_position": "President",
+     "enumeration_date": "2007-03-30",
+     "last_updated": "2012-11-28",
+     "organization_name": "A AVENTURA CHIROPRACTIC CARE CENTER INC",
+     "organizational_subpart": "NO",
+     "status": "A"
+    },
+    "created_epoch": "1175269830000",
+    "endpoints": [],
+    "enumeration_type": "NPI-2",
+    "identifiers": [],
+    "last_updated_epoch": "1354115886000",
+    "number": "1881714269",
+    "other_names": [],
+    "practiceLocations": [],
+    "taxonomies": [
+     {
+      "code": "111N00000X",
+      "desc": "Chiropractor",
+      "license": "CH0002858",
+      "primary": true,
+      "state": "FL",
+      "taxonomy_group": "193400000X - Single Specialty Group"
+     }
+    ]
+   }
+  ]
+ },
+ "refusedBody": {
+  "Errors": [
+   {
+    "description": "Field state requires additional search criteria",
+    "field": "state",
+    "number": "07"
+   },
+   {
+    "description": "Enumeration_type requires additional search criteria",
+    "field": "enumeration_type",
+    "number": "09"
+   }
+  ]
+ }
+}

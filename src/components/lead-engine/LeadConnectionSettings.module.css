@@ -1,0 +1,24 @@
+.section { max-width: 1250px; margin: 28px auto 0; padding: 26px; color: var(--ink); background: var(--glass-surface, var(--surface)); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--glass-shadow, var(--shadow)); font-family: var(--font-body), sans-serif; }
+.heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.badge { display: inline-flex; align-items: center; gap: 7px; color: var(--brand-blue); font-size: 12px; margin-bottom: 12px; }
+.section h2 { font-size: 23px; letter-spacing: -.6px; margin: 0 0 8px; }
+.section h3 { font-size: 17px; margin: 12px 0 8px; }
+.section p { font-size: 14px; line-height: 1.7; color: var(--muted); margin: 0; }
+.section button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; flex-shrink: 0; }
+.section button:hover:not(:disabled) { background: var(--soft); }
+.section button:disabled { opacity: .5; cursor: wait; }
+.section :is(button,summary):focus-visible { outline: 3px solid var(--brand-blue); outline-offset: 4px; }
+.grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; margin: 24px 0; }
+.grid article { padding: 20px; border-radius: 14px; border: 1px solid var(--line); background: var(--canvas); }
+.grid article > svg { color: var(--brand-blue); }
+.grid details { margin-top: 18px; }
+.grid summary { font-size: 13px; cursor: pointer; padding: 6px 0; }
+.grid details p { margin-top: 12px; overflow-wrap: anywhere; }
+.notice { padding: 18px; border: 1px solid var(--line); border-radius: 12px; margin: 22px 0; background: var(--soft); }
+.notice h3 { margin-top: 0; }
+.notice dl { display: grid; gap: 12px; font-size: 14px; margin: 16px 0; }
+.notice dl > div { display: flex; justify-content: space-between; gap: 16px; }
+.notice dd { margin: 0; text-align: right; }
+.section .note { font-size: 12px; }
+@media (max-width: 800px) { .grid { grid-template-columns: 1fr; } .heading { align-items: flex-start; flex-direction: column; gap: 18px; } }
+@media (max-width: 500px) { .section { padding: 20px 16px; } .notice dl > div { flex-direction: column; gap: 6px; } .notice dd { text-align: left; } }

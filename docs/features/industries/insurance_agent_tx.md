@@ -1,0 +1,27 @@
+# Texas insurance agency relationships
+
+Reviewed 2026-09-24. `insurance_agent_tx` uses the implemented recipe-B `tx_tdi` adapter over the Texas Department of Insurance business-relationships dataset. It supplies relationship and identity evidence, not a telephone number. This review handles an **Owner** association as ownership evidence only when the associated licensee parses as a person. A **Desig-Resp-Lic-Person (DRLP)** is a designated regulatory responsibility role and remains an owner candidate, not an owner-confirmed record. **Employee** is an explicit staff relationship and is outside the adapter's two fetched segments; it must never be reintroduced as an ownership signal.
+
+## Hypothesis and bounded audit
+
+The free TDI relationship record can identify a person-form Owner associated with a Texas insurance agency. It cannot establish a handset, an actual published business phone, or that a DRLP owns the agency. The `kxv3-diwf` join adds city, state, and ZIP only; the saved fixture confirms it supplies no street or phone.
+
+A five-case local fixture/code audit ran on 2026-09-24 using the first five saved `kvqi-vsrr` rows through `txTdi`. Three person-form Owner rows were retained with title `Owner`; two non-person or non-traceable Owner rows were held as `owner_is_entity`. The focused register test also exercises the DRLP segment: its saved corporate-associated DRLP row is held as `owner_is_entity`. The adapter request has exactly two segments, Owner and DRLP, so Employee rows are excluded upstream rather than being promoted into the owner branch. This was a fixture/code audit only: no network, secret, paid call, residential/property lookup, trace, phone verification, or contact-data export ran. It measures parser and scope behavior, not ownership truth beyond the row label, actual business-phone publication, mobile status, reachability, DNC/TCPA, or delivery.
+
+## Workflow and failure cases
+
+An Owner row with a parseable person proceeds as a relationship-supported owner candidate. A DRLP row may be a useful licensed-responsibility candidate but requires independent current ownership evidence before any owner-labelled outcome. Entity-valued Owners and DRLPs, initials that cannot be safely parsed as people, and Employees remain held. The dataset's agency/person names plus city and ZIP may support a future lawful business-identity match; they do not authorize finding a residential address or private telephone number.
+
+There is no actual business phone in the implemented TDI relationship or individual join. A future contact route must use an explicitly published business contact tied to the matched agency and preserve it as a business-contact candidate. A different number, a listing name match, or a mobile line-type result does not show that the number belongs directly to the Owner or DRLP. Before owner-labelled delivery, independent evidence must establish the current owner role and an explicit business-role link from that same contact to that person. Employee, DRLP-only, corporate, captive-staff, shared-office, and unlinked-phone records remain held.
+
+## Runtime finding and safe correction
+
+`pullNames` in [src/services/lead-engine-jobs.service.ts](../../../src/services/lead-engine-jobs.service.ts) sends every recipe-B name source to the shared `parcel` phase, and `insurance_agent_tx` is recipe B with `tx_tdi`. `parcelStep` then calls a county parcel lookup and stores `home_street`; `traceStep` subsequently sends that residential identity to the paid BatchData trace route. The TDI adapter intentionally contributes only city and ZIP, but that does not make a residential lookup appropriate. This conflicts with the workflow’s business-contact-only boundary.
+
+Safe correction proposed for root: for `job.industry_key === 'insurance_agent_tx'`, do not transition from `pullNames` to `parcel`; hold the row with `business_contact_unavailable` unless a separately implemented, approved public business-contact source has already supplied an explicit agency contact. Do not invoke `parcelStep` or `traceStep` for this industry. Keep the relation title in provenance, leave any owner-labelled delivery blocked unless independent ownership and direct-business-contact evidence are stored. This needs no new provider, lookup, or private data.
+
+## Evidence status and remaining experiment
+
+Implemented: the free TDI Owner/DRLP source filter, person parsing, agency-name provenance, and city/state/ZIP join. Partial: the live recipe-B runner can treat a person-form relation record as `owner_name` and route it into the shared residential parcel/trace sequence. Blocked: an actual published business-phone route and independent owner/direct-contact evidence. The live brain's historical `n=0` and research estimates are outside this fixture audit and are not phone, owner-contact, or cost measurements.
+
+After the hold is in place, run at most a 5–20-row aggregate study only if a catalog-verified, legally eligible public business-contact endpoint is implemented. Measure separately: relation type (Owner/DRLP/Employee), person parsing, agency match, explicitly published business contact, independent current-owner support, direct business-role support for the same contact, mobile, reachability, DNC/TCPA, suppression/duplicate, and delivery. Do not use residential/property data, private-phone discovery, paid services, secrets, or restricted lists.

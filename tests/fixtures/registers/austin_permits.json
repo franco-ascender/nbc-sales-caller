@@ -1,0 +1,79 @@
+{
+ "source": "austin_permits",
+ "fetchedAt": "2026-09-21",
+ "url": "https://data.austintexas.gov/resource/3syk-w9eu.json?$select=...&$where=issue_date>'2025-09-21' AND contractor_phone IS NOT NULL&$limit=6",
+ "rows": [
+  {
+   "permit_number": "2025-117554 MP",
+   "permittype": "MP",
+   "contractor_trade": "Mechanical Contractor",
+   "contractor_company_name": "D3 Mechanical LLC",
+   "contractor_full_name": "Dennis Anderson",
+   "contractor_phone": "5128067500",
+   "contractor_city": "Georgetown",
+   "contractor_zip": "78626",
+   "issue_date": "2025-09-22T00:00:00.000",
+   "original_zip": "78746"
+  },
+  {
+   "permit_number": "2025-120248 BP",
+   "permittype": "BP",
+   "contractor_trade": "General Contractor",
+   "contractor_company_name": "ECLAT HOMES LLC",
+   "contractor_full_name": "Guido C Macouzet",
+   "contractor_phone": "5123735885",
+   "contractor_city": "AUSTIN",
+   "contractor_zip": "78738",
+   "issue_date": "2025-09-22T00:00:00.000",
+   "original_zip": "78702"
+  },
+  {
+   "permit_number": "2025-111179 BP",
+   "permittype": "BP",
+   "contractor_trade": "General Contractor",
+   "contractor_company_name": "Bartlett Cocke General Contractors (MAIN)",
+   "contractor_full_name": "Donna Kirkpatrick",
+   "contractor_phone": "5123264223",
+   "contractor_city": "Austin",
+   "contractor_zip": "78704",
+   "issue_date": "2025-09-22T00:00:00.000",
+   "original_zip": "78726"
+  },
+  {
+   "permit_number": "2025-030906 MP",
+   "permittype": "MP",
+   "contractor_trade": "Mechanical Contractor",
+   "contractor_company_name": "Brandt Air Conditioning & Heating Services, LLC",
+   "contractor_full_name": "Robert Ferguson",
+   "contractor_phone": "2816933383",
+   "contractor_city": "KATY",
+   "contractor_zip": "77944-____",
+   "issue_date": "2025-09-22T00:00:00.000",
+   "original_zip": "78754"
+  },
+  {
+   "permit_number": "2025-118878 BP",
+   "permittype": "BP",
+   "contractor_trade": "General Contractor",
+   "contractor_company_name": "Journeyman Construction",
+   "contractor_full_name": "Cannon Kilde",
+   "contractor_phone": "5122477000",
+   "contractor_city": "AUSTIN",
+   "contractor_zip": "78752",
+   "issue_date": "2025-09-22T00:00:00.000",
+   "original_zip": "78735"
+  },
+  {
+   "permit_number": "2025-119347 EP",
+   "permittype": "EP",
+   "contractor_trade": "Electrical Contractor",
+   "contractor_company_name": "Grayzer Electric LLC",
+   "contractor_full_name": "Jeffrey Gray",
+   "contractor_phone": "5125354120",
+   "contractor_city": "HUTTO",
+   "contractor_zip": "78634-____",
+   "issue_date": "2025-09-22T00:00:00.000",
+   "original_zip": "78724"
+  }
+ ]
+}

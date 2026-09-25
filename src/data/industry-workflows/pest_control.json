@@ -1,0 +1,263 @@
+{
+  "industry": "pest_control",
+  "title": "Structural pest-control business and role-candidate review",
+  "hypothesis": "A structural-pest business licence can establish a business identity and a named responsible applicator or operator candidate, but neither a licence role nor a published business number proves business ownership, handset ownership, a mobile line, or permission to contact a person. Agricultural crop-pest activity is outside this cohort.",
+  "ownerSource": "Proposed TX TDA business-to-responsible-applicator join, CA CDPR business licence data, and FL FDACS company search. A certified operator, applicator, technician, or apprentice is a role candidate, never owner confirmation.",
+  "phoneSource": "Only a future source field explicitly published for the licensed structural-pest business, or a matched Maps business number, may be business-contact evidence. No private-number discovery or employee-phone inference is in scope.",
+  "workflow": [
+    {
+      "id": "scope",
+      "label": "Structural-pest business fit?",
+      "detail": "Require structural pest-control, exterminator, termite, or wildlife-removal evidence. Reject agricultural crop-pest activity; hold mosquito/lawn-only, sanitizing, insulation, and crawl-space-only results.",
+      "kind": "filter"
+    },
+    {
+      "id": "holdscope",
+      "label": "Hold non-structural or adjacent result",
+      "detail": "Do not relabel crop/agricultural activity or adjacent-only service as structural pest control.",
+      "kind": "hold"
+    },
+    {
+      "id": "brand",
+      "label": "Independent business segment?",
+      "detail": "Recognize franchise and multi-location pest brands before an owner hypothesis.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdbrand",
+      "label": "Hold franchise segment",
+      "detail": "A local franchise listing can be a business contact but does not establish a local owner cell.",
+      "kind": "hold"
+    },
+    {
+      "id": "source",
+      "label": "Eligible business-register route?",
+      "detail": "Use a verified public business source only after its parser, role fields, source mapping, and terms are confirmed. Current TX, CA, and FL routes are not mapped for ingest.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdsource",
+      "label": "Hold unavailable register route",
+      "detail": "Do not substitute an employee applicator list, a paid crawler, or an invented register mapping.",
+      "kind": "hold"
+    },
+    {
+      "id": "role",
+      "label": "Business and licence-role assessment",
+      "detail": "Retain the licensed business separately from a responsible applicator/operator candidate. Technicians and apprentices are employee roles, not owner candidates.",
+      "kind": "source"
+    },
+    {
+      "id": "owner",
+      "label": "Independent business-owner evidence?",
+      "detail": "Licence title, company association, or a named applicator alone is insufficient; preserve role provenance.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdowner",
+      "label": "Hold role-only candidate",
+      "detail": "Do not label or deliver an employee, applicator, operator, or qualifier as owner-confirmed.",
+      "kind": "hold"
+    },
+    {
+      "id": "phone",
+      "label": "Published business contact present?",
+      "detail": "A source or Maps phone is a business-contact candidate only and never a direct-owner assertion.",
+      "kind": "decision"
+    },
+    {
+      "id": "holdphone",
+      "label": "Hold absent or business-only contact",
+      "detail": "Do not derive a personal contact from a licence role, address, or business record.",
+      "kind": "hold"
+    },
+    {
+      "id": "verify",
+      "label": "Contact and evidence gates",
+      "detail": "Require applicable line-type, active/reachability, DNC/suppression, dedupe, independent owner, and handset-relationship evidence.",
+      "kind": "verify"
+    },
+    {
+      "id": "holdverify",
+      "label": "Hold failed evidence",
+      "detail": "Park non-mobile, unreachable, suppressed, shared, or unsupported-owner results.",
+      "kind": "hold"
+    },
+    {
+      "id": "deliver",
+      "label": "Deliver supported classification",
+      "detail": "Only an implemented future route with all contact and owner-evidence gates may deliver an owner-confirmed classification.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    {
+      "from": "scope",
+      "to": "brand",
+      "label": "structural-pest core fit"
+    },
+    {
+      "from": "scope",
+      "to": "holdscope",
+      "label": "crop, agricultural, adjacent-only, or no fit"
+    },
+    {
+      "from": "brand",
+      "to": "source",
+      "label": "independent segment"
+    },
+    {
+      "from": "brand",
+      "to": "holdbrand",
+      "label": "franchise or multi-location"
+    },
+    {
+      "from": "source",
+      "to": "role",
+      "label": "mapped eligible business route"
+    },
+    {
+      "from": "source",
+      "to": "holdsource",
+      "label": "unmapped, unsuitable, or unverified route"
+    },
+    {
+      "from": "role",
+      "to": "owner",
+      "label": "business and role facts retained"
+    },
+    {
+      "from": "owner",
+      "to": "phone",
+      "label": "independent owner evidence"
+    },
+    {
+      "from": "owner",
+      "to": "holdowner",
+      "label": "employee, applicator, or role-only evidence"
+    },
+    {
+      "from": "phone",
+      "to": "verify",
+      "label": "published business contact"
+    },
+    {
+      "from": "phone",
+      "to": "holdphone",
+      "label": "no eligible published contact"
+    },
+    {
+      "from": "verify",
+      "to": "deliver",
+      "label": "all contact and owner gates pass"
+    },
+    {
+      "from": "verify",
+      "to": "holdverify",
+      "label": "contact or owner evidence fails"
+    }
+  ],
+  "failures": [
+    {
+      "risk": "An employee applicator, technician, apprentice, or certified operator is labelled the business owner.",
+      "mitigation": "Persist exact licence role and business relationship; hold employee-class and role-only evidence until independent ownership evidence exists.",
+      "status": "proposed"
+    },
+    {
+      "risk": "Agricultural crop-pest activity enters the structural-pest cohort because the profile accepts the generic term pest.",
+      "mitigation": "Add a pest-profile agricultural exclusion and fixtures before core acceptance; require explicit structural-pest evidence for mixed names.",
+      "status": "blocked"
+    },
+    {
+      "risk": "A register or Maps business number is labelled a direct owner mobile.",
+      "mitigation": "Keep it business-contact evidence until line-type, reachability, DNC/suppression, dedupe, owner, and handset-evidence gates pass.",
+      "status": "partial"
+    },
+    {
+      "risk": "The described TX, CA, or FL licence route is assumed executable despite no adapter or register-source mapping.",
+      "mitigation": "Keep the register route unavailable until a source-specific adapter, verified fields, and an explicit register_source mapping exist.",
+      "status": "implemented"
+    },
+    {
+      "risk": "A franchise or multi-location pest brand is treated as a local owner-operated shop.",
+      "mitigation": "Segment brands before owner inference and keep their published contact at business level.",
+      "status": "partial"
+    }
+  ],
+  "sources": [
+    {
+      "label": "TX TDA Structural Pest Control current licences",
+      "scope": "TX commercial-business and applicator CSVs; business/applicator relationship needs column and join verification",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md TX TDA Structural Pest Control current licenses row; action item TX TDA pest CSV columns",
+      "status": "proposed"
+    },
+    {
+      "label": "CA CDPR licencee lists",
+      "scope": "CA business licence identity; not a verified owner-phone route",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md CA CDPR licensee lists row",
+      "status": "proposed"
+    },
+    {
+      "label": "FL FDACS pest company search",
+      "scope": "FL company name, licence number, and certified operator in charge; bulk remains unresolved",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md FL FDACS pest company search row",
+      "status": "proposed"
+    },
+    {
+      "label": "Live pest-control brain and relevance path",
+      "scope": "Recipe-C configuration, Maps fallback when no mapped register exists, and structural-pest relevance classification",
+      "evidence": "VERIFIED",
+      "reference": "src/data/lead-engine-brain.json industries.pest_control; src/lib/lead-engine-brain.ts registerSourceFor; src/lib/lead-engine-jobs.ts quoteJob; src/lib/lead-engine-industries.ts classifyRelevance",
+      "status": "implemented"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "The existing pest profile keeps structural-pest businesses while excluding unrelated activity.",
+      "test": "Five-case pure fixture/code audit of classifyRelevance(text, 'pest_control') on 2026-09-24.",
+      "observed": "Pest Control and Wildlife Removal were core; Mosquito Lawn Treatments and Sanitizing Services were adjacent; Crop Pest Management was incorrectly core. No provider or contact data was queried.",
+      "change": "Propose a pest-specific agricultural exclusion and explicit mixed-service fixture rule before any structural-pest contact workflow."
+    },
+    {
+      "hypothesis": "The live recipe-C pest route can read its named TX, CA, and FL public sources.",
+      "test": "Code audit of route and registerSourceFor for TX, CA, FL, and NY.",
+      "observed": "route reports the descriptive name_source for TX/CA/FL, but registerSourceFor returned null in each state. quoteJob requires a mapped register source and therefore chooses the Maps fallback; a recipe-C job would freeze if started without that fallback.",
+      "change": "Do not claim a working register route. Add a source-specific adapter and mapping only after role/column validation."
+    },
+    {
+      "hypothesis": "Root integration regression check, 2026-09-24",
+      "test": "Focused synthetic regression checks in tests/lead-engine-industry-corrections.test.ts, lead-engine-reviews.test.ts, lead-engine-gates-jobs.test.ts and lead-engine-jobs.test.ts. No paid provider call.",
+      "observed": "Crop/agricultural-only pest listings now fail relevance. Explicit residential/structural/termite/exterminator evidence preserves mixed businesses. Dedicated state pesticide-business adapters remain unimplemented.",
+      "change": "Shared runtime correction integrated. Original source samples are retained with their original denominators; no phone-yield improvement is claimed."
+    }
+  ],
+  "measurement": {
+    "kind": "fixture",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Five synthetic relevance cases: Pest Control core; Wildlife Removal core; Mosquito Lawn Treatments adjacent; Crop Pest Management incorrectly core; Sanitizing Services adjacent. Code audit only, with no provider calls or phone values retained. It does not measure source coverage, mobile status, reachability, DNC, handset ownership, owner confirmation, or delivery.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Fixture/code audit only; no provider or paid verification call",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean delivered owner contact was measured. The pest_control brain's historical research estimate is a different denominator and is not a per-clean cost for this workflow."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "Crop/agricultural-only pest listings now fail relevance. Explicit residential/structural/termite/exterminator evidence preserves mixed businesses. Dedicated state pesticide-business adapters remain unimplemented. Original review: The brain recognizes pest_control and the relevance path recognizes structural-pest vocabulary, but no TX/CA/FL pest register adapter or register_source mapping exists. Jobs therefore use the Maps fallback. The current core classifier also admits agricultural crop-pest activity.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-jobs.ts",
+      "src/services/lead-engine-jobs.service.ts",
+      "src/lib/lead-engine-industries.ts",
+      "src/lib/lead-engine-registers.ts"
+    ]
+  },
+  "nextMeasurement": "After agricultural exclusion fixtures and a source-specific business-role parser exist, run a free aggregate field-coverage sample separately for licensed business rows and employee/applicator rows in TX, CA, and FL. Measure active structural-pest businesses, role distribution, business-contact-field fill, duplicate rates, and classifier holds. A later authorized outcome study must separately measure line type, DNC, reachability, independently confirmed ownership, and delivery."
+}

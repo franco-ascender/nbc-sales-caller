@@ -1,0 +1,55 @@
+{
+ "_about": "GA parcel layer answer for SMITH JOHN, 2026-09-21",
+ "body": {
+  "objectIdFieldName": "OBJECTID",
+  "uniqueIdField": {
+   "name": "OBJECTID",
+   "isSystemMaintained": true
+  },
+  "globalIdFieldName": "",
+  "geometryType": "esriGeometryPolygon",
+  "exceededTransferLimit": true,
+  "features": [
+   {
+    "attributes": {
+     "Owner": "SMITH JOHN DWIGHT & SMITH NASHARA",
+     "OwnerAddr1": "1260 BUCKINGHAM DR",
+     "OwnerAddr2": "FAIRBURN GA 30213",
+     "Address": "1260 BUCKINGHAM DR"
+    }
+   },
+   {
+    "attributes": {
+     "Owner": "SMITH JOHN W ",
+     "OwnerAddr1": "6615 CONNELL RD",
+     "OwnerAddr2": "FAIRBURN GA 30213",
+     "Address": "6615 CONNELL RD"
+    }
+   },
+   {
+    "attributes": {
+     "Owner": "SMITH JOHNNY S & MARY ",
+     "OwnerAddr1": "215 HURST POINT",
+     "OwnerAddr2": "COLLEGE PARK GA 30349",
+     "Address": "215 HURST POINT"
+    }
+   },
+   {
+    "attributes": {
+     "Owner": "SMITH JOHN DERRIE ",
+     "OwnerAddr1": "440 W CAMPBELLTON ST",
+     "OwnerAddr2": "FAIRBURN GA 30213",
+     "Address": "440 WEST CAMPBELLTON ST"
+    }
+   },
+   {
+    "attributes": {
+     "Owner": "SMITH JOHN S II ",
+     "OwnerAddr1": "717 NE 43RD ST",
+     "OwnerAddr2": "FORT LAUDERDALE FL 33334",
+     "Address": "5497 SIERRA TRL"
+    }
+   }
+  ]
+ }
+}

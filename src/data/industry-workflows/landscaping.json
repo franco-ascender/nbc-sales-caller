@@ -1,0 +1,74 @@
+{
+  "industry": "landscaping",
+  "title": "Landscaping business-contact and owner-candidate review",
+  "hypothesis": "For independent landscaping businesses, a published business number can begin a business-contact workflow. A Colorado SOS registered agent can strengthen a matched business identity and owner-candidate hypothesis only when the agent is a person at the principal address; it does not establish ownership of the company, ownership of the handset, a mobile line, or permission to contact the person.",
+  "ownerSource": "Proposed CO SOS identity match: a person registered agent at the entity's principal address; surname-in-entity is a stronger signal, never owner confirmation.",
+  "phoneSource": "Implemented recipe-A published Maps business number; CO SOS provides no phone field in this route.",
+  "workflow": [
+    { "id": "maps", "label": "Discover published landscaping business", "detail": "Use the live recipe-A Maps route as a business-contact candidate only.", "kind": "source" },
+    { "id": "fit", "label": "Core landscaping fit?", "detail": "Require landscaping, landscaper, lawn care, lawn, landscape, or grounds-maintenance evidence; adjacent-only hardscape, irrigation, tree, pest, and snow-removal results do not prove landscaping fit.", "kind": "filter" },
+    { "id": "holdfit", "label": "Hold non-core result", "detail": "Do not reclassify adjacent-only or generic contractor listings as landscaping.", "kind": "hold" },
+    { "id": "brand", "label": "Independent operator segment?", "detail": "Recognize lawn-and-landscape franchise/brand matches before an owner hypothesis; a franchise listing may be a local business contact but does not evidence a local owner cell.", "kind": "decision" },
+    { "id": "holdbrand", "label": "Hold franchise or multi-location listing", "detail": "Keep the listing out of the owner-candidate branch pending an approved franchise workflow.", "kind": "hold" },
+    { "id": "phone", "label": "Published business number present?", "detail": "A Maps number is an advertised business contact, not a direct owner or mobile claim.", "kind": "decision" },
+    { "id": "holdphone", "label": "Hold without published contact", "detail": "Do not infer or append a person phone from SOS identity data.", "kind": "hold" },
+    { "id": "identity", "label": "Optional CO SOS identity corroboration", "detail": "For a matched Colorado entity, retain only aggregate-safe identity semantics: person agent and principal-address match. Surname-in-entity strengthens the candidate signal but does not confirm ownership.", "kind": "source" },
+    { "id": "verify", "label": "Verify business contact", "detail": "Apply existing line-type, live, DNC, and delivery-dedupe gates to the published business number. These gates do not verify identity or owner-handset ownership.", "kind": "verify" },
+    { "id": "owner", "label": "Independent owner and handset evidence?", "detail": "A registered agent, named business, or published mobile line alone is insufficient. Keep candidate identity and phone evidence separate.", "kind": "decision" },
+    { "id": "holdowner", "label": "Hold as business contact", "detail": "Do not label or deliver an owner-confirmed mobile without independent owner and handset evidence.", "kind": "hold" },
+    { "id": "deliver", "label": "Deliver approved owner-confirmed contact", "detail": "Only a future workflow that records independent owner evidence and all contact gates may use this classification.", "kind": "deliver" }
+  ],
+  "edges": [
+    { "from": "maps", "to": "fit", "label": "listing" },
+    { "from": "fit", "to": "brand", "label": "core match" },
+    { "from": "fit", "to": "holdfit", "label": "adjacent-only or no match" },
+    { "from": "brand", "to": "phone", "label": "independent segment" },
+    { "from": "brand", "to": "holdbrand", "label": "franchise or multi-location" },
+    { "from": "phone", "to": "identity", "label": "published business number" },
+    { "from": "phone", "to": "holdphone", "label": "no published number" },
+    { "from": "identity", "to": "verify", "label": "identity match or no eligible CO match" },
+    { "from": "verify", "to": "owner", "label": "contact gates passed" },
+    { "from": "verify", "to": "holdphone", "label": "line, live, DNC, or dedupe failed" },
+    { "from": "owner", "to": "deliver", "label": "independent owner and handset evidence" },
+    { "from": "owner", "to": "holdowner", "label": "candidate-only evidence" }
+  ],
+  "failures": [
+    { "risk": "A lawn, tree, irrigation, hardscape, pest, or snow-removal listing enters the landscaping owner cohort through adjacent vocabulary.", "mitigation": "Require a core landscaping match; hold adjacent-only and generic results before any owner-candidate inference.", "status": "implemented" },
+    { "risk": "A registered agent is described as the owner or their public filing address is used to find a personal phone.", "mitigation": "Use CO SOS only as matched business identity/candidate evidence; do not use it for personal-phone or address enrichment, and require independent owner and handset evidence.", "status": "proposed" },
+    { "risk": "A franchise, national lawn brand, or multi-location operator is treated as a one-truck owner-operated business.", "mitigation": "Route brand matches to a held franchise segment before owner-candidate processing.", "status": "partial" },
+    { "risk": "An advertised office, dispatch, or shared number is labeled a direct owner mobile.", "mitigation": "Keep it business-level until line-type, live, DNC, dedupe, independent owner, and handset-evidence gates each pass.", "status": "partial" }
+  ],
+  "sources": [
+    { "label": "Live landscaping recipe-A route", "scope": "Published landscaping business-contact discovery", "evidence": "VERIFIED", "reference": "src/data/lead-engine-brain.json industries.landscaping; src/lib/lead-engine-brain.ts route; src/lib/lead-engine-industries.ts PROFILES landscaping", "status": "implemented" },
+    { "label": "CO SOS Business Entities", "scope": "Colorado landscaping/lawn entity identity and registered-agent candidate evidence; no phone field", "evidence": "VERIFIED", "reference": "handoff/04_SOURCE_CATALOG.md Group B CO SOS row; handoff/07_RESEARCH_BUILD_SPEC.md Group B and CO SOS sections; https://data.colorado.gov/resource/4ykn-tg5h.json", "status": "proposed" },
+    { "label": "CO SOS registered-agent adapter", "scope": "Good-standing person-agent rows at the principal address, including LANDSCAP and LAWN source segments", "evidence": "VERIFIED", "reference": "src/lib/lead-engine-registers.ts CO_SOS_PATTERNS, coSosAgentRow, coSosAgents; tests/lead-engine-registers.test.ts co_sos_agents", "status": "implemented" }
+  ],
+  "iterations": [
+    { "hypothesis": "A Colorado landscaping or lawn entity's registered agent could be treated as an owner-contact source.", "test": "Free aggregate-only live query of 20 Good Standing CO SOS rows with a person agent and LANDSCAP or LAWN in the entity name on 2026-09-24; no phone fields were requested and no identities, addresses, or contact values were retained.", "observed": "20/20 had a person agent; 20/20 had both address fields; 15/20 had an exact normalized principal/agent-address match, which is the current parser admission condition; 5/20 had the agent surname in the entity name; 4/20 met both signals. The source supplied no phone measurement.", "change": "Treat this as identity-only owner-candidate evidence. Preserve the current person-and-address eligibility rule, use surname-in-entity only as a stronger signal, and prohibit automatic owner, handset, or phone claims." }
+  ],
+  "measurement": {
+    "kind": "free_source_sample",
+    "sampleSize": 20,
+    "observedAt": "2026-09-24",
+    "result": "CO SOS 4ykn-tg5h, Good Standing rows with agentorganizationname null and LANDSCAP or LAWN in entityname: person agent 20/20; both principal and agent-principal address fields present 20/20; normalized exact address match 15/20; surname in entity name 5/20; both signals 4/20. Aggregate-only identity-field coverage; no phone fields requested or retained. It does not measure mobile status, reachability, DNC, ownership of a handset, owner confirmation, or delivery.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Free public-source aggregate identity-field observation only",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No delivered owner contact was measured. The landscaping brain's historical Anas rates use a different denominator and are not a per-clean cost for this workflow."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "Landscaping is recognized and runs the Maps-first recipe-A discovery and relevance path. CO SOS has an implemented LANDSCAP/LAWN agent adapter, but the landscaping brain entry has no register-source mapping, so the adapter is unreachable for landscaping; neither path establishes owner confirmation or handset ownership.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-industries.ts",
+      "src/lib/lead-engine-registers.ts",
+      "src/services/lead-engine-jobs.service.ts"
+    ]
+  },
+  "nextMeasurement": "With synthetic Colorado landscaping rows, verify that a name-matched person agent at the principal address is retained only as an identity candidate; an organization agent, address mismatch, adjacent-only listing, and franchise listing are held; no agent address is used for personal-contact enrichment; and no owner-confirmed label can be delivered without separately recorded owner and handset evidence. A later authorized outcome pilot must measure published-contact line type, DNC, reachability, reached owner, and delivery with separate denominators."
+}

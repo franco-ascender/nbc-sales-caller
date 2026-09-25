@@ -1,0 +1,11 @@
+flowchart TD
+    N[NPPES bulk + API<br/>every clinician and practice, free] --> X[Corporate filter<br/>repeated Authorized Official, CMS group size,<br/>DSO and chain brand list]
+    X --> W[Ownership inference<br/>AO title Owner or President 63 percent<br/>AO surname in practice name 29 percent<br/>sole clinician at address]
+    G[Google Maps<br/>front desk phone] --> K
+    W --> K{AO phone vs front desk phone}
+    K -- differs, 28 percent of owners --> D1[Owner direct line candidate]
+    K -- same --> P[Cell append by name +<br/>practice or mailing address]
+    B[State boards: FL MQA, TX, CA, WA<br/>vet boards for veterinarians] --> W
+    D1 --> V[Telnyx, FTC DNC, litigator, ledger]
+    P --> V
+    V --> O[Verified owner cells<br/>8 to 9.5 cents each]

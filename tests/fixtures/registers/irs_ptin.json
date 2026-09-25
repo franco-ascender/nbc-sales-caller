@@ -1,0 +1,6 @@
+{
+ "source": "irs_ptin",
+ "fetchedAt": "2026-09-21",
+ "url": "https://www.irs.gov/pub/foia/foia-wyoming-extract.csv (first lines)",
+ "text": "\"LAST_NAME\",\"First_NAME\",\"MIDDLE_NAME\",\"SUFFIX\",\"DBA\",\"BUS_ADDR_LINE1\",\"BUS_ADDR_LINE2\",\"BUS_ADDR_LINE3\",\"BUS_ADDR_CITY\",\"BUS_ST_CODE\",\"BUS_ADDR_ZIP\",\"BUS_CNTRY_CDE\",\"WEBSITE\",\"BUS_PHNE_NBR\",\"PROFESSION\",\"AFSP_Indicator\"\n\"KOBERT\",\"KRAIG\",\"ARTHUR\",,\"Kraig Kobert, CPA, P.C.\",\"PO Box 3889\",\"610 W Broadway suite 104\",,\"Jackson\",\"WY\",\"83001\",,,\"(307) 733-4274\",\"CPA\",\"N\"\n\"BANTEKAS\",\"LORI\",,,\"Bantekas Accounting & Tax Services, PC\",\"Post Office Box 4534\",,,\"JACKSON\",\"WY\",\"83001\",,\"www.bantekas.com\",\"3074132464\",\"CPA\",\"N\"\n\"AANONSEN\",\"MARDEE\",,,\"H & R Block\",\"2523 E Garfield Space B\",,,\"LARAMIE\",\"WY\",\"82070\",,\"hrblock.com\",\"307-745-5667\",,\"N\"\n\"SWETT\",\"ALICE\",\"B\",,\"Swett Equity Accounting LLC\",\"820 N Main St\",,,\"BUFFALO\",\"WY\",\"82834\",,,\"3074251084\",\"EA\",\"N\"\n\"SCHMERGE\",\"STEPHEN\",\"J\",,\"Schreiner, Weskamp & Schmerge, LLC\",\"1607 E 19th Street\",,,\"CHEYENNE\",\"WY\",\"82001\",,,\"307-635-2600\",\"CPA\",\"N\"\n\"PAIZ\",\"JOSEPH\",\"J\",,\"ARP Offices LLC\",\"4631 Martingale Loop\",,,\"CHEYENNE\",\"WY\",\"82009\",,,\"307-630-3422\",\"CPA\",\"N\"\n"
+}

@@ -1,0 +1,5 @@
+# I08 — Roadmap example
+
+2026-09-15. User requests a mock roadmap to see how it looks. Render a clearly labeled English demo in the Overview roadmap widget when personal milestones are empty; five sample phases, two complete, third current, two upcoming. Existing personal milestones remain the default when present. View my roadmap opens the existing personal editor; Preview example returns to the mock. Preview is presentation-only: no DB/localStorage milestone writes, no fake membership progress or coach assignments. Keep NBC colors and balanced I07 layout. Build and verify desktop/mobile visibility, toggle and personal-data preservation; publish authorized Vercel preview over latest verified KCAL01/L01-R6 snapshot. No calls/payments/auth changes.
+
+Implemented and visually checked desktop/mobile.4 viewport fixtures pass including toggle without storage writes and preserving personal milestones across reload. Final226-file snapshot rebased without conflicts on C07-R1, retaining KCAL01/L01-R6/I07. Preview footer spacing corrected on mobile; data stays untouched. See I08 report for deployment/evidence.

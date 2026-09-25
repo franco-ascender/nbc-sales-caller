@@ -1,0 +1,253 @@
+{
+  "industry": "attorney_ny",
+  "title": "New York attorneys: registration business-contact route",
+  "hypothesis": "The NY Attorney Registrations route can produce a current New York professional and published office business-contact candidate, but neither a surname-in-firm signal nor the office phone proves ownership or a direct owner handset. The parser must itself reject non-NY rows rather than rely only on the source query.",
+  "ownerSource": "NYS Attorney Registrations can establish a currently registered person and company-name context. A surname in a firm is a named-partner heuristic only; independent firm-owner evidence is required for owner confirmation.",
+  "phoneSource": "The source's published phone is an office business-contact candidate. It is not evidence of a personal mobile or direct owner contact, even after generic phone verification.",
+  "workflow": [
+    {
+      "id": "request",
+      "label": "NY attorney request",
+      "detail": "Resolve the attorney_ny route; the Maps fallback and Maps delivery are forbidden.",
+      "kind": "source"
+    },
+    {
+      "id": "register",
+      "label": "NY Attorney Registrations",
+      "detail": "Read the catalog-verified eqw2-r5nb professional registration source using its current-status and NY query.",
+      "kind": "source"
+    },
+    {
+      "id": "parse",
+      "label": "Current person parse",
+      "detail": "The implemented parser requires Currently registered status and a person name; it currently relies on the query, rather than the parser, for NY state scope.",
+      "kind": "filter"
+    },
+    {
+      "id": "parsehold",
+      "label": "Registration hold",
+      "detail": "Hold inactive, non-person, unavailable-source, and, after the proposed correction, non-NY rows.",
+      "kind": "hold"
+    },
+    {
+      "id": "state",
+      "label": "NY state guard",
+      "detail": "Proposed fail-closed parser guard: retain only rows whose normalized state is NY.",
+      "kind": "decision"
+    },
+    {
+      "id": "candidate",
+      "label": "Published office business-contact candidate",
+      "detail": "Keep the professional registration, company context, and published office phone as business-contact evidence only. Surname-in-firm remains a heuristic.",
+      "kind": "decision"
+    },
+    {
+      "id": "reuse",
+      "label": "Reuse and switchboard check",
+      "detail": "Hold high-reuse or switchboard contacts; uniqueness does not prove an owner handset.",
+      "kind": "filter"
+    },
+    {
+      "id": "reusehold",
+      "label": "Shared-contact hold",
+      "detail": "Hold shared office or switchboard patterns before direct-contact classification.",
+      "kind": "hold"
+    },
+    {
+      "id": "gates",
+      "label": "Line and compliance gates",
+      "detail": "Apply mobile, reachability, DNC/TCPA, suppression, duplicate, freshness, and timezone controls.",
+      "kind": "verify"
+    },
+    {
+      "id": "gatehold",
+      "label": "Contact gate hold",
+      "detail": "Hold non-mobile, unreachable, DNC/TCPA, suppressed, duplicate, stale, or timezone-unresolved contacts.",
+      "kind": "hold"
+    },
+    {
+      "id": "owner",
+      "label": "Independent owner and direct-contact evidence",
+      "detail": "A future owner-labelled result needs supported owner/founder evidence for the firm and an explicit direct business-contact link to this phone.",
+      "kind": "verify"
+    },
+    {
+      "id": "ownerhold",
+      "label": "Owner claim unresolved",
+      "detail": "Hold employee, associate, front-desk, heuristic-only, conflicting, or unlinked evidence.",
+      "kind": "hold"
+    },
+    {
+      "id": "deliver",
+      "label": "Future owner-confirmed delivery",
+      "detail": "Deliver only after contact/compliance gates and independent owner/direct-contact evidence pass.",
+      "kind": "deliver"
+    }
+  ],
+  "edges": [
+    {
+      "from": "request",
+      "to": "register",
+      "label": "NY register route"
+    },
+    {
+      "from": "register",
+      "to": "parse",
+      "label": "parse registration"
+    },
+    {
+      "from": "parse",
+      "to": "parsehold",
+      "label": "status or person requirement fails"
+    },
+    {
+      "from": "parse",
+      "to": "state",
+      "label": "current named person"
+    },
+    {
+      "from": "state",
+      "to": "parsehold",
+      "label": "non-NY after proposed guard"
+    },
+    {
+      "from": "state",
+      "to": "candidate",
+      "label": "NY current person"
+    },
+    {
+      "from": "candidate",
+      "to": "reuse",
+      "label": "business-contact candidate"
+    },
+    {
+      "from": "reuse",
+      "to": "reusehold",
+      "label": "shared or switchboard pattern"
+    },
+    {
+      "from": "reuse",
+      "to": "gates",
+      "label": "eligible published contact"
+    },
+    {
+      "from": "gates",
+      "to": "gatehold",
+      "label": "line or compliance gate fails"
+    },
+    {
+      "from": "gates",
+      "to": "owner",
+      "label": "contact gates pass"
+    },
+    {
+      "from": "owner",
+      "to": "ownerhold",
+      "label": "owner or direct-contact evidence unresolved"
+    },
+    {
+      "from": "owner",
+      "to": "deliver",
+      "label": "all evidence supported"
+    }
+  ],
+  "failures": [
+    {
+      "risk": "A current non-NY registration reaches the NY workflow through a cache, malformed query, or direct parser caller.",
+      "mitigation": "Add a fail-closed normalized NY state check inside nyAttorneyRow and hold other states.",
+      "status": "proposed"
+    },
+    {
+      "risk": "Surname-in-firm is treated as owner or named-partner confirmation.",
+      "mitigation": "Keep it as a heuristic only and require independent firm-owner evidence before any owner label.",
+      "status": "blocked"
+    },
+    {
+      "risk": "The published office phone is labelled a direct owner mobile.",
+      "mitigation": "Keep it as a business-contact candidate and require separate reuse, line, compliance, and direct-business-contact evidence.",
+      "status": "partial"
+    },
+    {
+      "risk": "A register outage or non-NY request falls back to Maps delivery.",
+      "mitigation": "Keep attorney_ny in NEVER_MAPS_DELIVERABLE so the quote remains blocked without its eligible register route.",
+      "status": "implemented"
+    }
+  ],
+  "sources": [
+    {
+      "label": "NYS Attorney Registrations",
+      "scope": "NY current professional registration with company context and published office business phone",
+      "evidence": "VERIFIED",
+      "reference": "handoff/04_SOURCE_CATALOG.md NYS Attorney Registrations; handoff/07_RESEARCH_BUILD_SPEC.md section 6a; src/lib/lead-engine-registers.ts nyAttorneys",
+      "status": "implemented"
+    },
+    {
+      "label": "NY attorney parser",
+      "scope": "Current-status and person parsing, company retention, surname-in-firm heuristic, and published-phone normalization",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-registers.ts nyAttorneyRow; tests/lead-engine-registers.test.ts ny_attorneys",
+      "status": "implemented"
+    },
+    {
+      "label": "Parser state guard",
+      "scope": "Fail closed on any normalized state other than NY after parsing an otherwise current named registration",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-registers.ts nyAttorneyRow; five-case synthetic audit 2026-09-24",
+      "status": "proposed"
+    },
+    {
+      "label": "Never-Maps delivery guard",
+      "scope": "attorney_ny cannot select a Maps fallback or Maps deliverable",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-gates.ts NEVER_MAPS_DELIVERABLE; src/lib/lead-engine-jobs.ts quoteJob",
+      "status": "implemented"
+    },
+    {
+      "label": "Owner-evidence assessment",
+      "scope": "Existing assessment helper is not wired as an owner-confirmation requirement for this register delivery",
+      "evidence": "VERIFIED",
+      "reference": "src/lib/lead-engine-research.ts assessOwnerEvidence; src/services/lead-engine-jobs.service.ts settleVerified",
+      "status": "blocked"
+    }
+  ],
+  "iterations": [
+    {
+      "hypothesis": "The NY parser fails closed for source scope as well as current-status and person requirements.",
+      "test": "Five-case synthetic local audit on 2026-09-24 directly through nyAttorneyRow: current NY, current non-NY, delinquent, missing-name, and no-firm variants; plus node --experimental-strip-types --test --test-name-pattern='ny_attorneys' tests/lead-engine-registers.test.ts. No network, provider, secret, paid call, or private-contact lookup ran.",
+      "observed": "The focused test passed. Current NY, current non-NY, and no-firm variants were kept; Delinquent was held as status_not_registered and missing-name as not_a_person. The current non-NY result exposes the absent parser state guard. This is parser behavior only, not ownership, contact quality, compliance, or delivery evidence.",
+      "change": "Propose a normalized NY state check in nyAttorneyRow and a synthetic non-NY-current regression fixture; retain all accepted phones as office business-contact candidates until independent owner/direct-contact evidence exists."
+    },
+    {
+      "hypothesis": "Root integration regression check, 2026-09-24",
+      "test": "Focused synthetic regression checks in tests/lead-engine-industry-corrections.test.ts, lead-engine-reviews.test.ts, lead-engine-gates-jobs.test.ts and lead-engine-jobs.test.ts. No paid provider call.",
+      "observed": "The NY attorney parser now enforces state=NY itself and holds non-NY or missing-address-state rows, matching the declared adapter query scope. The never-Maps guard and ownership-unconfirmed export wording also apply.",
+      "change": "Shared runtime correction integrated. Original source samples are retained with their original denominators; no phone-yield improvement is claimed."
+    }
+  ],
+  "measurement": {
+    "kind": "fixture",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Five synthetic parser cases: two intended NY/current or solo candidates kept, one current non-NY case incorrectly kept, one delinquent case held, and one missing-person case held. The focused ny_attorneys fixture test passed. Fixture/code audit only; no live source, phone, owner, handset, compliance, or delivery measurement.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Local five-case fixture/code audit only; no source fetch, provider, append, trace, review, or phone-verification call ran.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean owner contact was measured. Catalog availability and historical brain estimates use different denominators and do not establish clean-contact cost."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "The NY attorney parser now enforces state=NY itself and holds non-NY or missing-address-state rows, matching the declared adapter query scope. The never-Maps guard and ownership-unconfirmed export wording also apply. Original review: The NY register adapter, current-status/person parsing, published office-phone candidate route, and attorney_ny never-Maps guard are implemented. The parser does not independently enforce NY state scope, and the delivery path lacks a wired owner/direct-contact evidence requirement; therefore no owner-confirmed attorney outcome is implemented.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-registers.ts",
+      "src/lib/lead-engine-jobs.ts",
+      "src/lib/lead-engine-gates.ts",
+      "src/services/lead-engine-jobs.service.ts",
+      "src/lib/lead-engine-research.ts"
+    ]
+  },
+  "nextMeasurement": "After the parser state guard and owner/direct-contact gate are wired, run a lawful 5–20-row aggregate study only from the catalog-verified NY public registration endpoint. Separate current NY registration, person, firm/solo candidate, unique published business-phone, independently owner-supported, mobile, reachable, DNC/TCPA-clear, suppression/duplicate-clear, direct-business-contact-supported, and delivered denominators. Do not use residential/property data to discover private numbers; perCleanUsd remains null until an approved outcome study."
+}

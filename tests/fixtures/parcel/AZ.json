@@ -1,0 +1,60 @@
+{
+ "_about": "AZ parcel layer answer for SMITH JOHN, 2026-09-21",
+ "body": {
+  "objectIdFieldName": "OBJECTID",
+  "uniqueIdField": {
+   "name": "OBJECTID",
+   "isSystemMaintained": true
+  },
+  "globalIdFieldName": "",
+  "geometryType": "esriGeometryPolygon",
+  "exceededTransferLimit": true,
+  "features": [
+   {
+    "attributes": {
+     "OwnerName": "SMITH JOHNNY R",
+     "OwnerAddressLine1": "4327 N 108TH AVE",
+     "OwnerCity": "PHOENIX",
+     "OwnerState": "AZ",
+     "OwnerZipCode": "85037"
+    }
+   },
+   {
+    "attributes": {
+     "OwnerName": "SMITH JOHN J/TERRESA L",
+     "OwnerAddressLine1": "7225 W SUNDERLAND AVE",
+     "OwnerCity": "PHOENIX",
+     "OwnerState": "AZ",
+     "OwnerZipCode": "85033"
+    }
+   },
+   {
+    "attributes": {
+     "OwnerName": "SMITH JOHN PRESTON",
+     "OwnerAddressLine1": "515 E CAREFREE HWY 880",
+     "OwnerCity": "PHOENIX",
+     "OwnerState": "AZ",
+     "OwnerZipCode": "85085"
+    }
+   },
+   {
+    "attributes": {
+     "OwnerName": "SMITH JOHN GRADY III",
+     "OwnerAddressLine1": "7818 E PALM LN",
+     "OwnerCity": "SCOTTSDALE",
+     "OwnerState": "AZ",
+     "OwnerZipCode": "85257"
+    }
+   },
+   {
+    "attributes": {
+     "OwnerName": "SMITH JOHN A",
+     "OwnerAddressLine1": "1433 W PEPPER PL",
+     "OwnerCity": "MESA",
+     "OwnerState": "AZ",
+     "OwnerZipCode": "85201"
+    }
+   }
+  ]
+ }
+}

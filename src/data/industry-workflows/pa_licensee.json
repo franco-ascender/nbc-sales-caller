@@ -1,0 +1,74 @@
+{
+  "industry": "pa_licensee",
+  "title": "Pennsylvania PALS accountancy and real-estate licensees",
+  "hypothesis": "The implemented PA PALS recipe-C route can retain an active individual Accountancy or Real Estate Commission licensee with a published register phone candidate. A licence and its phone do not establish business ownership, a direct business role for the phone, or handset ownership.",
+  "ownerSource": "PA PALS supplies an active individual licence record for Accountancy or Real Estate Commission. It is credential evidence only: the licensee remains an owner candidate until independent owner or founder evidence is matched to the same business.",
+  "phoneSource": "The PALS PhoneNo1 field is an implemented register-phone candidate. The fixture/code audit establishes parser retention only; it does not establish that the number is mobile, reachable, a published business contact, or direct to the licensee.",
+  "workflow": [
+    { "id": "pals", "label": "PA PALS person search", "detail": "Read a surname-page response from the implemented person endpoint; retain source provenance and keep the register phone distinct from ownership evidence.", "kind": "source" },
+    { "id": "scope", "label": "Active profession and person filter", "detail": "Keep active individual Accountancy or Real Estate Commission rows; reject all other professions, inactive rows, and rows lacking a parseable first and last name.", "kind": "filter" },
+    { "id": "scopehold", "label": "Licence out of scope", "detail": "Hold non-active, other-profession, facility, or incomplete-person rows.", "kind": "hold" },
+    { "id": "candidate", "label": "Licensed-person candidate", "detail": "Preserve licence type and business type, but do not call the licensee an owner.", "kind": "decision" },
+    { "id": "phone", "label": "Register phone candidate", "detail": "Use PhoneNo1 only as a contact candidate; missing, malformed, or shared contacts remain out of recipe C.", "kind": "source" },
+    { "id": "gates", "label": "Line and compliance gates", "detail": "Require mobile classification, reachability, DNC/TCPA clearance, suppression, duplicate, freshness, and timezone checks.", "kind": "verify" },
+    { "id": "gatehold", "label": "Contact gate hold", "detail": "Hold non-mobile, unreachable, DNC/TCPA, suppressed, duplicate, stale, shared, or timezone-unresolved contacts.", "kind": "hold" },
+    { "id": "owner", "label": "Independent owner and direct-contact evidence", "detail": "A future owner-labelled delivery requires current independent owner or founder evidence for the matched business and an explicit direct business-role link to this phone.", "kind": "verify" },
+    { "id": "ownerhold", "label": "Ownership unresolved", "detail": "Hold credential-only, employee, associate-broker, front-desk, conflicting, or unlinked-contact evidence; do not infer handset ownership.", "kind": "hold" },
+    { "id": "deliver", "label": "Future owner-confirmed delivery", "detail": "Deliver only after the generic contact gates and separate owner/direct-contact evidence both pass.", "kind": "deliver" }
+  ],
+  "edges": [
+    { "from": "pals", "to": "scope", "label": "parse person-search row" },
+    { "from": "scope", "to": "scopehold", "label": "status, profession, or person test fails" },
+    { "from": "scope", "to": "candidate", "label": "active scoped person" },
+    { "from": "candidate", "to": "phone", "label": "credential candidate" },
+    { "from": "phone", "to": "gatehold", "label": "no usable register phone" },
+    { "from": "phone", "to": "gates", "label": "phone candidate present" },
+    { "from": "gates", "to": "gatehold", "label": "line or compliance gate fails" },
+    { "from": "gates", "to": "owner", "label": "contact gates pass" },
+    { "from": "owner", "to": "ownerhold", "label": "owner or direct-contact evidence missing or conflicts" },
+    { "from": "owner", "to": "deliver", "label": "independent evidence supported" }
+  ],
+  "failures": [
+    { "risk": "A PALS licensee is presented as the owner of a business.", "mitigation": "Treat the licence as credential evidence and require independent owner or founder evidence matched to the business.", "status": "blocked" },
+    { "risk": "An associate broker, CPA employee, or other licensed professional is treated as an owner.", "mitigation": "Preserve the licence role and hold every credential-only row until an owner-specific source supports the same business and person.", "status": "proposed" },
+    { "risk": "PhoneNo1 is presented as a direct owner handset or a published business line.", "mitigation": "Keep register-phone provenance separate and require explicit direct business-role linkage before an owner-contact label.", "status": "blocked" },
+    { "risk": "A surname search silently omits records after PALS reports 500 records.", "mitigation": "Retain the adapter cap note and measure coverage with a separate lawful sampling plan; do not claim statewide completeness.", "status": "implemented" },
+    { "risk": "Generic recipe-C delivery bypasses the unresolved ownership question.", "mitigation": "Hold pa_licensee rows before delivery unless a supported owner-evidence assessment is stored; leave the export owner field empty for credential-only records.", "status": "blocked" }
+  ],
+  "sources": [
+    { "label": "PA PALS adapter", "scope": "Surname POST person search; active Accountancy and Real Estate Commission rows with first and last name; PhoneNo1 and Emailid1 are parsed when present.", "evidence": "VERIFIED", "reference": "src/lib/lead-engine-registers.ts paPals, PALS_URL, and PALS_PROFESSIONS; tests/fixtures/registers/pa_pals.json", "status": "implemented" },
+    { "label": "Live PA licensee brain route", "scope": "PA-only recipe C using pa_pals for the generic pa_licensee industry; historical n=4 benchmark remains outside this review's measurement.", "evidence": "VERIFIED", "reference": "src/data/lead-engine-brain.json industries.pa_licensee; src/lib/lead-engine-brain.ts registerSourceFor", "status": "implemented" },
+    { "label": "Generic verification and delivery gates", "scope": "Mobile, reachability, DNC/TCPA, suppression, duplicate, freshness, and timezone controls run for recipe C.", "evidence": "VERIFIED", "reference": "src/lib/lead-engine-gates.ts evaluateJobGates; src/services/lead-engine-jobs.service.ts settleVerified", "status": "implemented" },
+    { "label": "Independent owner-evidence assessment", "scope": "A helper requires a current explicit direct business contact plus independent owner or founder evidence, but pa_licensee delivery does not call it.", "evidence": "VERIFIED", "reference": "src/lib/lead-engine-research.ts assessOwnerEvidence; src/services/lead-engine-jobs.service.ts pullNames and settleVerified", "status": "blocked" },
+    { "label": "Philadelphia OPA fallback", "scope": "Historical brain notes name this route, but the review found no current pa_licensee adapter or verified business-contact implementation for it. It must not be used to find private contacts.", "evidence": "UNKNOWN", "reference": "src/data/lead-engine-brain.json industries.pa_licensee.notes; src/lib/lead-engine-registers.ts REGISTER_ADAPTERS", "status": "blocked" }
+  ],
+  "iterations": [
+    { "hypothesis": "The PALS parser keeps an active in-scope licensed person and phone candidate while rejecting an out-of-scope profession.", "test": "Five-case local fixture/code audit on 2026-09-24: parse the first five saved PALS fixture rows through paPals. Command used node --experimental-strip-types with tests/fixtures/registers/pa_pals.json; no network, credential, provider, contact-data export, or paid call ran.", "observed": "4/5 rows were active Real Estate Commission person rows and were retained with a parsed phone candidate; 1/5 Auctioneer Examiners row was held as profession_out_of_scope. The existing focused pa_pals register test also passed. This is parser behavior only, not a measurement of ownership, handset ownership, line type, reachability, DNC/TCPA, or delivery.", "change": "Document PALS records as licensed-person and phone candidates only; add an owner-evidence hold before any owner-labelled pa_licensee delivery." }
+  ],
+  "measurement": {
+    "kind": "fixture",
+    "sampleSize": 5,
+    "observedAt": "2026-09-24",
+    "result": "Five saved PALS fixture rows: four active Real Estate Commission person rows retained with a parsed phone candidate; one Auctioneer Examiners row held as out of scope. Local fixture/code audit only; no live source, phone, owner, handset, compliance, or delivery measurement.",
+    "verifiedPhones": 0
+  },
+  "cost": {
+    "basis": "Local five-case fixture/code audit only; no source fetch, provider, append, trace, review, or phone-verification call ran.",
+    "perInputUsd": 0,
+    "perCleanUsd": null,
+    "note": "No clean owner contact was measured. The historical brain benchmark has a different denominator and does not establish a clean-contact cost."
+  },
+  "implementation": {
+    "status": "partial",
+    "summary": "PA PALS parsing and generic recipe-C contact/compliance gates are implemented. pullNames writes the licensee into owner_name and settleVerified can deliver the row after generic gates without owner-evidence or direct-contact proof, so owner-confirmed delivery is not implemented.",
+    "runtimeFiles": [
+      "src/data/lead-engine-brain.json",
+      "src/lib/lead-engine-brain.ts",
+      "src/lib/lead-engine-registers.ts",
+      "src/services/lead-engine-jobs.service.ts",
+      "src/lib/lead-engine-gates.ts",
+      "src/lib/lead-engine-research.ts"
+    ]
+  },
+  "nextMeasurement": "After an owner-evidence hold is wired, run a lawful 5–20 row aggregate study only on a catalog-verified public business-contact endpoint. Separate active scoped licence, business match, independent owner support, explicit direct-business-contact support, mobile, reachable, DNC/TCPA-clear, suppression/duplicate-clear, and delivered denominators; do not use residential, property, private-phone, paid, or restricted-list sources."
+}

@@ -1,0 +1,6 @@
+import 'server-only';
+import {database,IntegrationError} from './integration.service';
+import {defaultView} from '@/lib/caller-dashboard';
+import type {ViewScope,SavedView,ViewConfig} from '@/lib/caller-dashboard';
+export async function getCallerView(owner:string,demo:boolean,scope:ViewScope):Promise<SavedView>{const result=await database().from('caller_views').select('version,config').eq('operator_id',owner).eq('is_demo',demo).eq('scope',scope).maybeSingle();if(result.error)throw new IntegrationError(503,'Your layout could not load. Please retry.');return result.data||{version:null,config:defaultView(scope)};}
+export async function saveCallerView(owner:string,demo:boolean,scope:ViewScope,version:string|null,request:string,config:ViewConfig):Promise<SavedView>{const result=await database().rpc('caller_save_view',{p_owner:owner,p_demo:demo,p_scope:scope,p_version:version,p_request:request,p_config:config});if(result.error)throw new IntegrationError(result.error.message.includes('view_conflict')?409:503,result.error.message.includes('view_conflict')?'Your layout changed in another tab. Reload the saved layout before editing again.':'Your layout could not save. Retry to keep your changes.');return getCallerView(owner,demo,scope);}
