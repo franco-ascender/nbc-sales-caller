@@ -9,6 +9,7 @@
 import { existsSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
 import { randomUUID } from 'node:crypto';
+import { refreshProviderSnapshot } from './lib/lead-provider-snapshot.mjs';
 
 if (existsSync('.env.local')) loadEnvFile('.env.local');
 
@@ -75,15 +76,16 @@ async function recordApify(rate) {
     }),
   });
   if (!pricing.ok) { console.error(`apply: pricing insert returned ${pricing.status}.`); return false; }
-  const account = await fetch(new URL('/rest/v1/lead_engine_provider_accounts?on_conflict=provider', url), {
-    method: 'POST', headers: { ...headers, Prefer: 'resolution=merge-duplicates,return=minimal' },
-    body: JSON.stringify({
-      provider: 'apify', balance_cents: Math.floor(rate.balanceUsd * 100), reserved_cents: 0, consumed_cents: 0,
+  try {
+    await refreshProviderSnapshot(url, headers, {
+      provider: 'apify', balance_cents: Math.floor(rate.balanceUsd * 100),
       verified_at: now.toISOString(), valid_until: new Date(now.getTime() + 7 * 86_400_000).toISOString(),
       evidence_ref: `apify ${rate.tier} plan credits remaining ${usd(rate.balanceUsd)}; read live ${now.toISOString().slice(0, 10)}`.slice(0, 300),
-    }),
-  });
-  if (!account.ok) { console.error(`apply: provider account upsert returned ${account.status}.`); return false; }
+    });
+  } catch (error) {
+    console.error(`apply: ${error instanceof Error ? error.message : 'Provider snapshot was not confirmed.'}`);
+    return false;
+  }
   return true;
 }
 
