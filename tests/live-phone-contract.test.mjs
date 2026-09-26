@@ -3,12 +3,16 @@ import assert from 'node:assert/strict';
 import { pilotAgentBody, callForm } from '../scripts/lib/live-phone-contract.mjs';
 const source = { conversation_config: { asr: { user_input_audio_format: 'ulaw_8000' }, tts: { agent_output_audio_format: 'ulaw_8000', voice_id: 'fixture' },
   conversation: { max_duration_seconds: 7200 }, agent: { prompt: { llm: 'gpt-4.1-mini', prompt: "NBC Sales' AI assistant\n\n# Context\nOld context", tools: [{ type: 'system', name: 'end_call' }] } } } };
-test('preserves source voice and brain with Nalify context and independent duration limit', () => {
-  const result = pilotAgentBody(source, { agency: 'Nalify', scenario: { brief: { ticket: '$2500/month' } } });
+test('preserves source voice with the explicit approved Nalify offer and independent duration limit', () => {
+  const result = pilotAgentBody(source, { agency: 'Nalify', scenario: { brief: { ticket: '$2500/month', offer: 'Lead generation for garage door businesses' } } });
   assert.equal(source.conversation_config.conversation.max_duration_seconds, 7200);
   assert.equal(result.conversation_config.conversation.max_duration_seconds, 600);
   assert.equal(result.conversation_config.tts.voice_id, 'fixture');
-  assert.match(result.conversation_config.agent.prompt.prompt, /Nalify's AI assistant/);
+  assert.equal(result.conversation_config.tts.speed, 0.9);
+  assert.equal(result.conversation_config.turn.turn_eagerness, 'patient');
+  assert.match(result.conversation_config.agent.prompt.prompt, /Service price: \$2500\/month/);
+  assert.doesNotMatch(result.conversation_config.agent.prompt.prompt, /Until approved NBC knowledge/);
+  assert.match(result.conversation_config.agent.prompt.prompt, /Nalify's AI sales assistant/);
   assert.doesNotMatch(result.conversation_config.agent.prompt.prompt, /Old context/);
   assert.equal(result.platform_settings.auth.enable_auth, true);
   assert.equal(result.platform_settings.call_limits.bursting_enabled, false);

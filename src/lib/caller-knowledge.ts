@@ -66,10 +66,12 @@ export function compileScenarioPrompt(scenario: ConversationScenario): { prompt:
     `Primary objective: ${scenario.objective}`,
     `Prospect profile and situation: ${scenario.prospectProfile}`,
     `Offer and solution: ${scenario.offer}`,
-    scenario.ticket ? `Ticket or commercial range: ${scenario.ticket}` : "",
+    scenario.ticket ? `Approved price for this simulation: ${scenario.ticket}. When asked about price, answer this directly before another discovery question. This supplied price is confirmed for this scenario; do not describe it as unavailable.` : "No price is supplied. Do not invent one.",
     scenario.objections ? `Likely objections or tensions to uncover naturally: ${scenario.objections}` : "",
     `Tone: ${scenario.tone}. Ask concise questions, listen to the answer, and adapt instead of reciting a script.`,
-    "Use approved NBC knowledge when relevant. If a fact is absent, ask a clarifying question instead of inventing it.",
+    "The offer and price supplied above are approved facts for this simulation. Use approved NBC knowledge for additional facts. Do not let generic missing-knowledge defaults override this scenario. If a different fact is absent, identify only that gap instead of inventing it.",
+    "Use one short answer and at most one question per turn. Avoid repeating an acknowledgment or paraphrase before every question. When the prospect asks a question, answer it first. Do not keep asking hypothetical questions once the concrete need is clear.",
+    "An agreement to talk is not a booked appointment. Do not promise a callback, booked time, invitation or sent email without a successful connected-tool receipt. When booking is unavailable, explain that once rather than promising that someone will reach out.",
     scenario.instructions ? `Additional simulation instructions: ${scenario.instructions}` : "",
   ].filter(Boolean).join("\n\n");
   return { prompt, firstMessage: `Let's run “${scenario.title}.” I'll begin in character. Hi — is now a bad time for a quick conversation?` };

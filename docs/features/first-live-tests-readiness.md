@@ -1,5 +1,7 @@
 # First live tests — readiness, 2026-09-25
 
+**Superseded UI, September 26:** the separate Test Center was removed following user feedback. Execution and saved results now live in Caller and Lead Engine. See [native-run-feedback.md](native-run-feedback.md) for current capabilities, verification gating and booking dependencies. The original shared budget and receipts are preserved.
+
 ## Latest instruction — user starts tests in the portal
 
 ### Portal delivered — user-operated tests

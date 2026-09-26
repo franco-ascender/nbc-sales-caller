@@ -26,6 +26,7 @@ test('actual portal routes enforce ownership, reserve before dispatch, avoid ret
       if(u.pathname==='/rest/v1/nbc_members')return json([{id:owner,display_name:'Fixture',role:'admin',status:'active'}]);
       if(u.pathname==='/rest/v1/nbc_pilot_rounds')return json(u.searchParams.get('owner_id')==='eq.'+owner?[{id:round,owner_id:owner,cap_cents:2500,paused:false,settings}]:[]);
       if(u.pathname==='/rest/v1/nbc_pilot_slots')return json(slots);
+      if(u.pathname==='/rest/v1/nbc_pilot_phone_checks')return json([]);
       if(u.pathname==='/rest/v1/nbc_pilot_operations')return json(operations);
       const b=JSON.parse(String(init?.body));assert.equal(b.p_owner,owner);
       if(u.pathname.endsWith('/nbc_pilot_reserve')){

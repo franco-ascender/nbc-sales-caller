@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import Link from 'next/link';
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDownToLine, ArrowRight, ArrowUpRight, Check, CheckCheck, FolderOpen, FileSearch, Fingerprint, Globe2, Link2, LockKeyhole, MapPin, Phone, Search, ShieldCheck, SlidersHorizontal, Smartphone, Database, BrainCircuit, X } from "lucide-react";
 import { buildLeadPlan, dollarsToCents, isUsState, LANE_BENCHMARKS, type LeadLane } from "@/lib/lead-engine-plan";
 import styles from "./LeadEngine.module.css";
@@ -31,7 +30,8 @@ export function LeadEngine() {
   const [exclusions, setExclusions] = useState("");
   const [operation, setOperation] = useState<LeadLane | "">("");
   const [downloaded, setDownloaded] = useState(false);
-  const [view, setView] = useState<View>('jobs');
+  const [view, setView] = useState<View>('search');
+  useEffect(()=>{if(window.location.hash==='#search')setView('search');},[]);
   const [example, setExample] = useState(false);
   const [researchStep, setResearchStep] = useState(0);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -52,7 +52,7 @@ export function LeadEngine() {
   return <div className={styles.workspace}>
     <header className={styles.heading}>
       <div className={styles.identity}><span className={styles.brandMark} aria-hidden="true"><Search size={23} /></span><div><span className={styles.eyebrow}>Prospecting</span><h1>Lead Engine</h1></div></div>
-      <Link href="/test-center" className={styles.mode}>Open Test Center <ArrowUpRight size={14}/></Link>
+      <span className={styles.mode}>Research · Verify · Review</span>
     </header>
 
     <div className={styles.navigation} role="tablist" aria-label="Lead Engine workspace">{tabs.map((tab, index) => <button type="button" ref={element => { tabRefs.current[index] = element; }} id={`tab-${tab.id}`} key={tab.id} role="tab" aria-controls={`panel-${tab.id}`} aria-selected={view === tab.id} tabIndex={view === tab.id ? 0 : -1} className={view === tab.id ? styles.activeTab : ''} onClick={() => changeView(tab.id)} onKeyDown={event => {

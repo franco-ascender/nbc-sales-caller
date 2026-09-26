@@ -1,2 +1,2 @@
-import { TestCenter } from '@/components/pilot/TestCenter';
-export default function Page(){return <TestCenter/>;}
+import { redirect } from 'next/navigation';
+export default function Page(){redirect('/caller#ai-caller');}

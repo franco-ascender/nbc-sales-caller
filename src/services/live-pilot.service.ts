@@ -11,7 +11,7 @@ interface Settings { agentId:string; from:string; destination:string }
 interface Round { id:string; owner_id:string; cap_cents:number; paused:boolean; settings:Settings }
 interface Slot { key:string; kind:'phone'|'scrape'; title:string; allocation_cents:number; reserve_cents:number; config:{industry?:string; city?:string; state?:string; location?:string; count?:number} }
 interface Provider { callSid?:string; agentId?:string; job?:DiscoveryJob; phase?:string }
-interface Operation { key:string; state:PilotState; reserved_cents:number; reported_microusd:number|null; provider:Provider; result:PilotResult; version:number }
+interface Operation { created_at?:string; updated_at?:string; key:string; state:PilotState; reserved_cents:number; reported_microusd:number|null; provider:Provider; result:PilotResult; version:number }
 interface Agent { conversation_config:{agent:{first_message:string; prompt:{llm:string; max_tokens:number; prompt:string; tool_ids?:string[]; knowledge_base?:unknown[]; tools?:Array<{type:string;name:string}>}};conversation:{max_duration_seconds:number};tts:{agent_output_audio_format:string};asr:{user_input_audio_format:string}};platform_settings:{auth:{enable_auth:boolean};call_limits:{bursting_enabled:boolean;agent_concurrency_limit:number;daily_limit:number}} }
 interface PhoneCall { sid:string; status:string; duration:string|null; price:string|null; price_unit:string; to:string; from:string }
 interface Conversation { status:string; transcript:Array<{role:string;message:string|null}>; analysis?:{transcript_summary?:string}; metadata:{phone_call?:{call_sid:string};cost?:number;termination_reason?:string;charging?:{platform_price?:number|null;llm_price?:number|null}} }
@@ -41,10 +41,15 @@ async function load(owner:string):Promise<{round:Round;slots:Slot[];operations:O
 }
 export async function pilotView(owner:string):Promise<PilotView> {
   const {round,slots,operations}=await load(owner);
-  const reserved=operations.reduce((n,o)=>n+o.reserved_cents,0);
+  const {data:checks,error:checksError}=await database().from('nbc_pilot_phone_checks').select('phone10,state,verification,reserved_cents').eq('round_id',PILOT_ROUND);
+  if(checksError)return fail('Verification progress could not be loaded.');
+  const reserved=operations.reduce((n,o)=>n+o.reserved_cents,0)+(checks??[]).reduce((n,c)=>n+c.reserved_cents,0);
+  const pricing=(round.settings as Settings&{verification?:{provider:string;unitCents:number;confirmedAt:string}}).verification;
+  const verifiedPrice=!!pricing&&pricing.provider==='batchdata'&&Number.isSafeInteger(pricing.unitCents)&&pricing.unitCents>=1&&pricing.unitCents<=10&&Date.parse(pricing.confirmedAt)>Date.now()-30*86400000&&Date.parse(pricing.confirmedAt)<=Date.now();
+  const configured=verifiedPrice&&Boolean(process.env.BATCHDATA_API_KEY);
   return {capCents:round.cap_cents,reservedCents:reserved,reportedMicrousd:operations.reduce((n,o)=>n+Number(o.reported_microusd??0),0),availableCents:Math.max(0,round.cap_cents-reserved),paused:round.paused,
-    pending:operations.some(o=>!terminal(o.state)),destinationLast4:round.settings.destination.slice(-4),
-    slots:slots.map(s=>{const o=operations.find(o=>o.key===s.key);return {key:s.key,kind:s.kind,title:s.title,allocationCents:s.allocation_cents,reserveCents:s.reserve_cents,count:s.config.count??null,state:o?.state??'ready',reportedMicrousd:o?.reported_microusd??null,result:o?.result??{}};})};
+    verification:{configured,unitCents:verifiedPrice?pricing!.unitCents:null,blocker:configured?null:'Account-specific verification pricing has not been confirmed. No phone checks will be charged.'}, booking:{ready:false,reason:'Connect the authorized booking calendar to offer real times and send an invitation.'}, pending:operations.some(o=>!terminal(o.state))||(checks??[]).some(c=>c.state!=='completed'),destinationLast4:round.settings.destination.slice(-4),
+    slots:slots.map(s=>{const o=operations.find(o=>o.key===s.key);return {key:s.key,kind:s.kind,title:s.title,allocationCents:s.allocation_cents,reserveCents:s.reserve_cents,createdAt:o?.created_at,updatedAt:o?.updated_at,count:s.config.count??null,state:o?.state??'ready',reportedMicrousd:o?.reported_microusd??null,result:{...o?.result,phoneChecks:(checks??[]).filter(c=>o?.result.rows?.some(r=>r.phone10===c.phone10)).map(c=>({phone10:c.phone10,state:c.state,verification:c.verification}))}};})};
 }
 function rpcError(message:string):never {
   if(message.includes('pilot_stale')||message.includes('pilot_terminal'))return fail('The result changed. Refresh to see the latest status.',409);
