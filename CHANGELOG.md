@@ -349,3 +349,9 @@ Se comprobó la existencia de los archivos previstos, los enlaces relativos de d
 - Atomic $25 cumulative round guard, $2.50 call reservation and two attempts/day; free US country validation, no paid Lookup add-ons.
 - Verification account-rate form with audit, pause-safe progress, chiropractor registry before verification, and separate all-evidence/phone-qualified CSV exports.
 - No new scrape/check/call purchases. Owner identity and calendar delivery are still separate unfinished integrations.
+
+## 2026-09-26 — New lists with live full-cycle progress
+- Existing Build a search screen: named lists by US city/state, industry and up to 50 businesses.
+- User-started automatic discovery, filtering, available registry research, phone verification and delivery; pause/resume and refresh recovery.
+- Animated status, real elapsed clock, stage-based progress, approximate ETA and persisted activity history; reduced-motion support.
+- Missing verification pricing and ambiguous paid responses pause visibly. Shared USD25 allowance and Outscraper suspension unchanged. Engineering validation uses fixtures only.

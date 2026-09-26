@@ -4,7 +4,7 @@ const e=parseEnv(readFileSync('.env.local','utf8')),base='https://nbc-sales-nbc-
 const report={errors:[],paidActions:0,views:[]},browser=await chromium.launch({channel:'chrome',headless:true});
 try{
  const context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'});
- await context.route(/\/api\/(pilot|caller\/phone-test|lead-engine\/verification-rate)(?:\?.*)?$/,async route=>{if(route.request().method()!=='GET'){report.paidActions++;await route.abort();return;}await route.continue();});
+ await context.route(/\/api\/(pilot|caller\/phone-test|lead-engine\/(?:verification-rate|runs))(?:\?.*)?$/,async route=>{if(route.request().method()!=='GET'){report.paidActions++;await route.abort();return;}await route.continue();});
  const page=await context.newPage();page.on('pageerror',e=>report.errors.push(e.message));
  await page.goto(base+'/caller#ai-caller');await page.getByLabel('Email address',{exact:true}).fill(e.NBC_OPERATOR_EMAIL);await page.getByLabel('Password',{exact:true}).fill(e.NBC_OPERATOR_INITIAL_PASSWORD);await page.getByRole('button',{name:'Enter NBC Sales',exact:true}).click();
  await page.getByRole('heading',{name:'Calls & outcomes',exact:true}).waitFor({timeout:45000});
@@ -15,7 +15,9 @@ try{
  if(await call.getByText('Appointment not confirmed',{exact:true}).count()!==1)throw Error('Unconfirmed booking not shown');
  await call.screenshot({path:out+'/caller-native.png'});
  for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await page.waitForTimeout(300);report.views.push({page:'caller',width,overflow:await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)});}
+ const dialerResponse=page.waitForResponse(r=>r.url().endsWith('/api/caller/phone-test')&&r.request().method()==='GET');
  await page.goto(base+'/caller#dialer');
+ const dialerData=await(await dialerResponse).json();
  const dialer=page.getByRole('region',{name:'AI phone trial'});
  await dialer.getByRole('heading',{name:'Let Anas try the caller.',exact:true}).waitFor({timeout:30000});
  await dialer.getByLabel('Recipient’s phone number',{exact:true}).fill('+1 (305) 555-0123');
@@ -24,7 +26,10 @@ try{
  report.confirmationLayout=await dialer.getByRole('checkbox').evaluate(input=>({display:getComputedStyle(input.parentElement).display,direction:getComputedStyle(input.parentElement).flexDirection}));
  if(report.confirmationLayout.display!=='flex'||report.confirmationLayout.direction!=='row')throw Error('Confirmation layout inherited incompatible styles');
  report.dialerStartEnabled=await dialer.getByRole('button',{name:'Start AI test call',exact:true}).isEnabled();
- if(!report.dialerStartEnabled)throw Error('Valid recipient cannot prepare a call');
+ const today=new Date().toISOString().slice(0,10);const todayCalls=dialerData.slots.filter(s=>s.kind==='phone'&&s.state!=='ready'&&s.createdAt?.startsWith(today)).length;
+ const canStart=!dialerData.pending&&!dialerData.paused&&dialerData.availableCents>=250&&todayCalls<2;
+ report.dialerLimitEnforced=report.dialerStartEnabled===canStart;
+ if(!report.dialerLimitEnforced)throw Error('Dialer availability differs from its saved budget/daily limits');
  for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await page.waitForTimeout(300);report.views.push({page:'dialer',width,overflow:await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)});await dialer.screenshot({path:out+'/dialer-'+width+'.png'});}
  await page.reload();await dialer.getByRole('heading',{name:'Let Anas try the caller.',exact:true}).waitFor();
  if(await dialer.getByLabel('Recipient’s phone number',{exact:true}).inputValue())throw Error('Recipient was unnecessarily persisted');

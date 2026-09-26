@@ -128,3 +128,6 @@ L02 local, 2026-09-16: operaciones de planes y research Lead Engine exigen opera
 - `POST /api/caller/phone-test`: `{requestId: UUIDv4, phone: US +1, confirmed: true}`. Explicit expected-recipient trial, $2.50 reservation, up to 600s. UUID replay returns the saved attempt; changing its destination is rejected. Basic Lookup (no paid fields) confirms US destination.
 - `POST /api/lead-engine/verification-rate`: `{rateUsd: decimal string, source: string, confirmed: true}`. Owner records current account rate, at most $0.10/phone. Audited; no verification or funds added.
 - Existing `/api/pilot` sync/stop support `dial-UUID` saved slots. No action resumes paid work on page load.
+
+### User-started list cycles — 2026-09-26
+`GET /api/lead-engine/runs` returns the private round's saved runs plus existing list evidence. `POST` accepts `create` with stable UUID, name, industry (roofing/chiropractor/medspa), US city/state, 5–50 businesses and explicit confirmation; or saved-key actions `advance`, `pause`, `resume` (confirmed). Creation only saves an authorized workflow; each advance performs at most one bounded step using existing reservation adapters. GET never dispatches work. Leases serialize advances across tabs. Missing verification pricing pauses before any paid phone check.

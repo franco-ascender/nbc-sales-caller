@@ -177,3 +177,6 @@ Detalle funcional en `docs/features/owner-cell-jobs.md`.
 
 ### Dialer and account rate — 2026-09-26
 Migrations `202609260200`, `202609260210`, `202609260220` applied. `nbc_pilot_phone_slot` persists a per-attempt destination in private slot config; stable UUID and owner guard, round lock, shared cap. A BEFORE INSERT operations trigger limits phone reservations to two per UTC day, including legacy phone slots. `nbc_pilot_rate_confirmations` stores owner, round, integer micro-USD rate, source, timestamp; service-role-only permissions and RLS. `nbc_pilot_set_verification_rate` audits and updates round settings without resetting reservations or cap. The 220 follow-up resolves a PL/pgSQL alias collision found by rollback-only assertions.
+
+### Durable lead cycles — 2026-09-26
+Migration `202609260300_lead_cycles.sql` applied: service-only `nbc_lead_cycles`, FK to private pilot slots, persisted phase/status/events/timestamps and a 90-second processing lease. Owner-checked functions create/replay, claim, finish and pause/resume; round locking preserves the USD25 cumulative ceiling. Pause wins over an in-flight finish. Existing paid dispatch and phone claims remain the authoritative duplicate/spend guards. A workflow record itself does not debit or dispatch a search.
