@@ -53,3 +53,27 @@ export function csvCell(value: unknown): string {
   const text = String(value ?? '');
   return '"' + (/^[\s]*[=+@-]/.test(text) ? "'" + text : text).replaceAll('"', '""') + '"';
 }
+
+export function qualifiedRows(result: PilotResult): PilotRow[] {
+  const seen = new Set<string>();
+  return (result.rows ?? []).filter(row => {
+    if (excludeBeforeVerification(row) || !row.phone10 || seen.has(row.phone10)) return false;
+    const check = result.phoneChecks?.find(c => c.phone10 === row.phone10);
+    if (check?.state !== 'completed' || !phoneDecision(check.verification).accepted) return false;
+    seen.add(row.phone10);
+    return true;
+  });
+}
+
+export function runEvidenceCsv(result: PilotResult, qualifiedOnly = false): string {
+  const rows = qualifiedOnly ? qualifiedRows(result) : result.rows ?? [];
+  return [
+    ['Business','City','State','Published phone','Website','Discovery decision','Phone decision','Line type','DNC','TCPA','Reachable','Verified at','Owner identity','Registry person','Registry role','Registry phone (not verified)','Registry evidence','Registry basis','Listing source'],
+    ...rows.map(row => {
+      const check = result.phoneChecks?.find(c => c.phone10 === row.phone10);
+      const v = check?.verification;
+      const evidence = result.ownerEvidence?.find(e => e.business === row.name && e.phone10 === row.phone10);
+      return [row.name,row.city,row.state,row.phone10,row.website,excludeBeforeVerification(row) ?? 'Eligible',check?.state === 'completed' ? phoneDecision(v).label : check?.state ?? 'Not checked',v?.lineType,v?.dnc,v?.tcpa,v?.reachable,v?.verifiedAt,'Not established',evidence?.person,evidence?.role,evidence?.registryPhone,evidence?.source,evidence?.basis,row.sourceUrl];
+    }),
+  ].map(row => row.map(csvCell).join(',')).join('\r\n');
+}

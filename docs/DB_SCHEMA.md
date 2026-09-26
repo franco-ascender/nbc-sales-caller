@@ -174,3 +174,6 @@ Escritas y probadas sobre Postgres 17 aislado; **aplicadas a NBC Caller el 2026-
 | `202609210250_lead_engine_registers.sql` | `lead_engine_register_ingests` | `lead_engine_register_start`, `lead_engine_register_write`, `lead_engine_register_progress`, `lead_engine_register_resume`, `lead_engine_names_reuse`, `lead_engine_register_summary`, `lead_engine_new_licensees` | Ingesta por trozos con cursor; snapshots append-only; una corrida activa por fuente. |
 
 Detalle funcional en `docs/features/owner-cell-jobs.md`.
+
+### Dialer and account rate — 2026-09-26
+Migrations `202609260200`, `202609260210`, `202609260220` applied. `nbc_pilot_phone_slot` persists a per-attempt destination in private slot config; stable UUID and owner guard, round lock, shared cap. A BEFORE INSERT operations trigger limits phone reservations to two per UTC day, including legacy phone slots. `nbc_pilot_rate_confirmations` stores owner, round, integer micro-USD rate, source, timestamp; service-role-only permissions and RLS. `nbc_pilot_set_verification_rate` audits and updates round settings without resetting reservations or cap. The 220 follow-up resolves a PL/pgSQL alias collision found by rollback-only assertions.

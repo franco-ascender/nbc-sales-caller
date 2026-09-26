@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { excludeBeforeVerification, phoneDecision, reviewConversation, csvCell } from '../src/lib/run-review.ts';
+import { excludeBeforeVerification, phoneDecision, reviewConversation, csvCell, qualifiedRows, runEvidenceCsv } from '../src/lib/run-review.ts';
 import { matchRegistryEvidence } from '../src/lib/run-owner-evidence.ts';
-import type {PilotRow} from '../src/lib/live-pilot.ts';
+import type {PilotResult, PilotRow} from '../src/lib/live-pilot.ts';
 const row:PilotRow={name:'Example Chiropractic',city:'Miami',state:'FL',phone10:'3055551234',website:null,sourceUrl:null,rejection:null,duplicate:false,chain:null};
 test('prefilter never sends missing, invalid, toll-free, duplicate or chain numbers to paid checks',()=>{
  assert.equal(excludeBeforeVerification(row),null);
@@ -29,4 +29,14 @@ test('registry association needs a unique active local organization and never pr
 });
 test('CSV spreadsheet formulas cannot execute, including leading whitespace',()=>{
  for(const value of ['=SUM(1,2)',' +15551234','\t@SUM(A1)','-cmd'])assert.ok(csvCell(value).startsWith('"\''));
+});
+
+test('qualified export excludes duplicate, chain, stale and unconfirmed phones and retains registry provenance',()=>{
+ const verification={phone10:row.phone10,lineType:'Mobile',dnc:false,tcpa:false,reachable:true,verifiedAt:new Date(Date.now()-1000).toISOString()};
+ const result:PilotResult={rows:[row,{...row,name:'Duplicate'},{...row,name:'Chain',chain:'Franchise'}],phoneChecks:[{phone10:row.phone10!,state:'completed',verification}]};
+ assert.equal(qualifiedRows(result).length,1);
+ assert.equal(runEvidenceCsv(result,true).split('\r\n').length,2);
+ assert.ok(runEvidenceCsv(result,true).includes('Not established'));
+ result.phoneChecks![0].state='uncertain';assert.equal(qualifiedRows(result).length,0);
+ result.phoneChecks![0].state='completed';verification.verifiedAt=new Date(Date.now()-32*86400000).toISOString();assert.equal(qualifiedRows(result).length,0);
 });

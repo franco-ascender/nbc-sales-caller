@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parsePilotAction } from '../src/lib/live-pilot.ts';
 const routes=await import('../src/app/api/pilot/route.ts');
+const phoneRoutes=await import('../src/app/api/caller/phone-test/route.ts');
 const owner='11111111-1111-4111-8111-111111111111';
 const other='22222222-2222-4222-8222-222222222222';
 const round='2026-09-25-first-live-tests';
@@ -14,8 +15,9 @@ test('actual portal routes enforce ownership, reserve before dispatch, avoid ret
   const original=globalThis.fetch;const saved={...process.env};
   Object.assign(process.env,{NEXT_PUBLIC_SUPABASE_URL:'https://pilot-fixture.supabase.co',SUPABASE_SECRET_KEY:'fixture',ELEVENLABS_API_KEY:'fixture',TWILIO_ACCOUNT_SID:'AC'+'a'.repeat(32),TWILIO_AUTH_TOKEN:'fixture',APIFY_API_TOKEN:'fixture'});
   const settings={agentId:'agent_fixture',from:'+12025550101',destination:'+12025550102'};
-  const slots=[{round_id:round,key:'caller-2',kind:'phone',title:'Your live Nalify call',allocation_cents:250,reserve_cents:250,config:{}}];
+  const slots=[{round_id:round,key:'caller-2',kind:'phone',title:'Your live Nalify call',allocation_cents:250,reserve_cents:250,config:{} as {destination?:string}}];
   type Op={key:string;state:string;reserved_cents:number;version:number;provider:Record<string,unknown>;result:Record<string,unknown>;reported_microusd:number|null};
+  let expectedDestination=settings.destination,country='US';
   let operations:Op[]=[],creates=0,registers=0,stops=0,ambiguous=false,invalidConfig=false,callStatus='in-progress';
   const json=(x:unknown,status=200)=>Response.json(x,{status});
   const req=(body?:object,token:string|null='owner')=>new Request('https://fixture.test/api/pilot',{method:body?'POST':'GET',headers:{...(token?{Authorization:'Bearer '+token}:{}),...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
@@ -29,6 +31,12 @@ test('actual portal routes enforce ownership, reserve before dispatch, avoid ret
       if(u.pathname==='/rest/v1/nbc_pilot_phone_checks')return json([]);
       if(u.pathname==='/rest/v1/nbc_pilot_operations')return json(operations);
       const b=JSON.parse(String(init?.body));assert.equal(b.p_owner,owner);
+      if(u.pathname.endsWith('/nbc_pilot_phone_slot')){
+        const key='dial-'+b.p_request,found=slots.find(s=>s.key===key);
+        if(found&&found.config.destination!==b.p_destination)return json({message:'destination_conflict',code:'P0001'},400);
+        if(!found)slots.push({round_id:round,key,kind:'phone',title:'Phone trial',allocation_cents:250,reserve_cents:250,config:{destination:b.p_destination}});
+        return json(key);
+      }
       if(u.pathname.endsWith('/nbc_pilot_reserve')){
         const found=operations.find(o=>o.key===b.p_key);if(found)return json({acquired:false,operation:found});
         const o={key:b.p_key,state:'dispatching',reserved_cents:250,version:0,provider:{},result:{},reported_microusd:null};operations.push(o);return json({acquired:true,operation:o});
@@ -45,17 +53,18 @@ test('actual portal routes enforce ownership, reserve before dispatch, avoid ret
       if(u.pathname==='/v1/convai/twilio/register-call'){assert.equal(operations.length,1);registers++;return new Response('<Response><Connect><Stream url="wss://api.elevenlabs.io/voice" /></Connect></Response>');}
       if(u.pathname==='/v1/convai/conversations')return json({conversations:[]});
     }
+    if(u.hostname==='lookups.twilio.com'){assert.equal(u.search,'');return json({valid:true,country_code:country,phone_number:expectedDestination});}
     if(u.hostname==='pricing.twilio.com')return json({outbound_prefix_prices:[{destination_prefixes:['1'],current_price:'.014'}]});
     if(u.hostname==='api.twilio.com'){
       if(u.pathname.endsWith('/IncomingPhoneNumbers.json'))return json({incoming_phone_numbers:[{phone_number:settings.from,capabilities:{voice:true}}]});
       if(u.pathname.endsWith('/Balance.json'))return json({balance:'10',currency:'USD'});
       if(u.pathname.endsWith('/Calls.json')&&method==='POST'){
-        assert.equal(operations[0].provider.phase,'dispatching');creates++;const form=new URLSearchParams(String(init?.body));assert.equal(form.get('To'),settings.destination);assert.equal(form.get('TimeLimit'),'600');assert.equal(form.get('Record'),'false');
+        assert.equal(operations[0].provider.phase,'dispatching');creates++;const form=new URLSearchParams(String(init?.body));assert.equal(form.get('To'),expectedDestination);assert.equal(form.get('TimeLimit'),'600');assert.equal(form.get('Record'),'false');
         if(ambiguous)throw Error('lost network response');return json({sid:'CA'+'b'.repeat(32),status:'queued'});
       }
       if(u.pathname.endsWith('/Calls/CA'+'b'.repeat(32)+'.json')){
         if(method==='POST'){stops++;callStatus='completed';}
-        return json({sid:'CA'+'b'.repeat(32),status:callStatus,duration:'21',price:'-.014',price_unit:'USD',to:settings.destination,from:settings.from});
+        return json({sid:'CA'+'b'.repeat(32),status:callStatus,duration:'21',price:'-.014',price_unit:'USD',to:expectedDestination,from:settings.from});
       }
     }
     throw Error('Unexpected fixture request: '+method+' '+u.hostname+u.pathname);
@@ -76,6 +85,22 @@ test('actual portal routes enforce ownership, reserve before dispatch, avoid ret
       assert.ok(responses.every(r=>r.status===200));assert.equal(creates,1);assert.equal(registers,1);
       assert.equal((await routes.POST(req({action:'sync',key:'caller-2'}))).status,200);assert.equal(creates,1);
       assert.equal((await routes.POST(req({action:'stop',key:'caller-2'}))).status,200);assert.equal(stops,1);assert.equal(operations[0].state,'completed');
+    });
+    await t.test('Dialer stores the entered destination, validates country and replays the same attempt without another call',async()=>{
+      operations=[];expectedDestination='+13055550123';
+      const body={requestId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',phone:expectedDestination,confirmed:true};
+      assert.equal((await phoneRoutes.POST(req(body,null))).status,401);
+      assert.equal((await phoneRoutes.POST(req({...body,confirmed:false}))).status,400);
+      country='CA';const before=creates;
+      assert.equal((await phoneRoutes.POST(req(body))).status,400);assert.equal(creates,before);assert.equal(operations.length,0);
+      country='US';callStatus='in-progress';
+      assert.equal((await phoneRoutes.POST(req(body))).status,200);assert.equal(creates,before+1);
+      assert.equal((await phoneRoutes.POST(req(body))).status,200);assert.equal(creates,before+1);
+      assert.equal((await phoneRoutes.POST(req({...body,phone:'+13055550124'}))).status,409);assert.equal(creates,before+1);
+      const view=await(await phoneRoutes.GET(req())).json();assert.equal(view.slots.find((s:{key:string})=>s.key==='dial-'+body.requestId).destinationLast4,'0123');assert.ok(!JSON.stringify(view).includes(expectedDestination));
+      assert.equal((await routes.POST(req({action:'sync',key:'dial-'+body.requestId}))).status,200);
+      assert.equal((await routes.POST(req({action:'stop',key:'dial-'+body.requestId}))).status,200);assert.equal(operations[0].state,'completed');
+      expectedDestination=settings.destination;
     });
     await t.test('ambiguous dispatch retains the reservation and repeating Start never calls twice',async()=>{
       operations=[];ambiguous=true;assert.equal((await routes.POST(req({action:'start',key:'caller-2',confirmed:true}))).status,503);

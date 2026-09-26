@@ -11,7 +11,7 @@ export interface PilotResult {
 }
 export interface PilotSlotView {
   key: string; kind: 'phone'|'scrape'; title: string; allocationCents: number; reserveCents: number;
-  createdAt?: string; updatedAt?: string; count: number|null; state: PilotState|'ready'; reportedMicrousd: number|null; result: PilotResult;
+  destinationLast4?: string; createdAt?: string; updatedAt?: string; count: number|null; state: PilotState|'ready'; reportedMicrousd: number|null; result: PilotResult;
 }
 export interface PilotView {
   capCents: number; reservedCents: number; reportedMicrousd: number; availableCents: number;
@@ -22,7 +22,7 @@ export function parsePilotAction(value: unknown): {action:'start'|'sync'|'stop'|
   const b = value as Record<string,unknown>;
   if (Object.keys(b).some(k=>!['action','key','confirmed','feedback'].includes(k))
     || !['start','sync','stop','feedback','check','verify','research'].includes(String(b.action)) || typeof b.key!=='string'
-    || !/^(caller-[12]|(roofing|chiropractor|medspa)-(miami|charlotte))$/.test(b.key)
+    || !/^(caller-[12]|dial-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|(roofing|chiropractor|medspa)-(miami|charlotte))$/.test(b.key)
     || (['start','verify'].includes(String(b.action)) && b.confirmed!==true)
     || (b.action==='feedback' && (typeof b.feedback!=='string' || b.feedback.length>3000))) throw Error('Choose an approved test and confirm its displayed limit.');
   return {action:b.action as 'start'|'sync'|'stop'|'feedback'|'check'|'verify'|'research',key:b.key,...(typeof b.feedback==='string'?{feedback:b.feedback}:{})};

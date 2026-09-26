@@ -11,7 +11,7 @@ export async function verifyRunPhone(owner: string, key: string): Promise<void> 
   const { data: round, error } = await db.from('nbc_pilot_rounds').select('settings').eq('id', PILOT_ROUND).eq('owner_id', owner).maybeSingle();
   if (error || !round) throw new IntegrationError(403, 'This run is not assigned to your account.');
   const pricing = round.settings?.verification;
-  if (!process.env.BATCHDATA_API_KEY || !pricing || pricing.provider !== 'batchdata' || !Number.isSafeInteger(pricing.unitCents) || pricing.unitCents < 1 || pricing.unitCents > 10 || !(Date.parse(pricing.confirmedAt) > Date.now() - 30 * 86400000)) throw new IntegrationError(409, 'Phone verification needs a confirmed account rate before any number can be charged.');
+  if (!process.env.BATCHDATA_API_KEY || !pricing || pricing.provider !== 'batchdata' || !Number.isSafeInteger(pricing.unitCents) || pricing.unitCents < 1 || pricing.unitCents > 10 || !(Date.parse(pricing.confirmedAt) > Date.now() - 30 * 86400000) || Date.parse(pricing.confirmedAt) > Date.now()) throw new IntegrationError(409, 'Phone verification needs a confirmed account rate before any number can be charged.');
   const [{ data: operation, error: operationError }, { data: checks, error: checkError }] = await Promise.all([
     db.from('nbc_pilot_operations').select('result,state').eq('round_id', PILOT_ROUND).eq('key', key).maybeSingle(),
     db.from('nbc_pilot_phone_checks').select('phone10,state').eq('round_id', PILOT_ROUND),

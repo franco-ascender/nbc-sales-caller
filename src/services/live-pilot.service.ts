@@ -9,7 +9,7 @@ import { isChain } from '@/lib/lead-engine-brands';
 
 interface Settings { agentId:string; from:string; destination:string }
 interface Round { id:string; owner_id:string; cap_cents:number; paused:boolean; settings:Settings }
-interface Slot { key:string; kind:'phone'|'scrape'; title:string; allocation_cents:number; reserve_cents:number; config:{industry?:string; city?:string; state?:string; location?:string; count?:number} }
+interface Slot { key:string; kind:'phone'|'scrape'; title:string; allocation_cents:number; reserve_cents:number; config:{destination?:string; industry?:string; city?:string; state?:string; location?:string; count?:number} }
 interface Provider { callSid?:string; agentId?:string; job?:DiscoveryJob; phase?:string }
 interface Operation { created_at?:string; updated_at?:string; key:string; state:PilotState; reserved_cents:number; reported_microusd:number|null; provider:Provider; result:PilotResult; version:number }
 interface Agent { conversation_config:{agent:{first_message:string; prompt:{llm:string; max_tokens:number; prompt:string; tool_ids?:string[]; knowledge_base?:unknown[]; tools?:Array<{type:string;name:string}>}};conversation:{max_duration_seconds:number};tts:{agent_output_audio_format:string};asr:{user_input_audio_format:string}};platform_settings:{auth:{enable_auth:boolean};call_limits:{bursting_enabled:boolean;agent_concurrency_limit:number;daily_limit:number}} }
@@ -49,9 +49,12 @@ export async function pilotView(owner:string):Promise<PilotView> {
   const configured=verifiedPrice&&Boolean(process.env.BATCHDATA_API_KEY);
   return {capCents:round.cap_cents,reservedCents:reserved,reportedMicrousd:operations.reduce((n,o)=>n+Number(o.reported_microusd??0),0),availableCents:Math.max(0,round.cap_cents-reserved),paused:round.paused,
     verification:{configured,unitCents:verifiedPrice?pricing!.unitCents:null,blocker:configured?null:'Account-specific verification pricing has not been confirmed. No phone checks will be charged.'}, booking:{ready:false,reason:'Connect the authorized booking calendar to offer real times and send an invitation.'}, pending:operations.some(o=>!terminal(o.state))||(checks??[]).some(c=>c.state!=='completed'),destinationLast4:round.settings.destination.slice(-4),
-    slots:slots.map(s=>{const o=operations.find(o=>o.key===s.key);return {key:s.key,kind:s.kind,title:s.title,allocationCents:s.allocation_cents,reserveCents:s.reserve_cents,createdAt:o?.created_at,updatedAt:o?.updated_at,count:s.config.count??null,state:o?.state??'ready',reportedMicrousd:o?.reported_microusd??null,result:{...o?.result,phoneChecks:(checks??[]).filter(c=>o?.result.rows?.some(r=>r.phone10===c.phone10)).map(c=>({phone10:c.phone10,state:c.state,verification:c.verification}))}};})};
+    slots:slots.map(s=>{const o=operations.find(o=>o.key===s.key);return {key:s.key,kind:s.kind,title:s.title,allocationCents:s.allocation_cents,reserveCents:s.reserve_cents,destinationLast4:s.kind==='phone'?phoneSettings(round,s).destination.slice(-4):undefined,createdAt:o?.created_at,updatedAt:o?.updated_at,count:s.config.count??null,state:o?.state??'ready',reportedMicrousd:o?.reported_microusd??null,result:{...o?.result,phoneChecks:(checks??[]).filter(c=>o?.result.rows?.some(r=>r.phone10===c.phone10)).map(c=>({phone10:c.phone10,state:c.state,verification:c.verification}))}};})};
 }
 function rpcError(message:string):never {
+  if(message.includes('pilot_not_found'))return fail('This private test round is not assigned to your account.',403);
+  if(message.includes('phone_daily_limit'))return fail('Two phone trials have already been reserved today. Try again after midnight UTC.',409);
+  if(message.includes('destination_conflict'))return fail('This request belongs to a different destination. Refresh the saved call before starting another.',409);
   if(message.includes('pilot_stale')||message.includes('pilot_terminal'))return fail('The result changed. Refresh to see the latest status.',409);
   if(message.includes('pilot_operation_pending'))return fail('Finish or reconcile the current test before starting another.',409);
   if(message.includes('pilot_budget_exceeded')||message.includes('pilot_paused'))return fail('The approved budget does not allow another test.',409);
@@ -61,17 +64,20 @@ async function observe(owner:string,o:Operation,state:PilotState,provider:Provid
   const {data,error}=await database().rpc('nbc_pilot_observe',{p_owner:owner,p_key:o.key,p_version:o.version,p_state:state,p_provider:provider,p_result:result,p_reported:reported});
   if(error)return rpcError(error.message);return data as Operation;
 }
+function phoneSettings(round:Round,slot:Slot):Settings {return {...round.settings,destination:slot.config.destination??round.settings.destination};}
 async function preflightPhone(s:Settings):Promise<void> {
   if(!/^agent_[a-z0-9]+$/.test(s.agentId)||![s.from,s.destination].every(x=>/^\+1[2-9]\d{9}$/.test(x)))return fail('The approved phone configuration is incomplete.');
-  const [a,sub,numbers,price,balance]=await Promise.all([
+  const [a,sub,numbers,price,balance,lookup]=await Promise.all([
     el<Agent>(`convai/agents/${s.agentId}`),el<{status:string;character_limit:number;character_count:number;can_extend_character_limit:boolean}>('user/subscription'),
     tw<{incoming_phone_numbers:Array<{phone_number:string;capabilities:{voice:boolean}}>}>('IncomingPhoneNumbers.json?PageSize=50'),
     remote<{outbound_prefix_prices:Array<{destination_prefixes:string[];current_price:string}>}>('https://pricing.twilio.com/v2/Voice/Countries/US',twAuth()),tw<{balance:string;currency:string}>('Balance.json'),
+    remote<{valid:boolean;country_code:string;phone_number:string}>(`https://lookups.twilio.com/v2/PhoneNumbers/${encodeURIComponent(s.destination)}`,twAuth()),
   ]);
+  if(!lookup.valid||lookup.country_code!=='US'||lookup.phone_number!==s.destination)return fail('This trial supports valid US destinations only. No call was started.',400);
   const p=a.conversation_config.agent.prompt;
   const rates=price.outbound_prefix_prices.filter(r=>r.destination_prefixes.some(x=>s.destination.slice(1).startsWith(x)));
   if(a.conversation_config.conversation.max_duration_seconds!==600||!a.platform_settings.auth.enable_auth||a.platform_settings.call_limits.bursting_enabled||a.platform_settings.call_limits.agent_concurrency_limit!==1
-    ||p.llm!=='gpt-4.1-mini'||!(p.max_tokens>0&&p.max_tokens<=140)||p.prompt.length>20000||!p.prompt.includes('Nalify')||p.tool_ids?.length||p.knowledge_base?.length||(p.tools??[]).some(t=>t.type!=='system'||t.name!=='end_call')
+    ||a.platform_settings.call_limits.daily_limit!==2||p.llm!=='gpt-4.1-mini'||!(p.max_tokens>0&&p.max_tokens<=140)||p.prompt.length>20000||!p.prompt.includes('Nalify')||p.tool_ids?.length||p.knowledge_base?.length||(p.tools??[]).some(t=>t.type!=='system'||t.name!=='end_call')
     ||a.conversation_config.asr.user_input_audio_format!=='ulaw_8000'||a.conversation_config.tts.agent_output_audio_format!=='ulaw_8000'
     ||sub.status!=='active'||sub.can_extend_character_limit!==false||sub.character_limit-sub.character_count<20000
     ||!numbers.incoming_phone_numbers.some(n=>n.phone_number===s.from&&n.capabilities.voice)||balance.currency!=='USD'||Number(balance.balance)<1
@@ -87,13 +93,13 @@ async function preflightScrape():Promise<void> {
 export async function startPilot(owner:string,key:string):Promise<PilotView> {
   const {round,slots,operations}=await load(owner);const slot=slots.find(s=>s.key===key);if(!slot)return fail('Choose an approved test.',400);
   if(operations.some(o=>o.key===key))return pilotView(owner);
-  if(slot.kind==='phone')await preflightPhone(round.settings);else await preflightScrape();
+  if(slot.kind==='phone')await preflightPhone(phoneSettings(round,slot));else await preflightScrape();
   const {data,error}=await database().rpc('nbc_pilot_reserve',{p_owner:owner,p_key:key});if(error)return rpcError(error.message);
   const claim=data as {acquired:boolean;operation:Operation};if(!claim.acquired)return pilotView(owner);
   let o=claim.operation;let provider:Provider={phase:'reserved'};
   try {
     if(slot.kind==='phone') {
-      const s=round.settings;provider={agentId:s.agentId,phase:'registering'};o=await observe(owner,o,'dispatching',provider,{});
+      const s=phoneSettings(round,slot);provider={agentId:s.agentId,phase:'registering'};o=await observe(owner,o,'dispatching',provider,{});
       const xml=await el<string>('convai/twilio/register-call',{method:'POST',body:JSON.stringify({agent_id:s.agentId,from_number:s.from,to_number:s.destination,direction:'outbound'})},true);
       if(xml.length>4000||!xml.includes('<Response>')||!xml.includes('<Stream ')||!xml.includes('wss://')||/<(Dial|Record|Redirect|Pay|Say)\b/i.test(xml))return fail('The phone connection response was not valid.');
       provider={...provider,phase:'dispatching'};o=await observe(owner,o,'dispatching',provider,{});
@@ -115,7 +121,7 @@ export async function startPilot(owner:string,key:string):Promise<PilotView> {
 }
 export async function checkPilot(owner:string,key:string):Promise<PilotView>{
   const {round,slots}=await load(owner);const slot=slots.find(s=>s.key===key);if(!slot)return fail('Choose an approved test.',400);
-  if(slot.kind==='phone')await preflightPhone(round.settings);else await preflightScrape();
+  if(slot.kind==='phone')await preflightPhone(phoneSettings(round,slot));else await preflightScrape();
   return pilotView(owner);
 }
 export async function syncPilot(owner:string,key:string,stop=false):Promise<PilotView> {
@@ -126,7 +132,7 @@ export async function syncPilot(owner:string,key:string,stop=false):Promise<Pilo
   if(slot.kind==='phone'){
     const sid=o.provider.callSid;if(!sid||!/^CA[0-9a-f]{32}$/i.test(sid))return fail('The call ID is not confirmed. Operator reconciliation is required; no new call will be created.',409);
     let call=await tw<PhoneCall>(`Calls/${sid}.json`);
-    if(call.sid!==sid||call.to!==round.settings.destination||call.from!==round.settings.from)return fail('Call identity mismatch.');
+    if(call.sid!==sid||call.to!==phoneSettings(round,slot).destination||call.from!==round.settings.from)return fail('Call identity mismatch.');
     if(stop&&['queued','ringing','in-progress'].includes(call.status))call=await tw<PhoneCall>(`Calls/${sid}.json`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({Status:call.status==='in-progress'?'completed':'canceled'})});
     const ended=['completed','busy','failed','no-answer','canceled'].includes(call.status);
     state=ended?(terminal(o.state)?o.state:call.status==='completed'?'completed':call.status==='canceled'?'stopped':'failed'):'running';
@@ -164,4 +170,10 @@ export async function syncPilot(owner:string,key:string,stop=false):Promise<Pilo
 export async function pilotFeedback(owner:string,key:string,feedback:string):Promise<PilotView>{
   const {operations}=await load(owner);const o=operations.find(o=>o.key===key);if(!o)return fail('Choose a completed or active test.',404);
   await observe(owner,o,o.state,o.provider,{...o.result,feedback});return pilotView(owner);
+}
+
+export async function startDialerTrial(owner:string,requestId:string,destination:string):Promise<PilotView>{
+  const {data:key,error}=await database().rpc('nbc_pilot_phone_slot',{p_owner:owner,p_request:requestId,p_destination:destination});
+  if(error)return rpcError(error.message);
+  return startPilot(owner,key as string);
 }

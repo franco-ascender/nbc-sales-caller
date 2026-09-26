@@ -343,3 +343,9 @@ Se comprobó la existencia de los archivos previstos, los enlaces relativos de d
 > Todo esto se tiene que poder conectar con GoHighLevel porque la mayoría de sus clientes usan GoHighLevel. También tenemos que poder tener un propio dashboard donde puedan haber reportes y breakdown de cómo está funcionando todo.
 
 > Eso lo vamos a ir definiendo vos y yo, pero sí para que veas las funciones que quieran asumir.
+
+## 2026-09-26 — Dialer recipient entry and qualification follow-through
+- Native Dialer admin trial form: user-entered US number, explicit recipient confirmation, saved UUID attempt, budget, Stop and transcript. No assistant-initiated calls.
+- Atomic $25 cumulative round guard, $2.50 call reservation and two attempts/day; free US country validation, no paid Lookup add-ons.
+- Verification account-rate form with audit, pause-safe progress, chiropractor registry before verification, and separate all-evidence/phone-qualified CSV exports.
+- No new scrape/check/call purchases. Owner identity and calendar delivery are still separate unfinished integrations.

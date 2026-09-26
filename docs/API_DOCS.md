@@ -122,3 +122,9 @@ OR02: GET anónimo workspace/session y lead-engine/plans401; reproducción contr
 ## Actualización L02 / I10
 
 L02 local, 2026-09-16: operaciones de planes y research Lead Engine exigen operador configurado + membresía existente admin/active mediante requireLeadOperator. Sin membresía/rol/status válido:403; fallo de consulta:503. Diagnóstico de conexiones conserva requireWorkspaceAdmin. Sin nuevos endpoints ni cambios de payload. Evidencia en docs/lanes/reports/L02.md; no publicado.
+
+### Dialer trials and verification rate (2026-09-26)
+- `GET /api/caller/phone-test`: private round state, admin plus round-owner guard; no dialing.
+- `POST /api/caller/phone-test`: `{requestId: UUIDv4, phone: US +1, confirmed: true}`. Explicit expected-recipient trial, $2.50 reservation, up to 600s. UUID replay returns the saved attempt; changing its destination is rejected. Basic Lookup (no paid fields) confirms US destination.
+- `POST /api/lead-engine/verification-rate`: `{rateUsd: decimal string, source: string, confirmed: true}`. Owner records current account rate, at most $0.10/phone. Audited; no verification or funds added.
+- Existing `/api/pilot` sync/stop support `dial-UUID` saved slots. No action resumes paid work on page load.
