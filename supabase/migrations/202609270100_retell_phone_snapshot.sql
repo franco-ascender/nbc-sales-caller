@@ -1,0 +1,27 @@
+begin;
+create or replace function public.nbc_pilot_phone_slot(p_owner uuid,p_request uuid,p_destination text,p_max_cents integer default null) returns text
+language plpgsql security invoker set search_path=public as $$
+declare r nbc_pilot_rounds; s nbc_pilot_slots; k text; used integer; today_calls integer;
+begin
+ select * into r from nbc_pilot_rounds where id='2026-09-25-first-live-tests' and owner_id=p_owner for update;
+ if not found then raise exception 'pilot_not_found';end if;
+ if p_destination !~ '^\+1[2-9][0-9]{2}[2-9][0-9]{6}$' or substring(p_destination from 3 for 3) in ('800','833','844','855','866','877','888','900') then raise exception 'invalid_destination';end if;
+ k:='dial-'||p_request::text;
+ select * into s from nbc_pilot_slots where round_id=r.id and key=k;
+ if found then
+  if s.config->>'destination' is distinct from p_destination then raise exception 'destination_conflict';end if;
+  return k;
+ end if;
+ if (coalesce(r.settings->>'perOperationApproval','false')='true') and p_max_cents is distinct from 250 then raise exception 'approval_required';end if;
+ if r.paused then raise exception 'pilot_paused';end if;
+ if exists(select 1 from nbc_pilot_operations where round_id=r.id and state in ('dispatching','running','uncertain')) or exists(select 1 from nbc_pilot_phone_checks where round_id=r.id and state<>'completed') then raise exception 'pilot_operation_pending';end if;
+ select count(*) into today_calls from nbc_pilot_operations o join nbc_pilot_slots slot_row on slot_row.round_id=o.round_id and slot_row.key=o.key where o.round_id=r.id and slot_row.kind='phone' and o.created_at>=date_trunc('day',now() at time zone 'UTC') at time zone 'UTC';
+ if (coalesce(r.settings->>'perOperationApproval','false')<>'true') and today_calls>=3 then raise exception 'phone_daily_limit';end if;
+ select coalesce(sum(reserved_cents),0) into used from nbc_pilot_operations where round_id=r.id;
+ used:=used+(select coalesce(sum(reserved_cents),0) from nbc_pilot_phone_checks where round_id=r.id);
+ if (coalesce(r.settings->>'perOperationApproval','false')<>'true') and used+250>r.cap_cents then raise exception 'pilot_budget_exceeded';end if;
+ insert into nbc_pilot_slots(round_id,key,kind,title,allocation_cents,reserve_cents,config) values(r.id,k,'phone','Phone trial · ending '||right(p_destination,4),250,250,jsonb_build_object('destination',p_destination,'scenario','Nalify / Garage Door Business Owner','approvedCeilingCents',p_max_cents,'approvedAt',now(),'phoneEngine',coalesce(r.settings->>'phoneEngine','elevenlabs'),'retell',case when r.settings->>'phoneEngine'='retell' then r.settings->'retell' else null end));
+ return k;
+end $$;
+
+commit;

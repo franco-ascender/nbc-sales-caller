@@ -1,15 +1,16 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import {Check,Clock3,Loader2,Pause,Play,Plus,Sparkles} from 'lucide-react';
-import {cyclePresentation,parseCycleInput,type LeadCycle} from '@/lib/lead-cycle';
+import {CYCLE_TEST_LIMIT,cycleVolumePlan,cyclePresentation,parseCycleInput,type LeadCycle} from '@/lib/lead-cycle';
 import type {PilotView} from '@/lib/live-pilot';
 import styles from './LeadRunControls.module.css';
+import {CYCLE_NICHES,cycleNiche} from '@/lib/lead-cycle-niches';
 interface View {runs:LeadCycle[];pilot:PilotView}
 const money=(cents:number)=>'$'+(cents/100).toFixed(2);
 const phrases=['Working on your list…','Connecting the dots…','Good leads take a little digging.','Sipping a virtual piña colada…','Keeping an eye on every detail.'];
 const labels=['Discover','Filter','Research','Verify','Deliver'];
 export function LeadRunControls({token,pilot,selectedKey,onUpdate}:{token:string;pilot:PilotView;selectedKey?:string;onUpdate:(view:PilotView,key?:string)=>void}){
- const [runs,setRuns]=useState<LeadCycle[]>([]),[open,setOpen]=useState(false),[industry,setIndustry]=useState('chiropractor'),[city,setCity]=useState('Miami'),[state,setState]=useState('FL'),[count,setCount]=useState(25),[name,setName]=useState(''),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(''),[error,setError]=useState(''),[now,setNow]=useState(Date.now()),[connectionPaused,setConnectionPaused]=useState(false);
+ const [runs,setRuns]=useState<LeadCycle[]>([]),[open,setOpen]=useState(true),[industry,setIndustry]=useState('chiropractor'),[scope,setScope]=useState('city'),[city,setCity]=useState('Miami'),[state,setState]=useState('FL'),[count,setCount]=useState(25),[name,setName]=useState(''),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(''),[error,setError]=useState(''),[now,setNow]=useState(Date.now()),[connectionPaused,setConnectionPaused]=useState(false);
  const mounted=useRef(true),stepLock=useRef(false),createLock=useRef(false),latest=useRef(runs),update=useRef(onUpdate),initial=useRef(true),requestId=useRef('');latest.current=runs;update.current=onUpdate;
  const keyName='nbc-lead-cycle-draft';
  async function request(body?:object):Promise<View|null>{
@@ -17,16 +18,19 @@ export function LeadRunControls({token,pilot,selectedKey,onUpdate}:{token:string
   }catch(e){if(mounted.current){setError(e instanceof Error?e.message:'Connection interrupted.');setConnectionPaused(true);}return null;}
  }
  const requestRef=useRef(request);requestRef.current=request;
- useEffect(()=>{mounted.current=true;initial.current=true;void(async()=>{const view=await requestRef.current();if(view&&initial.current){initial.current=false;const chosen=view.runs.find(r=>r.status==='running')??view.runs[0];if(chosen)update.current(view.pilot,chosen.key);else setOpen(true);}})();return()=>{mounted.current=false;};},[token]);
+ useEffect(()=>{mounted.current=true;initial.current=true;void(async()=>{const view=await requestRef.current();if(view&&initial.current){initial.current=false;const chosen=view.runs.find(r=>r.status==='running')??view.runs[0];if(chosen)update.current(view.pilot,chosen.key);setOpen(!view.runs.some(r=>r.status==='running'));}})();return()=>{mounted.current=false;};},[token]);
  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer);},[]);
  useEffect(()=>{const timer=setInterval(()=>{if(stepLock.current||createLock.current||connectionPaused)return;const active=latest.current.find(r=>r.status==='running');if(!active)return;stepLock.current=true;setBusy('advance');void requestRef.current({action:'advance',key:active.key}).finally(()=>{stepLock.current=false;if(mounted.current)setBusy('');});},3000);return()=>clearInterval(timer);},[connectionPaused]);
  const selected=runs.find(r=>r.key===selectedKey),active=runs.find(r=>r.status==='running');
  const presentation=selected?cyclePresentation(selected,pilot.slots.find(s=>s.key===selected.key),now):null;
- const title=name.trim()||`${industry==='medspa'?'Med spa':industry==='roofing'?'Roofing':'Chiropractors'} · ${city.trim()}, ${state.toUpperCase()}`;
+ const title=name.trim()||`${cycleNiche(industry)?.title??'Businesses'} · ${scope==='nationwide'?'Nationwide · US':scope==='state'?state.toUpperCase():`${city.trim()}, ${state.toUpperCase()}`}`;
  function change(){setConfirmed(false);requestId.current='';try{sessionStorage.removeItem(keyName);}catch{};setError('');}
  async function start(){
-  if(createLock.current)return;const payload={action:'create',requestId:requestId.current||crypto.randomUUID(),name:title,industry,city,state,count,confirmed};
-  try{parseCycleInput(payload);}catch(e){setError(e instanceof Error?e.message:'Check your list details.');return;}
+  if(createLock.current)return;const payload={action:'create',requestId:requestId.current||crypto.randomUUID(),name:title,industry,city:scope==='city'?city:'',state:scope==='nationwide'?'':state,count,confirmed:pilot.perOperationApproval?true:confirmed};
+  try{parseCycleInput(payload);if(count>CYCLE_TEST_LIMIT)throw Error('Testing limit: up to 50 businesses per search.');}catch(e){setError(e instanceof Error?e.message:'Check your list details.');return;}
+  const maximum=75+count*(pilot.verification?.unitCents??10);
+  if(!window.confirm(`Authorize up to ${money(maximum)} for this list? Includes discovery and phone checks. Actual usage may cost less. Cancel starts nothing.`))return;
+  Object.assign(payload,{approvedMaxCents:maximum});
   createLock.current=true;setBusy('create');setError('');requestId.current=payload.requestId;
   try{sessionStorage.setItem(keyName,JSON.stringify(payload));}catch{}
   const view=await request(payload);
@@ -39,15 +43,16 @@ export function LeadRunControls({token,pilot,selectedKey,onUpdate}:{token:string
  }
  const complete=selected?.status==='completed',running=selected?.status==='running'&&!connectionPaused;
  return <div className={styles.workspace}>
-  <div className={styles.toolbar}><div><strong>Your next list starts here.</strong><span>One search. Every stage, in view.</span></div><button disabled={Boolean(active)||pilot.pending} onClick={()=>{setOpen(!open);change();}}><Plus size={15}/>{open?'Close new list':'New list'}</button></div>
+  <div className={styles.toolbar}><div><strong>Define your search.</strong><span>Choose a market, review the maximum cost, then start.</span></div><button disabled={Boolean(active)||pilot.pending} onClick={()=>{setOpen(!open);change();}}><Plus size={15}/>{open?'Hide search form':'New search'}</button></div>
   {open&&<form className={styles.composer} onSubmit={e=>{e.preventDefault();void start();}}>
-   <div className={styles.fields}><label>Industry<select value={industry} disabled={Boolean(busy)} onChange={e=>{setIndustry(e.target.value);change();}}><option value="chiropractor">Chiropractors</option><option value="roofing">Roofing</option><option value="medspa">Med spa</option></select></label><label>City<input value={city} disabled={Boolean(busy)} maxLength={60} onChange={e=>{setCity(e.target.value);change();}}/></label><label>State<input value={state} disabled={Boolean(busy)} maxLength={2} onChange={e=>{setState(e.target.value.toUpperCase());change();}} placeholder="FL"/></label><label>Businesses<select value={count} disabled={Boolean(busy)} onChange={e=>{setCount(Number(e.target.value));change();}}>{[10,25,50].map(n=><option key={n} value={n}>{n}</option>)}</select></label></div>
-   <label>List name<input value={name} disabled={Boolean(busy)} maxLength={80} placeholder={title} onChange={e=>{setName(e.target.value);change();}}/></label>
-   <p className={styles.quote}>Discovery reservation <b>$0.75</b> · {pilot.verification?.configured?<>Full-cycle reservation up to <b>{money(75+count*pilot.verification.unitCents!)}</b></>:'Phone verification waits for the confirmed account rate.'} · Shared allowance remaining <b>{money(pilot.availableCents)}</b></p>
+   <div className={styles.formMain}><div className={styles.stepTitle}><span>01</span><div><h3>Choose your market</h3><p>Start with a business type and where you want to search.</p></div></div><div className={styles.fields}><label>Industry · {CYCLE_NICHES.length} niches<select value={industry} disabled={Boolean(busy)} onChange={e=>{setIndustry(e.target.value);change();}}>{CYCLE_NICHES.map(n=><option key={n.id} value={n.id}>{n.title}</option>)}</select></label><label>Search area<select aria-label="Search area" value={scope} disabled={Boolean(busy)} onChange={e=>{setScope(e.target.value);change();}}><option value="nationwide">Nationwide · United States</option><option value="state">Statewide</option><option value="city">City</option></select></label>{scope==='city'&&<label>City<input value={city} disabled={Boolean(busy)} maxLength={60} onChange={e=>{setCity(e.target.value);change();}}/></label>}{scope!=='nationwide'&&<label>State<input value={state} disabled={Boolean(busy)} maxLength={2} onChange={e=>{setState(e.target.value.toUpperCase());change();}} placeholder="FL"/></label>}</div><div className={styles.stepTitle}><span>02</span><div><h3>Size your list</h3><p>This is the number of businesses to research, before phone checks.</p></div></div><div className={styles.fields}><label>Businesses<select value={count} disabled={Boolean(busy)} onChange={e=>{setCount(Number(e.target.value));change();}}>{[10,25,50,100,250,500,1000,2500,5000].map(n=><option key={n} value={n}>{n.toLocaleString('en-US')}{n>CYCLE_TEST_LIMIT?' · locked during testing':''}</option>)}</select></label></div>
+   <label>List name <small>(optional)</small><input value={name} disabled={Boolean(busy)} maxLength={80} placeholder={title} onChange={e=>{setName(e.target.value);change();}}/></label>
+   </div><aside className={styles.review}><div className={styles.stepTitle}><span>03</span><div><h3>Review & start</h3><p>You approve the maximum before we run.</p></div></div><strong className={styles.searchName}>{title}</strong><p className={styles.quote}>Up to {count.toLocaleString('en-US')} business listings; the number of verified mobile contacts may be lower. Nationwide searches are samples, not guaranteed coverage of every state.</p>
+   {count>CYCLE_TEST_LIMIT?<p role="status" className={styles.notice}>Large-list planning: {cycleVolumePlan(count).length} batches of up to 50 businesses. We are still testing: searches above 50 are locked. No reservation or charge will be made.</p>:<p className={styles.quote}>Discovery reservation <b>$0.75</b> · {pilot.verification?.configured?<>Full-cycle reservation up to <b>{money(75+count*pilot.verification.unitCents!)}</b></>:'Phone verification waits for the confirmed account rate.'} · {pilot.perOperationApproval?'Approved separately for each list':<>Shared allowance remaining <b>{money(pilot.availableCents)}</b></>}</p>}
    {!pilot.verification?.configured&&<p className={styles.notice}>You can start discovery now. The list will pause before paid phone checks until the account rate is confirmed. That step will need Resume.</p>}
-   <label className={styles.consent}><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>Run this search and available checks within the existing $25 shared allowance.</label>
-   <button className={styles.start} disabled={!confirmed||Boolean(busy)||Boolean(active)||pilot.pending||pilot.paused||pilot.availableCents<75}><Play size={15}/>{busy==='create'?'Saving your search…':'Start search · reserve $0.75'}</button>
-  </form>}
+   {!pilot.perOperationApproval&&<label className={styles.consent}><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>Review and approve the maximum cost for this search and available phone checks.</label>}
+   <button className={styles.start} disabled={count>CYCLE_TEST_LIMIT||(!pilot.perOperationApproval&&!confirmed)||Boolean(busy)||Boolean(active)||pilot.pending||pilot.paused||(!pilot.perOperationApproval&&pilot.availableCents<75)}><Play size={15}/>{busy==='create'?'Saving your search…':'Review cost & start'}</button>
+  </aside></form>}
   {error&&<div role="alert" className={styles.notice}>{error} {connectionPaused&&<button onClick={()=>{setError('');void request();}}>Reconnect to saved progress</button>}</div>}
   {selected&&presentation&&<section className={styles.progressCard} aria-label="List progress" data-running={Boolean(running)}>
    <div className={styles.progressHead}><div className={styles.orb} aria-hidden="true">{complete?<Check size={23}/>:running?<Sparkles size={23}/>:<Pause size={23}/>}</div><div><span>{selected.name}</span><h3>{connectionPaused?'Connection paused':selected.status==='waiting_rate'?'Ready for phone verification':selected.status==='needs_attention'?'This step needs a review':selected.status==='paused'?'Your progress is saved':presentation.title}</h3><p aria-hidden="true">{running?phrases[Math.floor(now/8000)%phrases.length]:complete?'Every saved result, ready to review.':'No new processing step will start while paused.'}</p></div><div className={styles.timer}><Clock3 size={14}/><time>{Math.floor(presentation.elapsed/60)}:{String(presentation.elapsed%60).padStart(2,'0')}</time><small>elapsed since start</small></div></div>

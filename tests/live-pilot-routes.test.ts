@@ -48,7 +48,7 @@ test('actual portal routes enforce ownership, reserve before dispatch, avoid ret
       }
     }
     if(u.hostname==='api.elevenlabs.io'){
-      if(u.pathname.endsWith('/agents/agent_fixture'))return json({conversation_config:{agent:{first_message:'Nalify',prompt:{llm:'gpt-4.1-mini',max_tokens:140,prompt:'Nalify',tools:[{type:'system',name:'end_call'}]}},conversation:{max_duration_seconds:invalidConfig?7200:600},tts:{agent_output_audio_format:'ulaw_8000'},asr:{user_input_audio_format:'ulaw_8000'}},platform_settings:{auth:{enable_auth:true},call_limits:{agent_concurrency_limit:1,daily_limit:2,bursting_enabled:false}}});
+      if(u.pathname.endsWith('/agents/agent_fixture'))return json({conversation_config:{agent:{first_message:'Nalify',prompt:{llm:'gpt-4.1-mini',max_tokens:140,prompt:'Nalify',tools:[{type:'system',name:'end_call'}]}},conversation:{max_duration_seconds:invalidConfig?7200:600},tts:{agent_output_audio_format:'ulaw_8000'},asr:{user_input_audio_format:'ulaw_8000'}},platform_settings:{auth:{enable_auth:true},call_limits:{agent_concurrency_limit:1,daily_limit:3,bursting_enabled:false}}});
       if(u.pathname==='/v1/user/subscription')return json({status:'active',character_limit:300000,character_count:100,can_extend_character_limit:false});
       if(u.pathname==='/v1/convai/twilio/register-call'){assert.equal(operations.length,1);registers++;return new Response('<Response><Connect><Stream url="wss://api.elevenlabs.io/voice" /></Connect></Response>');}
       if(u.pathname==='/v1/convai/conversations')return json({conversations:[]});

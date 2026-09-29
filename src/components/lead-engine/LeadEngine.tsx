@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDownToLine, ArrowRight, ArrowUpRight, Check, CheckCheck, FolderOpen, FileSearch, Fingerprint, Globe2, Link2, LockKeyhole, MapPin, Phone, Search, ShieldCheck, SlidersHorizontal, Smartphone, Database, BrainCircuit, X } from "lucide-react";
-import { buildLeadPlan, dollarsToCents, isUsState, LANE_BENCHMARKS, type LeadLane } from "@/lib/lead-engine-plan";
+import { useEffect, useRef, useState } from "react";
+import { ArrowRight, FolderOpen, FileSearch, Fingerprint, Link2, Phone, Search, ShieldCheck, SlidersHorizontal, Smartphone, Database, BrainCircuit, X } from "lucide-react";
+import { useWorkspaceAccess } from "@/components/workspace/WorkspaceAccess";
 import styles from "./LeadEngine.module.css";
 import { LeadConfidence } from './LeadConfidence';
 import { unscoredLeadConfidence } from '@/lib/lead-engine-confidence';
@@ -12,50 +12,28 @@ import { LeadJobs } from "./LeadJobs";
 import { LeadRegisters } from "./LeadRegisters";
 import { LeadBrain } from "./LeadBrain";
 
-const money = (cents: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: cents % 100 === 0 ? 0 : 2 }).format(cents / 100);
-const researchSteps = [
-  { title: 'Discover', detail: 'Businesses in your market', status: 'Awaiting provider setup', copy: 'Search published business listings by industry and city. Keep the website and listing URL with each result.', icon: Globe2 },
-  { title: 'Research', detail: 'A person, with evidence', status: 'Owner research not connected', copy: 'Compare the business website with independent public business records. A name or job title alone does not confirm a direct owner contact.', icon: Fingerprint },
-  { title: 'Verify', detail: 'Check the phone in batches', status: 'Phone verification not connected', copy: 'Check mobile type, phone status and suppression signals together. A mobile number still needs evidence linking it to the owner.', icon: Phone },
-] as const;
-const tabs = [{ id: 'jobs', label: 'Owner cells', icon: Smartphone }, { id: 'registers', label: 'Registers', icon: Database }, { id: 'brain', label: 'Brain (admin)', icon: BrainCircuit }, { id: 'search', label: 'Build a search', icon: Search }, { id: 'evidence', label: 'Evidence workspace', icon: Fingerprint }, { id: 'lists', label: 'Lead lists', icon: FolderOpen }] as const;
-type View = typeof tabs[number]['id'];
+const primaryTabs = [{ id: 'search', label: 'Build Search', icon: Search }, { id: 'lists', label: 'Lead Lists', icon: FolderOpen }] as const;
+const advancedTabs = [{ id: 'jobs', label: 'Owner research', icon: Smartphone }, { id: 'registers', label: 'Business registers', icon: Database }, { id: 'evidence', label: 'Evidence guide', icon: Fingerprint }, { id: 'brain', label: 'Research settings', icon: BrainCircuit }] as const;
+type View = typeof primaryTabs[number]['id'] | typeof advancedTabs[number]['id'];
 const illustrativeConfidence = { ...unscoredLeadConfidence(), value: 75, status: 'needs_review' as const, checks: unscoredLeadConfidence().checks.map(check => ({ ...check, points: check.key === 'independent_owner' ? 0 : check.maximum, state: check.key === 'independent_owner' ? 'missing' as const : 'passed' as const })) };
 
 export function LeadEngine() {
-  const [industry, setIndustry] = useState("Roofing");
-  const [metro, setMetro] = useState("Charlotte, NC");
-  const [target, setTarget] = useState("50");
-  const [budget, setBudget] = useState("10");
-  const [exclusions, setExclusions] = useState("");
-  const [operation, setOperation] = useState<LeadLane | "">("");
-  const [downloaded, setDownloaded] = useState(false);
+  const {user} = useWorkspaceAccess();
   const [view, setView] = useState<View>('search');
-  useEffect(()=>{if(window.location.hash==='#search')setView('search');},[]);
+  const [advanced, setAdvanced] = useState(false);
   const [example, setExample] = useState(false);
-  const [researchStep, setResearchStep] = useState(0);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const plan = useMemo(() => buildLeadPlan({ industry, metro, target: Number(target), hardBudgetCents: dollarsToCents(budget) ?? 0, exclusions: exclusions.split(",").map(item => item.trim()).filter(Boolean), operation: operation || undefined }), [industry, metro, target, budget, exclusions, operation]);
-  const benchmark = plan.lane ? LANE_BENCHMARKS[plan.lane] : null;
-  const valid = plan.errors.length === 0 && plan.lane !== null;
-  // Shown on the field itself: the whole-form error list sits far below and reads as unrelated.
-  const metroEntry = metro.trim(), metroParts = /^(.{2,}),\s*([A-Za-z]{2})$/.exec(metroEntry);
-  const metroInvalid = metroEntry.length > 0 && (!metroParts || !isUsState(metroParts[2].toUpperCase()));
-  function download(): void {
-    const file = new Blob([JSON.stringify({ ...plan, createdAt: new Date().toISOString(), status: "draft", pilot: { maxBusinesses: 300, maxCostCents: 1000, completed: false }, executionBlockers: ["Provider pricing and access not verified", "Global ledger and suppression integration required", "Pilot budget approval required"], containsContactData: false }, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(file); const link = document.createElement("a");
-    link.href = url; link.download = "nbc-lead-engine-plan.json"; link.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000); setDownloaded(true);
-  }
-  function changeView(next: View): void { setView(next); }
+  const tabs = [...primaryTabs, ...(advanced ? advancedTabs.filter(t=>t.id!=='brain'||user?.role==='admin') : [])];
+  useEffect(()=>{const sync=()=>{const id=window.location.hash.slice(1);if([...primaryTabs,...advancedTabs].some(t=>t.id===id)&& (id!=='brain'||user?.role==='admin')){setView(id as View);if(advancedTabs.some(t=>t.id===id))setAdvanced(true);}};sync();window.addEventListener('hashchange',sync);return()=>window.removeEventListener('hashchange',sync);},[user?.role]);
+  function changeView(next: View): void { setView(next);window.history.replaceState(null,'','#'+next); }
 
   return <div className={styles.workspace}>
     <header className={styles.heading}>
       <div className={styles.identity}><span className={styles.brandMark} aria-hidden="true"><Search size={23} /></span><div><span className={styles.eyebrow}>Prospecting</span><h1>Lead Engine</h1></div></div>
-      <span className={styles.mode}>Research · Verify · Review</span>
+      <p className={styles.mode}>Find your market. Check the numbers. Build your next list.</p>
     </header>
 
-    <div className={styles.navigation} role="tablist" aria-label="Lead Engine workspace">{tabs.map((tab, index) => <button type="button" ref={element => { tabRefs.current[index] = element; }} id={`tab-${tab.id}`} key={tab.id} role="tab" aria-controls={`panel-${tab.id}`} aria-selected={view === tab.id} tabIndex={view === tab.id ? 0 : -1} className={view === tab.id ? styles.activeTab : ''} onClick={() => changeView(tab.id)} onKeyDown={event => {
+    <div className={styles.navigationRow}><div className={styles.navigation} role="tablist" aria-label="Lead Engine workspace">{tabs.map((tab, index) => <button type="button" ref={element => { tabRefs.current[index] = element; }} id={`tab-${tab.id}`} key={tab.id} role="tab" aria-controls={`panel-${tab.id}`} aria-selected={view === tab.id} tabIndex={view === tab.id ? 0 : -1} className={view === tab.id ? styles.activeTab : ''} onClick={() => changeView(tab.id)} onKeyDown={event => {
       let next = index;
       if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
       else if (event.key === 'ArrowLeft') next = (index + tabs.length - 1) % tabs.length;
@@ -63,18 +41,18 @@ export function LeadEngine() {
       else if (event.key === 'End') next = tabs.length - 1;
       else return;
       event.preventDefault(); changeView(tabs[next].id); tabRefs.current[next]?.focus();
-    }}><tab.icon size={15} />{tab.label}</button>)}</div>
+    }}><tab.icon size={16} />{tab.label}</button>)}</div><button className={styles.advancedToggle} aria-expanded={advanced} onClick={()=>{setAdvanced(!advanced);if(advanced&&advancedTabs.some(t=>t.id===view))changeView('search');}}><SlidersHorizontal size={15}/>Advanced tools</button></div>
 
     <section id="panel-jobs" role="tabpanel" aria-labelledby="tab-jobs" hidden={view !== 'jobs'}>
-      <LeadJobs />
+      {view==='jobs'&&<LeadJobs />}
     </section>
 
     <section id="panel-registers" role="tabpanel" aria-labelledby="tab-registers" hidden={view !== 'registers'}>
-      <LeadRegisters />
+      {view==='registers'&&<LeadRegisters />}
     </section>
 
     <section id="panel-brain" role="tabpanel" aria-labelledby="tab-brain" hidden={view !== 'brain'}>
-      <LeadBrain />
+      {view==='brain'&&user?.role==='admin'&&<LeadBrain />}
     </section>
 
     <section id="panel-search" role="tabpanel" aria-labelledby="tab-search" hidden={view !== 'search'}>
@@ -90,7 +68,7 @@ export function LeadEngine() {
       <div className={styles.evidencePrinciple}><ShieldCheck size={21} /><p><strong>Mobile does not automatically mean owner.</strong>100 is the highest evidence score, not a guarantee that the number belongs to the owner. Sources can be outdated, and numbers can change hands.</p></div>
     </section>
 
-    <section hidden={view !== 'lists'} id="panel-lists" role="tabpanel" aria-labelledby="tab-lists"><div className={styles.sectionTitle}><div><span className={styles.sectionNumber}>YOUR LEAD LIBRARY</span><h2>Every market. Its own folder.</h2></div><span className={styles.softLabel}>Private lists · Shared duplicate protection</span></div><LeadLibrary /></section>
+    <section hidden={view !== 'lists'} id="panel-lists" role="tabpanel" aria-labelledby="tab-lists"><div className={styles.sectionTitle}><div><span className={styles.sectionNumber}>YOUR LEAD LIBRARY</span><h2>Every market. Its own folder.</h2></div><span className={styles.softLabel}>Private lists · Shared duplicate protection</span></div>{view==='lists'&&<LeadLibrary />}</section>
     
     <footer className={styles.workspaceFooter}><span><ShieldCheck size={14} />Published business contacts · Human review · No automatic Caller handoff</span></footer>
   </div>;

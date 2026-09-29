@@ -4,7 +4,7 @@ import { createBatchDataVerificationProvider } from './lead-engine-batchdata';
 import { excludeBeforeVerification } from '@/lib/run-review';
 import { PILOT_ROUND, type PilotRow } from '@/lib/live-pilot';
 
-// One number per explicit browser request. The UI continues only while the user-started action is open.
+// Up to ten numbers per user-started browser step. The UI continues only while the user-started action is open.
 // The claim lives before POST. A lost response cannot release the claim or pay for the same phone again.
 export async function verifyRunPhone(owner: string, key: string): Promise<void> {
   const db = database();
@@ -19,18 +19,25 @@ export async function verifyRunPhone(owner: string, key: string): Promise<void> 
   if (operationError || checkError) throw new IntegrationError(503, 'Saved verification progress could not be read.');
   if (!operation || operation.state !== 'completed' || !Array.isArray(operation.result.rows)) throw new IntegrationError(409, 'Complete business discovery before phone verification.');
   const checked = new Set((checks ?? []).map(c => c.phone10));
-  const row = (operation.result.rows as PilotRow[]).find(r => !excludeBeforeVerification(r) && r.phone10 && !checked.has(r.phone10));
-  if (!row?.phone10) return;
-  const { data: claim, error: claimError } = await db.rpc('nbc_pilot_claim_phone', { p_owner: owner, p_key: key, p_phone: row.phone10 });
+  const phones = [...new Set((operation.result.rows as PilotRow[]).filter(r => !excludeBeforeVerification(r) && r.phone10 && !checked.has(r.phone10)).map(r => r.phone10!))].slice(0, 10);
+  if (!phones.length) return;
+  const { data: claim, error: claimError } = await db.rpc('nbc_pilot_claim_phone_batch', { p_owner: owner, p_key: key, p_phones: phones });
   if (claimError) throw new IntegrationError(409, claimError.message.includes('budget') ? 'The remaining approved allocation cannot cover another verification.' : 'Another operation is active or needs reconciliation. No new verification started.');
   if (!claim.acquired) return;
+  const claimed: string[] = claim.phones;
+  if (!Array.isArray(claimed) || !claimed.length || claimed.length > 10 || new Set(claimed).size !== claimed.length || claimed.some(p => !phones.includes(p))) throw new IntegrationError(503, 'The verification reservation needs reconciliation. No provider request was sent.');
+  const unfinished = new Set(claimed);
   try {
-    const [verification] = await createBatchDataVerificationProvider(process.env.BATCHDATA_API_KEY).verifyPhones([row.phone10]);
-    if (!verification || verification.phone10 !== row.phone10) throw Error('Verification mismatch');
-    const saved = await db.rpc('nbc_pilot_finish_phone', { p_owner: owner, p_phone: row.phone10, p_verification: verification });
-    if (saved.error) throw Error('Verification receipt not saved');
+    const verifications = await createBatchDataVerificationProvider(process.env.BATCHDATA_API_KEY).verifyPhones(claimed);
+    for (const phone of claimed) {
+      const verification = verifications.find(v => v.phone10 === phone);
+      if (!verification) throw Error('Verification mismatch');
+      const saved = await db.rpc('nbc_pilot_finish_phone', { p_owner: owner, p_phone: phone, p_verification: verification });
+      if (saved.error) throw Error('Verification receipt not saved');
+      unfinished.delete(phone);
+    }
   } catch {
-    await db.rpc('nbc_pilot_finish_phone', { p_owner: owner, p_phone: row.phone10, p_verification: null });
-    throw new IntegrationError(503, 'This verification could not be confirmed. Its reservation is retained; it will not be retried automatically.');
+    for (const phone of unfinished) await db.rpc('nbc_pilot_finish_phone', { p_owner: owner, p_phone: phone, p_verification: null });
+    throw new IntegrationError(503, 'This verification batch could not be fully confirmed. Saved results are retained; unresolved reservations will not be retried automatically.');
   }
 }

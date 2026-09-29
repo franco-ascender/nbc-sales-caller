@@ -1,0 +1,12 @@
+import {chromium} from '@playwright/test';import {parseEnv} from 'node:util';import{readFileSync,mkdirSync,writeFileSync}from'node:fs';
+const e=parseEnv(readFileSync('.env.local','utf8')),b=await chromium.launch({channel:'chrome',headless:true}),p=await b.newPage({viewport:{width:1440,height:1100}}),report={passed:false};mkdirSync('artifacts/readiness/caller-redesign',{recursive:true});
+await p.route(/\/api\/(caller\/phone-test|pilot|caller\/sessions)/,async r=>{if(r.request().method()!=='GET')await r.abort();else await r.continue();});
+try{
+ await p.goto('https://nbc-sales-nbc-sales.vercel.app/caller');await p.getByLabel('Email address',{exact:true}).fill(e.NBC_OPERATOR_EMAIL);await p.getByLabel('Password',{exact:true}).fill(e.NBC_OPERATOR_INITIAL_PASSWORD);await p.getByRole('button',{name:'Enter NBC Sales',exact:true}).click();
+ const tabs=p.getByRole('tablist',{name:'Caller workspace'});await tabs.waitFor();if(await tabs.getByRole('tab').first().innerText()!=='Make a Call')throw Error('Wrong default');
+ const panel=p.getByRole('region',{name:'AI phone trial'});await panel.getByLabel('Recipient’s phone number',{exact:true}).fill('+1 (305) 555-0123');const start=panel.getByRole('button',{name:'Start AI test call',exact:true});if(!await start.isDisabled())throw Error('Confirmation bypass');await panel.getByRole('checkbox').check();if(!await start.isEnabled())throw Error('Cannot prepare call');
+ await p.screenshot({path:'artifacts/readiness/caller-redesign/desktop.png'});
+ await p.getByRole('button',{name:'Advanced tools',exact:true}).click();await tabs.getByRole('tab',{name:'Analytics',exact:true}).click();await p.getByRole('button',{name:'Advanced tools',exact:true}).click();if(await tabs.getByRole('tab',{name:'Make a Call',exact:true}).getAttribute('aria-selected')!=='true')throw Error('Hidden active tab');
+ await tabs.getByRole('tab',{name:'Conversation Lab',exact:true}).click();await p.getByRole('heading',{name:'Talk to your AI caller.'}).waitFor();await tabs.getByRole('tab',{name:'Make a Call',exact:true}).click();
+ await p.setViewportSize({width:390,height:844});await p.screenshot({path:'artifacts/readiness/caller-redesign/mobile.png',fullPage:true});if(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw Error('Mobile overflow');report.passed=true;
+}finally{await b.close();writeFileSync('artifacts/readiness/caller-redesign/report.json',JSON.stringify(report,null,2));console.log(report);}

@@ -131,3 +131,6 @@ L02 local, 2026-09-16: operaciones de planes y research Lead Engine exigen opera
 
 ### User-started list cycles — 2026-09-26
 `GET /api/lead-engine/runs` returns the private round's saved runs plus existing list evidence. `POST` accepts `create` with stable UUID, name, industry (roofing/chiropractor/medspa), US city/state, 5–50 businesses and explicit confirmation; or saved-key actions `advance`, `pause`, `resume` (confirmed). Creation only saves an authorized workflow; each advance performs at most one bounded step using existing reservation adapters. GET never dispatches work. Leases serialize advances across tabs. Missing verification pricing pauses before any paid phone check.
+
+### GET /api/admin/costs (2026-09-26)
+Admin-only, private/no-store, read-only breakdown of saved telephone-trial and lead-list operations. Returns per-operation/provider reported micro-USD, rate-based verification estimates, missing cost components, approved/reserved amounts, qualification counts and provider response timing when measured. Does not initiate provider work. Existing member/browser and workspace-provider totals overlap and must not be added to this report. Up to 10,000 rows per source, with explicit `truncated` flag. Not an invoice or universal account reconciliation endpoint.

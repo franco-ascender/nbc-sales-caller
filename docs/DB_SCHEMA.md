@@ -180,3 +180,6 @@ Migrations `202609260200`, `202609260210`, `202609260220` applied. `nbc_pilot_ph
 
 ### Durable lead cycles — 2026-09-26
 Migration `202609260300_lead_cycles.sql` applied: service-only `nbc_lead_cycles`, FK to private pilot slots, persisted phase/status/events/timestamps and a 90-second processing lease. Owner-checked functions create/replay, claim, finish and pause/resume; round locking preserves the USD25 cumulative ceiling. Pause wins over an in-flight finish. Existing paid dispatch and phone claims remain the authoritative duplicate/spend guards. A workflow record itself does not debit or dispatch a search.
+
+### Verification price snapshots (2026-09-26)
+Migration `202609261000_verification_rate_snapshot.sql`: nullable `rate_microusd`, `rate_source`, `rate_confirmed_at` on `nbc_pilot_phone_checks`. Before-insert trigger captures a valid confirmed exact account rate within the held reserve. Future changes to account pricing do not rewrite historical checks. Old rows remain unknown without historical evidence; snapshots yield estimates, not provider invoices. Existing service-only table access and RLS retained.

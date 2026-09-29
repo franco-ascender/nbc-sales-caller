@@ -5,12 +5,13 @@ import {pilotView,startPilot,syncPilot} from './live-pilot.service';
 import {researchRunEvidence} from './run-owner-evidence.service';
 import {verifyRunPhone} from './run-verification.service';
 import {PILOT_ROUND,type PilotView} from '@/lib/live-pilot';
-import {cycleCounts,type CycleInput,type LeadCycle,type CyclePhase,type CycleStatus} from '@/lib/lead-cycle';
+import {assertCycleExecutable,cycleCounts,type CycleInput,type LeadCycle,type CyclePhase,type CycleStatus} from '@/lib/lead-cycle';
 export interface LeadCycleView {runs:LeadCycle[];pilot:PilotView}
 const columns='key,name,industry,city,state,count,status,phase,message,started_at,phase_started_at,finished_at,events';
 function storageError(message:string):never {
  if(message.includes('pilot_not_found'))throw new IntegrationError(403,'This search round is not available to your account.');
  if(message.includes('request_conflict'))throw new IntegrationError(409,'This saved request has different list details. Refresh its progress before creating another.');
+ if(message.includes('approval_required'))throw new IntegrationError(409,'The quoted cost changed. Refresh and approve the current maximum.');
  if(message.includes('budget'))throw new IntegrationError(409,'The remaining shared allowance cannot cover this step.');
  if(message.includes('pending'))throw new IntegrationError(409,'Pause or finish the active list, and resolve pending operations, before starting another.');
  throw new IntegrationError(409,'This step could not be saved. Refresh your list before continuing.');
@@ -22,6 +23,7 @@ export async function leadCycleView(owner:string):Promise<LeadCycleView>{
  return {runs:(data??[]) as LeadCycle[],pilot};
 }
 export async function createLeadCycle(owner:string,input:CycleInput):Promise<LeadCycleView>{
+ try{assertCycleExecutable(input.count);}catch(e){throw new IntegrationError(409,e instanceof Error?e.message:'Testing limit exceeded.');}
  const {requestId,...details}=input;
  const {error}=await database().rpc('nbc_lead_cycle_create',{p_owner:owner,p_request:requestId,p_input:details});
  if(error)storageError(error.message);
@@ -61,7 +63,7 @@ export async function advanceLeadCycle(owner:string,key:string):Promise<LeadCycl
   }else if(phase==='filter'){
    const counts=cycleCounts(slot);phase='research';message=`Filtered ${counts.found} businesses: ${counts.excluded} excluded, ${counts.eligible} unique phones to review.`;
   }else if(phase==='research'){
-   if(saved.industry==='chiropractor'&&(slot.result.rows?.length??0)>0){await researchRunEvidence(owner,key);message='Registry evidence saved. Associations still need ownership review.';}
+   if(saved.city&&saved.state&&saved.industry==='chiropractor'&&(slot.result.rows?.length??0)>0){await researchRunEvidence(owner,key);message='Registry evidence saved. Associations still need ownership review.';}
    else message='Business sources retained. Owner evidence for this market needs further research.';
    phase='verify';
   }else if(phase==='verify'){

@@ -1,0 +1,4 @@
+// Switch new operation snapshots only. Existing calls keep their original provider.
+import{readFileSync}from'node:fs';import{parseEnv}from'node:util';const e=parseEnv(readFileSync('.env.local','utf8'));const config=JSON.parse(readFileSync('artifacts/readiness/retell/dialer-config.json'));if(config.maximumCents!==250||config.version!==0)throw Error('Review candidate configuration');
+const settings=JSON.stringify({phoneEngine:'retell',retell:config}).replace(/'/g,"''");const query=`update nbc_pilot_rounds set settings=settings||'${settings}'::jsonb where id='2026-09-25-first-live-tests' returning settings->>'phoneEngine' as engine`;
+const r=await fetch(`https://api.supabase.com/v1/projects/${e.SUPABASE_PROJECT_REF}/database/query`,{method:'POST',headers:{Authorization:'Bearer '+e.SUPABASE_ACCESS_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({query})});if(!r.ok)throw Error('Activation failed');console.log(await r.json());

@@ -1,0 +1,7 @@
+import { WORKFLOW_NICHES } from './lead-engine-niches.ts';
+// Explicit business-search wording. Registry recipe IDs are not search queries.
+export const CYCLE_SEARCH_TERMS: Readonly<Record<string,string>> = {
+ garage_doors:'garage door',car_detailing:'car detailing',hvac:'hvac',roofing:'roofing',plumbing:'plumbing',electrical:'electrical',remodeling:'remodeling',pool:'pool services',landscaping:'landscaping',painting:'painting',fencing:'fencing',concrete:'concrete',auto_repair:'auto repair',auto_body:'auto body',jewelers:'jewelers',exotic_car_dealers:'exotic car dealers',cpa:'accountant',realtor:'real estate agent',property_manager:'property management',dentist:'dentist',chiropractor:'chiropractor',med_spa:'med spa',attorney:'law firm',real_estate_investor:'real estate investment',developer:'real estate developer',contractors:'general contractor',movers_tree_haulers:'moving company',pest_control:'pest control',salons_barbers:'hair salon',salon_suites:'salon suites',childcare_home:'family day care',childcare_center:'day care center',insurance_agencies:'insurance agency',tax_preparer:'tax preparation',restaurants:'restaurant',str_operator:'vacation rental management',
+};
+export const CYCLE_NICHES = [...WORKFLOW_NICHES.map(n=>({id:n.id,title:n.title,searchTerm:CYCLE_SEARCH_TERMS[n.id]})), {id:'garage_doors',title:'Garage Doors',searchTerm:CYCLE_SEARCH_TERMS.garage_doors}];
+export function cycleNiche(id:string) { return CYCLE_NICHES.find(n=>n.id===(id==='medspa'?'med_spa':id)); }

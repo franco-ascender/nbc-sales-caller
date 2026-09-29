@@ -43,7 +43,7 @@ export function safeBusinessUrl(value: unknown, source=false): string | null {
 const states='AL:Alabama|AK:Alaska|AZ:Arizona|AR:Arkansas|CA:California|CO:Colorado|CT:Connecticut|DE:Delaware|FL:Florida|GA:Georgia|HI:Hawaii|ID:Idaho|IL:Illinois|IN:Indiana|IA:Iowa|KS:Kansas|KY:Kentucky|LA:Louisiana|ME:Maine|MD:Maryland|MA:Massachusetts|MI:Michigan|MN:Minnesota|MS:Mississippi|MO:Missouri|MT:Montana|NE:Nebraska|NV:Nevada|NH:New Hampshire|NJ:New Jersey|NM:New Mexico|NY:New York|NC:North Carolina|ND:North Dakota|OH:Ohio|OK:Oklahoma|OR:Oregon|PA:Pennsylvania|RI:Rhode Island|SC:South Carolina|SD:South Dakota|TN:Tennessee|TX:Texas|UT:Utah|VT:Vermont|VA:Virginia|WA:Washington|WV:West Virginia|WI:Wisconsin|WY:Wyoming|DC:District of Columbia';
 const stateNames=new Map(states.split('|').map(pair=>{const [code,name]=pair.split(':');return [normalizeWords(name),code];}));
 const codes=new Set(states.split('|').map(pair=>pair.split(':')[0]));
-export function parseDiscoveryCandidate(value: unknown, plan: LeadPlanInput): DiscoveryCandidate {
+export function parseDiscoveryCandidate(value: unknown, plan: LeadPlanInput, scope: 'local'|'nationwide' = 'local'): DiscoveryCandidate {
   const row=leadRecord(value)?value:{};
   const str=(v:unknown,max:number)=>typeof v==='string'?v.replace(/[\u0000-\u001f\u007f]/g,'').trim().slice(0,max):'';
   const name=str(row.title,200),city=str(row.city,150),rawState=str(row.state,100),state=codes.has(rawState)?rawState:stateNames.get(normalizeWords(rawState))??'';
@@ -52,7 +52,7 @@ export function parseDiscoveryCandidate(value: unknown, plan: LeadPlanInput): Di
   const fitTier=classifyRelevance(text,plan.industry);
   let rejection:string|null=null;
   if(!name||!city||!state||row.countryCode!=='US'||!sourceUrl) rejection='incomplete_source';
-  else if(state!==plan.metro.split(',').at(-1)?.trim()) rejection='outside_requested_state';
+  else if(scope!=='nationwide'&&state!==plan.metro.split(',').at(-1)?.trim()) rejection='outside_requested_state';
   else if(row.permanentlyClosed!==false||row.temporarilyClosed!==false) rejection='operating_status_unconfirmed';
   else if(!phone10) rejection='published_phone_missing';
   else if(/^(800|888|877|866|855|844|833)/.test(phone10)) rejection='toll_free';

@@ -27,7 +27,7 @@ try{
  if(report.confirmationLayout.display!=='flex'||report.confirmationLayout.direction!=='row')throw Error('Confirmation layout inherited incompatible styles');
  report.dialerStartEnabled=await dialer.getByRole('button',{name:'Start AI test call',exact:true}).isEnabled();
  const today=new Date().toISOString().slice(0,10);const todayCalls=dialerData.slots.filter(s=>s.kind==='phone'&&s.state!=='ready'&&s.createdAt?.startsWith(today)).length;
- const canStart=!dialerData.pending&&!dialerData.paused&&dialerData.availableCents>=250&&todayCalls<2;
+ const canStart=!dialerData.pending&&!dialerData.paused&&dialerData.availableCents>=250&&todayCalls<3;
  report.dialerLimitEnforced=report.dialerStartEnabled===canStart;
  if(!report.dialerLimitEnforced)throw Error('Dialer availability differs from its saved budget/daily limits');
  for(const width of [1440,390]){await page.setViewportSize({width,height:1000});await page.waitForTimeout(300);report.views.push({page:'dialer',width,overflow:await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)});await dialer.screenshot({path:out+'/dialer-'+width+'.png'});}

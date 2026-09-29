@@ -87,3 +87,9 @@ Se conservan cursores fecha+UUID, reconcile acotado, propiedad por UUID, export 
 ## Extensión C03 (2026-09-15)
 
 El tab se denomina AI Caller. CRM incorpora listas/selección; AI Caller presenta cola y acceso secundario a prueba de navegador/historial. C01 conserva cursores, reconcile5, mute/fin y export. Nuevos datasets `is_demo` sólo admin se excluyen del historial real, sync/reconcile, límite de starts y export verificado. Demo se usa para ilustrar cola/transcripciones sin iniciar conversaciones. Diseño/implementación en `caller-operations.md`; reporte `docs/lanes/reports/C03.md`. SQL050 aplicado y preview publicado bajo autorización de Franco para revisar allí. Telefonía/grabación bilateral y clon real evaluado por persona siguen pendientes; no se iniciaron llamadas para evidencia.
+
+## Extra Dialer trial — 2026-09-26
+
+Franco requested one additional recipient/test from the Dialer. Confirmed two calls today, no pending operation and USD13.09 available to reserve. Raise the per-UTC-day trial cap from two to three consistently across SQL slot creation, reservation trigger, server preflight, provider agent and UI. Preserve USD25 cumulative budget, USD2.50 reservation/call, concurrency one and explicit recipient expectation. Show the current Start blocker. No call is dispatched during release checks.
+
+Released as `dpl_ARPzKCpaJSHLYHM6NJCW78tBcavQ`. Provider readback confirmed only daily_limit changed (2 → 3); conversation configuration, concurrency and bursting were preserved. SQL rollback assertions passed for third reservation, fourth rejection, budget, idempotency and active-operation guards. Production browser confirmed Start remains disabled before consent and enables after entering a valid number and confirming; all dialing mutations were blocked during inspection. No call was initiated. Evidence: `artifacts/readiness/extra-phone-trial/`.

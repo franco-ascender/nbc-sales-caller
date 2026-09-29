@@ -1,5 +1,6 @@
 'use client';
 
+import { OperationCosts } from './OperationCosts';
 import { useEffect, useState } from 'react';
 import { Activity, RefreshCw, Search, ShieldCheck, WalletCards } from 'lucide-react';
 import { useWorkspaceAccess } from '@/components/workspace/WorkspaceAccess';
@@ -63,9 +64,10 @@ function Usage({ token }: { token: string }) {
   }, [token, offset, query, revision]);
   const rate = data?.rates.find(item => item.status === 'draft'), amount = Number(cost);
   const estimate = rate && Number.isFinite(amount) && amount >= 0 && amount <= 1000000 ? quoteCredits(Math.round(amount * 1e6), rate.credit_value_microusd, rate.markup_bps) : null;
-  return <div className={styles.page}>
+  return <div className={styles.page} style={{gridTemplateColumns:'minmax(0, 1fr)'}}>
     <header className={styles.heading}><div><span className={styles.eyebrow}>NBC ADMINISTRATION</span><h1>Usage & costs</h1><p>Provider spend, member consumption and NBC Credits in one place.</p></div><button aria-label="Refresh usage" onClick={() => setRevision(value => value + 1)} disabled={busy}><RefreshCw size={16}/></button></header>
     <div className={styles.notice}><ShieldCheck size={15}/> Live observation · Provider costs are read directly. NBC Credits are not deducted automatically yet.</div>
+    <OperationCosts token={token} revision={revision}/>
     {error && <p role="alert" className={styles.error}>{error}</p>}
     {data?.provider.status === 'available' ? <ProviderCosts provider={data.provider} /> : data && <div className={styles.notice}>The provider cost feed is temporarily unavailable. Member usage remains visible below; refresh to retry.</div>}
     <div className={styles.stats}><div className={styles.stat}><span>{query ? 'Matching members' : 'Registered members'}</span><strong>{data ? number(data.total) : '—'}</strong><span>New members appear automatically</span></div><div className={styles.stat}><span>Metering</span><strong>Live</strong><span>Actual usage, no automatic charges</span></div><div className={styles.stat}><span>Credit top-ups</span><strong>{data?.paymentsReady ? 'Configured' : 'In setup'}</strong><span>Approved packages required</span></div></div>

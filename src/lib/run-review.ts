@@ -15,7 +15,7 @@ export function phoneDecision(v: LeadVerification | null | undefined): { label: 
   const checkedAt = Date.parse(v.verifiedAt ?? '');
   if (!Number.isFinite(checkedAt) || checkedAt > Date.now() || Date.now() - checkedAt >= 31 * 86400000) return { label: 'Fresh verification required · held', accepted: false };
   if (v.lineType === null) return { label: 'Provider could not identify line type', accepted: false };
-  if (v.lineType.toLowerCase() !== 'mobile') return { label: `${v.lineType} · excluded`, accepted: false };
+  if (v.lineType.toLowerCase() !== 'mobile') return { label: `${v.lineType} · not a mobile`, accepted: false };
   if (v.dnc === true) return { label: 'Do Not Call match · excluded', accepted: false };
   if (v.tcpa === true) return { label: 'TCPA risk signal · excluded', accepted: false };
   if (v.reachable === false) return { label: 'Unreachable · excluded', accepted: false };
@@ -75,5 +75,40 @@ export function runEvidenceCsv(result: PilotResult, qualifiedOnly = false): stri
       const evidence = result.ownerEvidence?.find(e => e.business === row.name && e.phone10 === row.phone10);
       return [row.name,row.city,row.state,row.phone10,row.website,excludeBeforeVerification(row) ?? 'Eligible',check?.state === 'completed' ? phoneDecision(v).label : check?.state ?? 'Not checked',v?.lineType,v?.dnc,v?.tcpa,v?.reachable,v?.verifiedAt,'Not established',evidence?.person,evidence?.role,evidence?.registryPhone,evidence?.source,evidence?.basis,row.sourceUrl];
     }),
+  ].map(row => row.map(csvCell).join(',')).join('\r\n');
+}
+
+/** Counts unique eligible phones, not duplicate listings or unsent numbers. */
+export function verificationSummary(result: PilotResult) {
+  const eligible = new Set((result.rows ?? []).filter(r => !excludeBeforeVerification(r)).map(r => r.phone10!));
+  const counts = { total: eligible.size, checked: 0, pending: 0, unresolved: 0, reachable: 0, unreachable: 0, unknown: 0, mobile: 0, landline: 0, other: 0, qualified: qualifiedRows(result).length };
+  for (const phone of eligible) {
+    const check = result.phoneChecks?.find(c => c.phone10 === phone);
+    if (!check) { counts.pending++; continue; }
+    if (check.state !== 'completed') { counts.unresolved++; continue; }
+    counts.checked++;
+    const v = check.verification, at = Date.parse(v?.verifiedAt ?? '');
+    const fresh = Number.isFinite(at) && at <= Date.now() && Date.now() - at < 31 * 86400000;
+    if (!fresh || typeof v?.reachable !== 'boolean') counts.unknown++;
+    else if (v.reachable) counts.reachable++;
+    else counts.unreachable++;
+    const type = fresh ? v?.lineType?.toLowerCase().replace(/[\s_-]/g, '') : null;
+    if (type === 'mobile') counts.mobile++;
+    else if (type === 'landline') counts.landline++;
+    else counts.other++;
+  }
+  return counts;
+}
+export function verificationPercent(count: number, checked: number): string {
+  return checked ? `${(count / checked * 100).toFixed(1)}%` : '—';
+}
+export function verificationSummaryCsv(result: PilotResult): string {
+  const s = verificationSummary(result);
+  return [
+    ['Metric', 'Unique phones', 'Percent of completed checks'],
+    ['Eligible for verification', s.total, ''], ['Completed checks', s.checked, ''],
+    ['Not checked', s.pending, ''], ['Unresolved requests', s.unresolved, ''],
+    ...([['Reachable (provider reported)', s.reachable], ['Unreachable (provider reported)', s.unreachable], ['Reachability unknown or stale', s.unknown], ['Mobile', s.mobile], ['Landline', s.landline], ['Other or unknown line type', s.other], ['Mobile checks passed', s.qualified]] as const).map(([label, n]) => [label, n, verificationPercent(n, s.checked)]),
+    ['Note', 'Reachability does not confirm an answered call, owner identity, or permission to call.', ''],
   ].map(row => row.map(csvCell).join(',')).join('\r\n');
 }

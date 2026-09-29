@@ -3,7 +3,7 @@ import{chromium}from'playwright';import{readFileSync,writeFileSync,mkdirSync}fro
 const e=parseEnv(readFileSync('.env.local','utf8')),out='artifacts/readiness/lead-cycle-20260926';mkdirSync(out,{recursive:true});
 const browser=await chromium.launch({channel:'chrome',headless:true});
 const report={passed:false,fixtureCreates:0,fixtureAdvances:0,paidActions:0,errors:[],views:[]};
-const pilot={capCents:2500,reservedCents:800,availableCents:1700,reportedMicrousd:0,paused:false,pending:false,destinationLast4:'0000',verification:{configured:true,unitCents:1,blocker:null},slots:[]};
+const pilot={perOperationApproval:true,capCents:2500,reservedCents:3000,availableCents:0,reportedMicrousd:0,paused:false,pending:false,destinationLast4:'0000',verification:{configured:true,unitCents:1,blocker:null},slots:[]};
 let runs=[],stage=0;
 const row={name:'Fixture Clinic',city:'Miami',state:'FL',phone10:'3055551234',website:null,sourceUrl:'https://example.test/clinic',rejection:null,chain:null,duplicate:false};
 const rows=[row,{...row,name:'Second Clinic',phone10:'3055551235'},{...row,name:'Missing Phone',phone10:null}];
@@ -15,7 +15,7 @@ try{
   if(route.request().method()==='POST'){
    const b=route.request().postDataJSON();
    if(b.action==='create'){
-    report.fixtureCreates++;if(!b.confirmed)throw Error('Missing confirmation');
+    report.fixtureCreates++;if(!b.confirmed||b.approvedMaxCents!==100)throw Error('Missing confirmation');
     const key='list-'+b.requestId;pilot.slots=[{key,kind:'scrape',industry:b.industry,title:b.name,state:'ready',count:b.count,allocationCents:100,reserveCents:75,reportedMicrousd:null,result:{}}];
     runs=[{key,name:b.name,industry:b.industry,city:b.city,state:b.state,count:b.count,status:'running',phase:'discover',started_at:new Date().toISOString(),phase_started_at:new Date().toISOString(),finished_at:null,message:'Search authorized.',events:[]}];
     // Lost create response: client must read saved state and never start a second list.
@@ -36,12 +36,12 @@ try{
   }
   await route.fulfill({json:{runs,pilot}});
  });
- const page=await context.newPage();page.on('pageerror',error=>report.errors.push(error.message));
+ let approve=false;const page=await context.newPage();page.on('dialog',async d=>{if(!d.message().includes('$1.00'))throw Error('Missing list cost');await(approve?d.accept():d.dismiss());});page.on('pageerror',error=>report.errors.push(error.message));
  await page.goto('https://nbc-sales-nbc-sales.vercel.app/lead-engine#search');
  await page.getByLabel('Email address',{exact:true}).fill(e.NBC_OPERATOR_EMAIL);await page.getByLabel('Password',{exact:true}).fill(e.NBC_OPERATOR_INITIAL_PASSWORD);await page.getByRole('button',{name:'Enter NBC Sales',exact:true}).click();
  const panel=page.getByRole('region',{name:'Lead search runs'});await panel.getByRole('heading',{name:'Build a qualified lead list'}).waitFor();
  await panel.getByLabel('List name',{exact:true}).fill('My full-cycle fixture');
- await panel.getByRole('checkbox').check();
+ await panel.getByRole('button',{name:'Start search · reserve $0.75',exact:true}).click();await page.waitForTimeout(300);if(report.fixtureCreates)throw Error('Cancel created a list');approve=true;
  await panel.getByRole('button',{name:'Start search · reserve $0.75',exact:true}).evaluate(button=>{button.click();button.click();});
  const progress=panel.getByRole('region',{name:'List progress'});await progress.waitFor();
  await progress.getByRole('button',{name:'Pause after current step'}).click();

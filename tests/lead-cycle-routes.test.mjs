@@ -28,7 +28,7 @@ test('full-cycle API: replay, serialized advances, missing rate, completion and 
    if(u.pathname.endsWith('/nbc_lead_cycle_control')){runs[0].status=b.p_action==='pause'?'paused':'running';return json(null);}
    if(u.pathname.endsWith('/nbc_pilot_reserve')){if(operations.length)return json({acquired:false,operation:operations[0]});const o={key,state:'dispatching',reserved_cents:75,reported_microusd:null,version:0,result:{},provider:{}};operations.push(o);return json({acquired:true,operation:o});}
    if(u.pathname.endsWith('/nbc_pilot_observe')){Object.assign(operations[0],{state:b.p_state,result:b.p_result,provider:b.p_provider,version:operations[0].version+1,reported_microusd:b.p_reported??null});return json(operations[0]);}
-   if(u.pathname.endsWith('/nbc_pilot_claim_phone')){if(checks.some(c=>c.phone10===b.p_phone))return json({acquired:false});checks.push({phone10:b.p_phone,state:'dispatching',reserved_cents:1,verification:null});return json({acquired:true});}
+   if(u.pathname.endsWith('/nbc_pilot_claim_phone_batch')){const phones=b.p_phones.filter(p=>!checks.some(c=>c.phone10===p));if(!phones.length)return json({acquired:false});checks.push(...phones.map(phone10=>({phone10,state:'dispatching',reserved_cents:1,verification:null})));return json({acquired:true,phones});}
    if(u.pathname.endsWith('/nbc_pilot_finish_phone')){const c=checks.find(c=>c.phone10===b.p_phone);c.verification=b.p_verification;c.state=b.p_verification?'completed':'uncertain';return json(null);}
   }
   if(u.hostname==='api.apify.com'){
@@ -46,6 +46,7 @@ test('full-cycle API: replay, serialized advances, missing rate, completion and 
  try{
   assert.equal((await routes.GET(request(undefined,null))).status,401);assert.equal((await routes.GET(request(undefined,'other'))).status,403);
   assert.equal((await routes.POST(request({...body,confirmed:false}))).status,400);
+  assert.equal((await routes.POST(request({...body,city:'',state:'',count:5000}))).status,409);assert.equal(searches,0);assert.equal(runs.length,0);
   await send(body);await send(body);assert.equal(runs.length,1);assert.equal(searches,0);
   await Promise.all([send({action:'advance',key}),send({action:'advance',key})]);assert.equal(searches,1);
   for(let i=0;i<6&&runs[0].status==='running';i++)await send({action:'advance',key});
