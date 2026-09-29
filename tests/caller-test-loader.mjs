@@ -6,6 +6,8 @@ import ts from 'typescript';
 const root = new URL('../', import.meta.url);
 registerHooks({
   resolve(specifier, context, nextResolve) {
+    // Unit routes do not have a Next request lifecycle. Background work is tested separately.
+    if (specifier === 'next/server') return { url: 'data:text/javascript,export function after(work) { (globalThis.__afterTasks ??= []).push(work); }', shortCircuit: true };
     if (specifier === 'server-only') return { url: 'data:text/javascript,export {};', shortCircuit: true };
     if (specifier.startsWith('@/')) specifier = new URL(`src/${specifier.slice(2)}`, root).href;
     if ((specifier.startsWith('.') || specifier.startsWith('file:')) && context.parentURL) {

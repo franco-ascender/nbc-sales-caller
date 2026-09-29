@@ -35,7 +35,7 @@ test('Retell portal routes enforce ownership, reserve before dispatch, avoid ret
       if(u.pathname==='/rest/v1/nbc_pilot_phone_checks')return json([]);
       if(u.pathname==='/rest/v1/nbc_pilot_operations')return json(operations);
       const b=JSON.parse(String(init?.body));assert.equal(b.p_owner,owner);
-      if(u.pathname.endsWith('/nbc_pilot_phone_slot')){
+      if((u.pathname.endsWith('/nbc_pilot_phone_slot')||u.pathname.endsWith('/nbc_phone_scenario_slot'))){
         const key='dial-'+b.p_request,found=slots.find(s=>s.key===key);
         if(found&&found.config.destination!==b.p_destination)return json({message:'destination_conflict',code:'P0001'},400);
         if(!found)slots.push({round_id:round,key,kind:'phone',title:'Phone trial',allocation_cents:250,reserve_cents:250,config:{destination:b.p_destination,phoneEngine:'retell',retell}});

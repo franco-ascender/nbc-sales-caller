@@ -1,0 +1,15 @@
+import {after} from 'next/server';
+import {database,apiError,IntegrationError} from '@/services/integration.service';
+import {verifyRetellWebhook,callTranscript} from '@/lib/retell-webhook';
+import {syncPilot} from '@/services/live-pilot.service';
+import {archiveRecording} from '@/services/caller-archive.service';
+import {PILOT_ROUND} from '@/lib/live-pilot';
+export const runtime='nodejs';export const maxDuration=60;
+export async function POST(request:Request){try{
+ const reader=request.body?.getReader();if(!reader)throw new IntegrationError(400,'Missing event.');let size=0;const chunks:Uint8Array[]=[];try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>4*1024*1024){await reader.cancel();throw new IntegrationError(413,'Event too large.');}chunks.push(value);}}finally{reader.releaseLock();}const raw=Buffer.concat(chunks).toString('utf8'),signature=request.headers.get('x-retell-signature');if(!verifyRetellWebhook(raw,signature,process.env.RETELL_WEBHOOK_SECRET||process.env.RETELL_API_KEY||''))throw new IntegrationError(401,'Invalid event signature.');
+ let payload;try{payload=JSON.parse(raw);}catch{throw new IntegrationError(400,'Invalid event.');}if(!payload||typeof payload!=='object')throw new IntegrationError(400,'Invalid event.');const {event,call:c}=payload;if(!['call_started','call_ended','call_analyzed','transcript_updated'].includes(event))return new Response(null,{status:204});if(!c||typeof c.call_id!=='string')throw new IntegrationError(400,'Invalid call.');
+ const db=database(),o=await db.from('nbc_pilot_operations').select('key,provider').eq('round_id',PILOT_ROUND).eq('provider->>callId',c.call_id).maybeSingle();if(o.error)throw new IntegrationError(503,'Event storage unavailable.');if(!o.data)throw new IntegrationError(503,'Call association is not ready. Retry event.');const [s,r]=await Promise.all([db.from('nbc_pilot_slots').select('config').eq('round_id',PILOT_ROUND).eq('key',o.data.key).single(),db.from('nbc_pilot_rounds').select('owner_id').eq('id',PILOT_ROUND).single()]);const config=s.data?.config;if(s.error||r.error||!config)throw new IntegrationError(503,'Call association unavailable.');if(c.agent_id!==config.retell?.agentId||c.agent_version!==config.retell?.version||c.to_number!==config.destination||c.from_number!==config.retell?.from)throw new IntegrationError(409,'Call identity mismatch.');
+ const saved=await db.rpc('nbc_save_call_event',{p_owner:r.data.owner_id,p_key:o.data.key,p_time:Number(signature!.match(/^v=(\d+)/)![1]),p_status:c.call_status,p_transcript:callTranscript(c.transcript_object??c.transcript_with_tool_calls)});if(saved.error)throw new IntegrationError(503,'Could not save event.');
+ if(['call_ended','call_analyzed'].includes(event))after(async()=>{try{await syncPilot(r.data.owner_id,o.data!.key);await archiveRecording(r.data.owner_id,o.data!.key);}catch{/* The durable event remains; Archive refresh safely retries reads. */}});
+ return new Response(null,{status:204});
+ }catch(e){return apiError(e);}}

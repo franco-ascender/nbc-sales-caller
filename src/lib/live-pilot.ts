@@ -13,7 +13,7 @@ export interface PilotResult {
 }
 export interface PilotSlotView {
   key: string; kind: 'phone'|'scrape'; title: string; allocationCents: number; reserveCents: number;
-  industry?: string; destinationLast4?: string; createdAt?: string; updatedAt?: string; count: number|null; state: PilotState|'ready'; reportedMicrousd: number|null; result: PilotResult;
+  scenarioTitle?:string; industry?: string; destinationLast4?: string; createdAt?: string; updatedAt?: string; count: number|null; state: PilotState|'ready'; reportedMicrousd: number|null; result: PilotResult;
 }
 export interface PilotView {
   phoneEngine?:'retell'|'elevenlabs';

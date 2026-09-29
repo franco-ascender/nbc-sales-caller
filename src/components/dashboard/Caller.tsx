@@ -1,5 +1,5 @@
 "use client";
-import { NativeRunPanel } from '@/components/pilot/NativeRunPanel';
+import {isBlocked} from '@/lib/caller-workbench';
 
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
@@ -17,7 +17,7 @@ import { CallerCrm } from "./CallerCrm";
 import { useCallerPipeline } from "./CallerPipeline";
 import { CallerAnalytics } from './CallerAnalytics';
 import { CallerVoicePresence } from './CallerVoicePresence';
-import { CallerAiQueue } from './CallerAiQueue';
+import {CallerPhoneArchive,CallRecordingAndNotes,useCallArchive,phoneAnalyticsSessions} from './CallerArchive';
 import { CallerCityCoverage } from "./CallerCityCoverage";
 import { CallerScorecard } from "./CallerScorecard";
 import { CallerPostCallAnalysis } from "./CallerPostCallAnalysis";
@@ -38,6 +38,7 @@ async function request<T>(token: string, path: string, body?: object): Promise<T
 
 export function Caller(): ReactNode {
   const access = useWorkspaceAccess();
+  const archive=useCallArchive(access.token);
   const [demo, setDemo] = useState(false), [demoExists, setDemoExists] = useState(false), [demoAvailable, setDemoAvailable] = useState(false), [demoBusy, setDemoBusy] = useState(false), [demoError, setDemoError] = useState("");
   const demoLock = useRef(false), mode = useRef(false); mode.current = demo;
   const leads = useCallerLeads(demo);
@@ -248,32 +249,33 @@ export function Caller(): ReactNode {
   useEffect(() => { if (access.user?.role !== "admin" || !access.token) return; let cancelled = false; void request<{exists:boolean;available:boolean}>(access.token,"/api/caller/demo").then(result=>{if(!cancelled){setDemoExists(result.exists);setDemoAvailable(result.available);}}).catch(()=>{if(!cancelled)setDemoError("Demo controls could not load. Refresh Caller to retry.");}); return ()=>{cancelled=true;}; },[access.token,access.user?.role]);
   function changeMode(value:boolean):void { historyVersion.current++; mode.current=value; setDemo(value); setDialLead(null); setTransfer(previous=>({ids:[],version:previous.version+1})); setSelected(null); selection.current=null; }
   async function setMockData(enabled:boolean):Promise<void> { if(demoLock.current||active||recovering||Boolean(busy))return;demoLock.current=true;setDemoBusy(true);setDemoError("");try{await request(access.token,"/api/caller/demo",{enabled});setDemoExists(enabled);changeMode(enabled);if(demo===enabled)await Promise.all([leads.refresh(),lists.refresh(),refresh()]);}catch(failure){setDemoError(failure instanceof Error?failure.message:"Demo data could not be updated. Retry the same action.");}finally{demoLock.current=false;setDemoBusy(false);} }
-  function inspectResult(result:CallSession):void {selection.current=result.id;setSelected(result);setTestOpen(true);chooseTab("voice");}
+  function inspectResult(result:CallSession):void {selection.current=result.id;setSelected(result);setTestOpen(true);chooseTab("archive");}
 
-  useEffect(() => { if (!selected || !testOpen || tab !== "voice") return; const frame = requestAnimationFrame(() => document.getElementById("caller-conversation-result")?.scrollIntoView({ behavior: "instant", block: "start" })); return () => cancelAnimationFrame(frame); }, [selected?.id, testOpen, tab]);
+  useEffect(() => { if (!selected || !testOpen || tab !== "archive") return; const frame = requestAnimationFrame(() => document.getElementById("caller-conversation-result")?.scrollIntoView({ behavior: "instant", block: "start" })); return () => cancelAnimationFrame(frame); }, [selected?.id, testOpen, tab]);
 
   const insights = sessionInsights(sessions);
   const visibleSessions = filterSessions(sessions, query, statusFilter);
 
-  const primaryTabs = [{ id: "dialer", label: "Make a Call", icon: Phone }, { id: "voice", label: "Conversation Lab", icon: AudioLines }, { id: "crm", label: "Contacts", icon: Users }, { id: "insights", label: "Insights", icon: MessageSquareText }];
-  const advancedTabs = [{ id: "analytics", label: "Analytics", icon: BarChart3 }, ...(access.user?.role === "admin" ? [{ id: "coverage", label: "Local numbers", icon: MapPinned }, { id: "voices", label: "Voice settings", icon: SlidersHorizontal }] : [])];
+  const primaryTabs = [{ id: "dialer", label: "Make a Call", icon: Phone }, { id: "voice", label: "Conversation Lab", icon: AudioLines }, { id: "crm", label: "Contacts", icon: Users }, { id: "archive", label: "Archive", icon: MessageSquareText }, { id: "analytics", label: "Analytics", icon: BarChart3 }];
+  const advancedTabs = [{ id: "insights", label: "Insights", icon: MessageSquareText }, ...(access.user?.role === "admin" ? [{ id: "coverage", label: "Local numbers", icon: MapPinned }, { id: "voices", label: "Voice settings", icon: SlidersHorizontal }] : [])];
   const tabs = [...primaryTabs, ...(advanced ? advancedTabs : [])];
-  useEffect(()=>{const followHash=()=>{const hash=window.location.hash.slice(1);const value=hash==='ai-caller'?'voice':hash;if(['dialer','voice','crm','insights','analytics','coverage','voices'].includes(value)){if(['coverage','voices'].includes(value)&&access.user?.role!=='admin')return;setTab(value);if(['analytics','coverage','voices'].includes(value))setAdvanced(true);if(value==='voices')setStudioOpened(true);}};followHash();window.addEventListener("hashchange",followHash);return()=>window.removeEventListener("hashchange",followHash);},[access.user?.role]);
+  useEffect(()=>{const followHash=()=>{const hash=window.location.hash.slice(1);const value=hash==='ai-caller'?'voice':hash;if(['dialer','voice','crm','archive','insights','analytics','coverage','voices'].includes(value)){if(['coverage','voices'].includes(value)&&access.user?.role!=='admin')return;setTab(value);if(['insights','coverage','voices'].includes(value))setAdvanced(true);if(value==='voices')setStudioOpened(true);}};followHash();window.addEventListener("hashchange",followHash);return()=>window.removeEventListener("hashchange",followHash);},[access.user?.role]);
   function chooseTab(value: string): void { setTab(value); window.history.replaceState(null,"",window.location.pathname+window.location.search+'#'+(value==="voice"?"ai-caller":value)); if (value === "voices") setStudioOpened(true); }
   return <div className={styles.workspace}>
     <header className={sales.workspaceHead}><div><span className={sales.callerEyebrow}>CONVERSATIONS THAT MOVE BUSINESS</span><h1>AI Caller</h1><p>Make a call, refine your conversation, and review what happened.</p></div></header>
     {access.user?.role === "admin" && <details className={sales.developmentTools}><summary>{demo?"Demo data is active · manage":"Demo data tools"}</summary><div className={ops.demoBar}><div><strong>{demo ? "DEMO DATA" : "Live data"}</strong><small>{demo ? "Illustrative leads and conversations. No real calls or NBC results." : "Admin development tools · demo records are stored separately."}</small></div><div className={ops.actions}>{demoExists && <button className={ops.secondary} disabled={demoBusy||active||recovering||Boolean(busy)||leads.busy||lists.busy} onClick={()=>changeMode(!demo)}>{demo?"Show live data":"Show demo data"}</button>}<button className={ops.secondary} disabled={!demoAvailable||demoBusy||active||recovering||Boolean(busy)||leads.busy||lists.busy} onClick={()=>void setMockData(!demoExists)}>{demoBusy?"Updating demo data…":demoExists?"Remove mock data":"Add mock data"}</button></div>{demoError&&<p role="alert" className={ops.error}>{demoError}</p>}</div></details>}
     <div className={sales.callerNavigation}><div role="tablist" aria-label="Caller workspace" className={sales.tabs}>{tabs.map(({ id, label, icon: Icon }, index) => <button id={`caller-tab-${id}`} role="tab" aria-selected={tab === id} aria-controls={`caller-panel-${id}`} tabIndex={tab === id ? 0 : -1} key={id} onClick={() => chooseTab(id)} onKeyDown={event => { let next = index; if (event.key === "ArrowRight") next = (index + 1) % tabs.length; else if (event.key === "ArrowLeft") next = (index + tabs.length - 1) % tabs.length; else if (event.key === "Home") next = 0; else if (event.key === "End") next = tabs.length - 1; else return; event.preventDefault(); chooseTab(tabs[next].id); document.getElementById(`caller-tab-${tabs[next].id}`)?.focus(); }}><Icon size={17} />{label}</button>)}</div><button className={sales.advancedToggle} aria-expanded={advanced} onClick={()=>{setAdvanced(!advanced);if(advanced&&advancedTabs.some(t=>t.id===tab))chooseTab("dialer");}}><SlidersHorizontal size={15}/>Advanced tools</button></div>
+    {!demo && tab!=="dialer" && archive.calls.some(c=>['reserved','dispatching','running','uncertain'].includes(c.state)) && <div className={sales.activeVoice} role="status"><AudioLines size={20}/><span>A phone call is active or awaiting confirmation.</span><button onClick={()=>chooseTab("dialer")}>Return to call</button></div>}
     {(active || busy === "start") && (tab !== "voice" || !testOpen) && <div className={sales.activeVoice} role="status"><AudioLines size={20} /><span>{active ? `Voice test active · ${formatCallTime(elapsed)}` : "Connecting voice test…"}</span><button onClick={() => {setTestOpen(true);chooseTab("voice");}}>Return to voice test</button><button disabled={!active || busy === "end"} onClick={() => void action("end", () => client.current?.endSession() ?? Promise.resolve())}>End voice test</button></div>}
-    <section role="tabpanel" id="caller-panel-crm" aria-labelledby="caller-tab-crm" hidden={tab !== "crm"}><CallerCrm key={String(demo)} store={leads} lists={lists} pipeline={pipeline} importRequest={importRequest} send={ids=>{setTransfer(previous=>({ids,version:previous.version+1}));chooseTab("voice");}} dial={lead => { setDialLead(lead); chooseTab("dialer"); }} /></section>
-    {tab === "analytics" && <section role="tabpanel" id="caller-panel-analytics" aria-labelledby="caller-tab-analytics"><CallerAnalytics leads={leads.leads} sessions={sessions} demo={demo} pipeline={pipeline.pipeline} /></section>}
+    <section role="tabpanel" id="caller-panel-crm" aria-labelledby="caller-tab-crm" hidden={tab !== "crm"}><CallerCrm key={String(demo)} store={leads} lists={lists} pipeline={pipeline} importRequest={importRequest} send={ids=>{const lead=leads.leads.find(l=>ids.includes(l.id)&&!isBlocked(l));if(lead){setDialLead(lead);chooseTab("dialer");}}} dial={lead => { if(isBlocked(lead))return;setDialLead(lead); chooseTab("dialer"); }} /></section>
+    {tab === "analytics" && <section role="tabpanel" id="caller-panel-analytics" aria-labelledby="caller-tab-analytics"><CallerAnalytics leads={leads.leads} sessions={demo?sessions:[...sessions,...phoneAnalyticsSessions(archive.calls,sessions)]} demo={demo} pipeline={pipeline.pipeline} /></section>}
     {tab === "dialer" && <section role="tabpanel" id="caller-panel-dialer" aria-labelledby="caller-tab-dialer"><CallerDialer key={dialLead?.id || "manual"} store={leads} pipeline={pipeline} initialLead={dialLead} /></section>}
     {tab === "insights" && <section role="tabpanel" id="caller-panel-insights" aria-labelledby="caller-tab-insights"><CallerReasons sessions={sessions} inspect={id => { const result = sessions.find(session => session.id === id); if (result) inspectResult(result); }} /></section>}
     {access.user?.role === "admin" && <section role="tabpanel" id="caller-panel-coverage" aria-labelledby="caller-tab-coverage" hidden={tab !== "coverage"}><CallerCityCoverage active={tab === "coverage"} token={access.token} /></section>}
     {studioOpened && access.user?.role === "admin" && <section role="tabpanel" id="caller-panel-voices" aria-labelledby="caller-tab-voices" hidden={tab !== "voices"}><CallerVoices active={tab === "voices"} /></section>}
     <section role="tabpanel" id="caller-panel-voice" aria-labelledby="caller-tab-voice" hidden={tab !== "voice"}>
-    {!demo && access.user?.role === 'admin' && <details className={sales.developmentTools}><summary>Earlier phone calls & outcomes</summary><NativeRunPanel kind="phone"/></details>}
-    <div className={ops.toolsBar}><div><h3>Talk to your AI caller.</h3><p>Browser voice tests let you talk to the AI agent. They do not call a lead.</p></div><div className={ops.actions}><button className={ops.secondary} onClick={()=>setTestOpen(value=>!value)}>{testOpen?"Hide voice test":"Show voice test"}</button><button className={ops.secondary} onClick={()=>document.getElementById("caller-saved-history")?.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth",block:"start"})}>Conversation history</button></div></div>
+
+    <div className={ops.toolsBar}><div><h3>Talk to your AI caller.</h3><p>Browser voice tests let you talk to the AI agent. They do not call a lead.</p></div><div className={ops.actions}><button className={ops.secondary} onClick={()=>setTestOpen(value=>!value)}>{testOpen?"Hide voice test":"Show voice test"}</button><button className={ops.secondary} onClick={()=>chooseTab("archive")}>Conversation history</button></div></div>
     {access.user?.role === "admin" && !demo && <CallerKnowledgeLab token={access.token} activeScenario={activeScenario} disabled={active || Boolean(busy) || recovering} onUseScenario={setActiveScenario} />}
     {error && <div className={styles.error} role="alert">{error}</div>}
     <div hidden={!testOpen}>
@@ -293,17 +295,12 @@ export function Caller(): ReactNode {
         <section className={styles.panel}><header><div><span className={styles.eyebrow}>DURING THE CALL</span><h2>Live conversation</h2></div><span className={styles.status}>{active ? "Connected" : "Standby"}</span></header><div className={styles.transcript} aria-live="polite">{messages.length ? messages.map((message, i) => <article key={i} className={message.role === "user" ? styles.userTurn : ""}><span>{message.role === "user" ? "You" : "NBC agent"}</span><p>{message.message}</p></article>) : <div className={styles.empty}><Mic size={27} /><h3>Your words will appear here.</h3><p>Start a test and speak naturally. Try describing your business, asking a question, or interrupting the agent.</p></div>}</div><footer>Live text is provisional. The saved result is verified with the voice provider.</footer></section>
       </div>
     </div>
-    <CallerAiQueue key={String(demo)} store={leads} lists={lists} transfer={transfer} upload={()=>{setImportRequest(value=>value+1);chooseTab("crm");}} sessions={sessions} inspect={inspectResult}/>
-      <div className={styles.metrics} aria-label="Recent call metrics">
-        <article><span>Completed tests</span><strong>{insights.completed}</strong><small>Of {insights.total} recent sessions</small></article>
-        <article><span>Conversation time</span><strong>{(insights.durationSeconds / 60).toFixed(1)}<em>min</em></strong><small>{insights.missingDurations ? `${insights.missingDurations} duration${insights.missingDurations === 1 ? "" : "s"} still unknown` : "Saved conversation time"}</small></article>
-        <article><span>Failed tests</span><strong>{insights.failed}</strong><small>{insights.expired} expired reservation{insights.expired === 1 ? "" : "s"} tracked separately</small></article>
-        <article><span>Awaiting result</span><strong>{insights.pending}</strong><small>Reserved, active or processing</small></article>
-      </div>
-      <p className={styles.scope}>Metrics cover the latest 30 loaded sessions at most, regardless of filters. Search and status filters cover all loaded history, not your entire account.</p>
+    </section>
+    <section role="tabpanel" id="caller-panel-archive" aria-labelledby="caller-tab-archive" hidden={tab!=="archive"}>
+    {!demo&&<><CallerPhoneArchive token={access.token} calls={archive.calls} assets={archive.assets} refresh={()=>void archive.refresh()}/>{archive.error&&<p role="alert">{archive.error}</p>}</>}
       {settling && <div className={styles.processing} role="status"><Loader2 size={16} className={styles.spin} />The call ended. Checking the provider for its saved result…</div>}
       <section id="caller-saved-history" className={styles.panel}>
-        <header><div><span className={styles.eyebrow}>PERSISTENT CALL HISTORY</span><h2>{demo ? "Demo conversation history" : "Your real test sessions"}</h2></div><button disabled={Boolean(busy)} onClick={() => void action("refresh", () => refresh())}><RefreshCw size={15} />Refresh history</button></header>
+        <header><div><span className={styles.eyebrow}>PERSISTENT CALL HISTORY</span><h2>{demo ? "Demo conversation history" : "Browser conversation archive"}</h2></div><button disabled={Boolean(busy)} onClick={() => void action("refresh", () => refresh())}><RefreshCw size={15} />Refresh history</button></header>
         <div className={styles.recovery}>
           <div className={styles.recoveryActions}>
             <button disabled={demo || recovering || active || Boolean(busy)} onClick={() => void recover()}>{recovering ? <Loader2 className={styles.spin} size={15} /> : <RefreshCw size={15} />}Recover pending</button>
@@ -332,6 +329,7 @@ export function Caller(): ReactNode {
         <header><div><span className={styles.eyebrow}>{selected.is_demo ? "DEMO RESULT · ILLUSTRATIVE" : "SAVED PROVIDER RESULT"}</span><h2>Conversation result</h2></div><div className={styles.resultActions}><span className={styles.status} data-status={selected.status}>{selected.status}</span><button disabled={!canExportSession(selected)} onClick={downloadTranscript}><Download size={15} />Download transcript</button></div></header>
         <div className={styles.result}>
           <p className={styles.sessionMeta}>Session {selected.id}<br />{selected.is_demo ? "Synthetic demo transcript. No real conversation took place." : selected.synced_at ? `Last verified: ${new Date(selected.synced_at).toLocaleString("en-US")}${selected.cost_microusd == null ? " · Cost pending" : ` · Provider-reported cost: $${(selected.cost_microusd/1e6).toFixed(4)}`}` : "This session has not returned a verified result yet."}</p>
+          {!selected.is_demo&&<CallRecordingAndNotes key={selected.id} token={access.token} resourceKey={"web-"+selected.id} asset={archive.assets.find(a=>a.resource_key==="web-"+selected.id)} onSaved={()=>void archive.refresh()}/>}
           <h3>Summary</h3><p>{selected.summary || (["completed", "failed"].includes(selected.status) ? "No summary was returned for this conversation." : selected.status === "expired" ? "This reservation expired. Refresh the result to check whether a conversation was recorded by the provider." : "The result is not final yet. Refresh it again shortly.")}</p>
           {selected.failure_code && <p>Session status: {selected.failure_code.replaceAll("_", " ")}</p>}
           {!selected.is_demo && <CallerPostCallAnalysis token={access.token} session={selected} onSaved={session => { setSelected(session); setSessions(previous => previous.map(item => item.id === session.id ? session : item)); }} />}

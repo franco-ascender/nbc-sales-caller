@@ -15,8 +15,10 @@ export async function preflightRetell(c:RetellConfig):Promise<void>{
  const[a,l,n]=await Promise.all([retellApi(`/get-agent/${c.agentId}?version=${c.version}`),retellApi(`/get-retell-llm/${c.llmId}?version=${c.llmVersion}`),retellApi('/get-phone-number/'+encodeURIComponent(c.from))]);
  if(a.agent_id!==c.agentId||a.version!==c.version||a.is_published!==true||a.voice_id!==c.voiceId||a.max_call_duration_ms!==600000||l.model!=='gpt-4.1-mini'||l.model_high_priority===true||retellConfigHash(a)!==c.agentHash||retellConfigHash(l)!==c.llmHash||n.phone_number!==c.from||n.phone_number_type!=='retell-twilio')throw new IntegrationError(409,'The phone configuration changed. Review its quote before calling.');
 }
-export async function dispatchRetell(c:RetellConfig,to:string,key:string):Promise<string>{
- const r=await retellApi('/v2/create-phone-call','POST',{from_number:c.from,to_number:to,override_agent_id:c.agentId,override_agent_version:c.version,metadata:{nbc_operation:key}});
+export async function dispatchRetell(c:RetellConfig,to:string,key:string,scenario?:{prompt:string;firstMessage:string}):Promise<string>{
+ const host=process.env.CALLER_WEBHOOK_ORIGIN||(process.env.VERCEL_URL?'https://'+process.env.VERCEL_URL:'');
+ if(scenario&&!/^https:\/\//.test(host))throw new IntegrationError(503,'Call event delivery is not configured.');
+ const r=await retellApi('/v2/create-phone-call','POST',{from_number:c.from,to_number:to,override_agent_id:c.agentId,override_agent_version:c.version,metadata:{nbc_operation:key},...(scenario?{retell_llm_dynamic_variables:{nbc_scenario:scenario.prompt},agent_override:{retell_llm:{begin_message:scenario.firstMessage},agent:{data_storage_setting:'everything',opt_in_signed_url:true,webhook_url:host+'/api/caller/webhooks/retell',webhook_events:['call_started','transcript_updated','call_ended','call_analyzed']}}}:{})});
  if(typeof r.call_id!=='string'||!/^call_[\w-]+$/.test(r.call_id)||r.agent_id!==c.agentId||r.from_number!==c.from||r.to_number!==to)throw new IntegrationError(503,'Call identity not confirmed; reconciliation is required.');
  return r.call_id;
 }

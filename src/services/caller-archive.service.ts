@@ -1,0 +1,47 @@
+import 'server-only';
+import {database,IntegrationError} from './integration.service';
+import {pilotView} from './live-pilot.service';
+import {ownedSession} from './caller.service';
+import {retellApi} from './retell-phone.service';
+import {safeRetellRecordingUrl} from '@/lib/retell-webhook';
+import {PILOT_ROUND} from '@/lib/live-pilot';
+const BUCKET='caller-recordings';
+export async function ownedPhone(owner:string,key:string){
+ const db=database();const round=await db.from('nbc_pilot_rounds').select('id,settings').eq('id',PILOT_ROUND).eq('owner_id',owner).maybeSingle();if(round.error||!round.data)throw new IntegrationError(404,'Call not found.');
+ const [s,o]=await Promise.all([db.from('nbc_pilot_slots').select('config').eq('round_id',PILOT_ROUND).eq('kind','phone').eq('key',key).maybeSingle(),db.from('nbc_pilot_operations').select('provider,state').eq('round_id',PILOT_ROUND).eq('key',key).maybeSingle()]);if(s.error||o.error||!s.data||!o.data)throw new IntegrationError(404,'Call not found.');return{config:s.data.config,provider:o.data.provider,state:o.data.state,settings:round.data.settings};
+}
+export async function ownedResource(owner:string,key:string){if(key.startsWith('web-'))return ownedSession(owner,key.slice(4));return ownedPhone(owner,key);}
+export async function readAssets(owner:string){const r=await database().from('caller_call_assets').select('resource_key,recording_status,note,note_version,live_transcript,live_status,updated_at').eq('owner_id',owner);if(r.error)throw new IntegrationError(503,'Archive could not be loaded.');return r.data;}
+export async function phoneArchive(owner:string){let view;try{view=await pilotView(owner);}catch(e){if(e instanceof IntegrationError&&[403,404].includes(e.status))return{calls:[],assets:await readAssets(owner)};throw e;}return{calls:view.slots.filter(s=>s.kind==='phone'&&s.state!=='ready').sort((a,b)=>(b.createdAt??'').localeCompare(a.createdAt??'')),assets:await readAssets(owner)};}
+export async function saveCallNote(owner:string,key:string,note:string,version:number){await ownedResource(owner,key);const db=database();await db.from('caller_call_assets').upsert({owner_id:owner,resource_key:key},{onConflict:'owner_id,resource_key',ignoreDuplicates:true});const r=await db.from('caller_call_assets').update({note,note_version:version+1,updated_at:new Date().toISOString()}).eq('owner_id',owner).eq('resource_key',key).eq('note_version',version).select('note,note_version').maybeSingle();if(r.error)throw new IntegrationError(503,'Note could not be saved.');if(!r.data)throw new IntegrationError(409,'This note changed. Refresh before editing it again.');return r.data;}
+async function boundedAudio(response:Response){if(!response.ok)throw new IntegrationError(404,'Recording is not available yet.');const max=50*1024*1024;if(Number(response.headers.get('content-length'))>max)throw new IntegrationError(413,'Recording exceeds the archive limit.');const reader=response.body?.getReader();if(!reader)throw new IntegrationError(503,'Recording is empty.');let size=0;const parts:Uint8Array[]=[];try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>max){await reader.cancel();throw new IntegrationError(413,'Recording exceeds the archive limit.');}parts.push(value);}}finally{reader.releaseLock();}if(size<32)throw new IntegrationError(404,'Recording is not available yet.');return Buffer.concat(parts);}
+async function elevenAudio(id:string){if(!/^[a-zA-Z0-9_-]{1,150}$/.test(id))throw new IntegrationError(409,'Recording identity missing.');return fetch(`https://api.elevenlabs.io/v1/convai/conversations/${id}/audio`,{headers:{'xi-api-key':process.env.ELEVENLABS_API_KEY??''},redirect:'error',signal:AbortSignal.timeout(25000)});}
+export async function archiveRecording(owner:string,key:string){
+ const resource=await ownedResource(owner,key),db=database();const existing=await db.from('caller_call_assets').select('recording_path').eq('owner_id',owner).eq('resource_key',key).maybeSingle();if(existing.error)throw new IntegrationError(503,'Recording storage unavailable.');if(existing.data?.recording_path)return existing.data.recording_path as string;
+ let response:Response;
+ if(key.startsWith('web-')){const s=resource as Awaited<ReturnType<typeof ownedSession>>;if(!['completed','failed'].includes(s.status)||!s.provider_call_id)throw new IntegrationError(409,'Recording is available after the call.');response=await elevenAudio(s.provider_call_id);}
+ else{const p=resource as Awaited<ReturnType<typeof ownedPhone>>;if(!['completed','failed','stopped'].includes(p.state))throw new IntegrationError(409,'Recording is available after the call.');
+ if(p.provider.engine==='retell'){const c=await retellApi('/v2/get-call/'+p.provider.callId);if(c.call_id!==p.provider.callId||c.agent_id!==p.config.retell?.agentId||c.agent_version!==p.config.retell?.version||c.to_number!==(p.config.destination??p.settings.destination)||c.from_number!==p.config.retell?.from)throw new IntegrationError(409,'Recording identity mismatch.');const url=safeRetellRecordingUrl(c.recording_url);if(!url)throw new IntegrationError(404,'No recording has been returned for this call.');response=await fetch(url,{redirect:'error',signal:AbortSignal.timeout(25000)});}
+ else{if(!/^CA[0-9a-f]{32}$/i.test(p.provider.callSid??''))throw new IntegrationError(404,'This attempt has no recorded phone connection.');const headers={'xi-api-key':process.env.ELEVENLABS_API_KEY??''};const list=await fetch(`https://api.elevenlabs.io/v1/convai/conversations?agent_id=${encodeURIComponent(p.provider.agentId??p.settings.agentId)}&page_size=100`,{headers,signal:AbortSignal.timeout(10000)});if(!list.ok)throw new IntegrationError(503,'Recording lookup failed.');let id:string|undefined;for(const item of (await list.json()).conversations??[]){if(!/^[a-zA-Z0-9_-]{1,150}$/.test(item.conversation_id))continue;const d=await fetch('https://api.elevenlabs.io/v1/convai/conversations/'+item.conversation_id,{headers,signal:AbortSignal.timeout(5000)});if(d.ok){const detail=await d.json();if(detail.conversation_id===item.conversation_id&&detail.agent_id===(p.provider.agentId??p.settings.agentId)&&detail.metadata?.phone_call?.call_sid===p.provider.callSid){id=item.conversation_id;break;}}}if(!id)throw new IntegrationError(404,'Historical recording not found.');response=await elevenAudio(id);}}
+ const bytes=await boundedAudio(response);const wav=bytes.toString('ascii',0,4)==='RIFF'&&bytes.toString('ascii',8,12)==='WAVE';const mp3=bytes.toString('ascii',0,3)==='ID3'||(bytes[0]===255&&(bytes[1]&224)===224);if(!wav&&!mp3)throw new IntegrationError(502,'Provider did not return a supported recording.');const path=`${owner}/${key}.${wav?'wav':'mp3'}`;const upload=await db.storage.from(BUCKET).upload(path,bytes,{contentType:wav?'audio/wav':'audio/mpeg',upsert:true});if(upload.error)throw new IntegrationError(503,'Recording could not be saved. Retry archive refresh.');await db.from('caller_call_assets').upsert({owner_id:owner,resource_key:key},{onConflict:'owner_id,resource_key',ignoreDuplicates:true});const saved=await db.from('caller_call_assets').update({recording_path:path,recording_status:'saved',updated_at:new Date().toISOString()}).eq('owner_id',owner).eq('resource_key',key);if(saved.error)throw new IntegrationError(503,'Recording index could not be saved.');return path;
+}
+export async function recordingLink(owner:string,key:string){const path=await archiveRecording(owner,key);const r=await database().storage.from(BUCKET).createSignedUrl(path,900);if(r.error)throw new IntegrationError(503,'Playback could not be opened.');return{url:r.data.signedUrl};}
+
+// Provider webhooks save immediately. Portal reads also resume interrupted saves,
+// with a database claim and a 15-minute retry interval per recording.
+export async function archivePending(owner:string,calls:Array<{key:string;state:string}>){
+ const db=database();
+ const [assets,web]=await Promise.all([
+  db.from('caller_call_assets').select('resource_key,recording_path,recording_attempt_at').eq('owner_id',owner),
+  db.from('call_sessions').select('id').eq('operator_id',owner).eq('is_demo',false).in('status',['completed','failed']).not('provider_call_id','is',null).order('created_at',{ascending:false}).limit(100),
+ ]);
+ if(assets.error||web.error)return;
+ const cutoff=new Date(Date.now()-15*60_000).toISOString();
+ const keys=[...calls.filter(c=>['completed','failed','stopped'].includes(c.state)).map(c=>c.key),...(web.data??[]).map(s=>'web-'+s.id)].filter(key=>{const a=assets.data.find(a=>a.resource_key===key);return !a?.recording_path&&(!a?.recording_attempt_at||a.recording_attempt_at<cutoff);}).slice(0,2);
+ await Promise.all(keys.map(async key=>{
+  await db.from('caller_call_assets').upsert({owner_id:owner,resource_key:key},{onConflict:'owner_id,resource_key',ignoreDuplicates:true});
+  const claim=await db.from('caller_call_assets').update({recording_attempt_at:new Date().toISOString(),recording_status:'saving'}).eq('owner_id',owner).eq('resource_key',key).is('recording_path',null).or(`recording_attempt_at.is.null,recording_attempt_at.lt.${cutoff}`).select('resource_key').maybeSingle();
+  if(claim.error||!claim.data)return;
+  try{await archiveRecording(owner,key);}catch(e){await db.from('caller_call_assets').update({recording_status:e instanceof IntegrationError&&e.status===404?'unavailable':'retry'}).eq('owner_id',owner).eq('resource_key',key).is('recording_path',null);}
+ }));
+}

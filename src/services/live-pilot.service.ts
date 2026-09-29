@@ -1,4 +1,6 @@
 import 'server-only';
+import {scenarioPhoneConfig} from './retell-scenario-config';
+import {phoneScenario} from '@/lib/phone-scenario';
 import {preflightRetell,dispatchRetell,reconcileRetell} from './retell-phone.service';
 import type {RetellConfig} from '@/lib/retell-config';
 import { elevenLatency } from '@/lib/caller-measurements';
@@ -12,7 +14,7 @@ import { isChain } from '@/lib/lead-engine-brands';
 
 interface Settings { phoneEngine?:string; retell?:RetellConfig; perOperationApproval?:boolean; agentId:string; from:string; destination:string }
 interface Round { id:string; owner_id:string; cap_cents:number; paused:boolean; settings:Settings }
-interface Slot { key:string; kind:'phone'|'scrape'; title:string; allocation_cents:number; reserve_cents:number; config:{phoneEngine?:string; retell?:RetellConfig; destination?:string; industry?:string; scope?:'nationwide'|'state'|'city'; city?:string; state?:string; location?:string; count?:number} }
+interface Slot { key:string; kind:'phone'|'scrape'; title:string; allocation_cents:number; reserve_cents:number; config:{archiveEnabled?:boolean;scenario?:string;scenarioBrief?:unknown;phoneEngine?:string; retell?:RetellConfig; destination?:string; industry?:string; scope?:'nationwide'|'state'|'city'; city?:string; state?:string; location?:string; count?:number} }
 interface Provider { engine?:string; callId?:string; callSid?:string; agentId?:string; job?:DiscoveryJob; phase?:string }
 interface Operation { created_at?:string; updated_at?:string; key:string; state:PilotState; reserved_cents:number; reported_microusd:number|null; provider:Provider; result:PilotResult; version:number }
 interface Agent { conversation_config:{agent:{first_message:string; prompt:{llm:string; max_tokens:number; prompt:string; tool_ids?:string[]; knowledge_base?:unknown[]; tools?:Array<{type:string;name:string}>}};conversation:{max_duration_seconds:number};tts:{agent_output_audio_format:string};asr:{user_input_audio_format:string}};platform_settings:{auth:{enable_auth:boolean};call_limits:{bursting_enabled:boolean;agent_concurrency_limit:number;daily_limit:number}} }
@@ -52,10 +54,12 @@ export async function pilotView(owner:string):Promise<PilotView> {
   const configured=verifiedPrice&&Boolean(process.env.BATCHDATA_API_KEY);
   return {phoneEngine:round.settings.phoneEngine==='retell'?'retell':'elevenlabs',perOperationApproval:round.settings.perOperationApproval===true,capCents:round.cap_cents,reservedCents:reserved,reportedMicrousd:operations.reduce((n,o)=>n+Number(o.reported_microusd??0),0),availableCents:Math.max(0,round.cap_cents-reserved),paused:round.paused,
     verification:{configured,unitCents:verifiedPrice?pricing!.unitCents:null,blocker:configured?null:'Account-specific verification pricing has not been confirmed. No phone checks will be charged.'}, booking:{ready:false,reason:'Connect the authorized booking calendar to offer real times and send an invitation.'}, pending:operations.some(o=>!terminal(o.state))||(checks??[]).some(c=>c.state!=='completed'),destinationLast4:round.settings.destination.slice(-4),
-    slots:slots.map(s=>{const o=operations.find(o=>o.key===s.key);return {key:s.key,kind:s.kind,title:s.title,industry:s.config.industry,allocationCents:s.allocation_cents,reserveCents:s.reserve_cents,destinationLast4:s.kind==='phone'?phoneSettings(round,s).destination.slice(-4):undefined,createdAt:o?.created_at,updatedAt:o?.updated_at,count:s.config.count??null,state:o?.state??'ready',reportedMicrousd:o?.reported_microusd??null,result:{...o?.result,phoneChecks:(checks??[]).filter(c=>o?.result.rows?.some(r=>r.phone10===c.phone10)).map(c=>({phone10:c.phone10,state:c.state,verification:c.verification}))}};})};
+    slots:slots.map(s=>{const o=operations.find(o=>o.key===s.key);return {key:s.key,kind:s.kind,title:s.title,scenarioTitle:s.config.scenario,industry:s.config.industry,allocationCents:s.allocation_cents,reserveCents:s.reserve_cents,destinationLast4:s.kind==='phone'?phoneSettings(round,s).destination.slice(-4):undefined,createdAt:o?.created_at,updatedAt:o?.updated_at,count:s.config.count??null,state:o?.state??'ready',reportedMicrousd:o?.reported_microusd??null,result:{...o?.result,phoneChecks:(checks??[]).filter(c=>o?.result.rows?.some(r=>r.phone10===c.phone10)).map(c=>({phone10:c.phone10,state:c.state,verification:c.verification}))}};})};
 }
 function rpcError(message:string):never {
   if(message.includes('pilot_not_found'))return fail('This private test round is not assigned to your account.',403);
+  if(message.includes('scenario_not_found'))return fail('This saved scenario is no longer available. Choose another.',404);
+  if(message.includes('scenario_request_conflict'))return fail('This attempt belongs to another scenario or recipient. Refresh before preparing another call.',409);
   if(message.includes('approval_required'))return fail('Review and approve the current maximum cost before starting.',409);
   if(message.includes('phone_daily_limit'))return fail('Three phone trials have already been reserved today. Try again after midnight UTC.',409);
   if(message.includes('destination_conflict'))return fail('This request belongs to a different destination. Refresh the saved call before starting another.',409);
@@ -112,7 +116,7 @@ export async function startPilot(owner:string,key:string):Promise<PilotView> {
       const s=phoneSettings(round,slot);
       if(s.phoneEngine==='retell'&&s.retell){
         provider={engine:'retell',agentId:s.retell.agentId,phase:'dispatching'};o=await observe(owner,o,'dispatching',provider,{phoneEngine:'retell'});
-        const callId=await dispatchRetell(s.retell,s.destination,key);provider={...provider,callId,phase:'dispatched'};
+        const callId=await dispatchRetell(s.retell,s.destination,key,slot.config.archiveEnabled?phoneScenario(slot.config.scenarioBrief):undefined);provider={...provider,callId,phase:'dispatched'};
         await observe(owner,o,'running',provider,{phoneEngine:'retell',message:'Your phone test is connecting.'});return pilotView(owner);
       }
       provider={agentId:s.agentId,phase:'registering'};o=await observe(owner,o,'dispatching',provider,{});
@@ -195,8 +199,8 @@ export async function pilotFeedback(owner:string,key:string,feedback:string):Pro
   await observe(owner,o,o.state,o.provider,{...o.result,feedback});return pilotView(owner);
 }
 
-export async function startDialerTrial(owner:string,requestId:string,destination:string,approvedMaxCents?:number):Promise<PilotView>{
-  const {data:key,error}=await database().rpc('nbc_pilot_phone_slot',{p_owner:owner,p_request:requestId,p_destination:destination,p_max_cents:approvedMaxCents??null});
+export async function startDialerTrial(owner:string,requestId:string,destination:string,approvedMaxCents?:number,scenarioId?:string):Promise<PilotView>{
+  const {data:key,error}=await database().rpc('nbc_phone_scenario_slot',{p_owner:owner,p_request:requestId,p_destination:destination,p_max_cents:approvedMaxCents??null,p_scenario_id:scenarioId??null,p_retell:scenarioPhoneConfig});
   if(error)return rpcError(error.message);
   return startPilot(owner,key as string);
 }

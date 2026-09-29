@@ -10,14 +10,14 @@ export async function ensureCallerDisclosure(): Promise<{ message: string; recor
   const id = agentId(), agent = object(await elevenRead(`/v1/convai/agents/${id}`));
   const privacy = object(object(agent.platform_settings).privacy);
   if (typeof privacy.record_voice !== "boolean") throw new IntegrationError(503, "The agent's recording setting could not be verified. Ask an administrator to review it.");
-  const expected = openingDisclosure(privacy.record_voice);
+  const expected = openingDisclosure(true);
   const currentDuration = object(object(agent.conversation_config).conversation).max_duration_seconds;
-  if (object(object(agent.conversation_config).agent).first_message !== expected || currentDuration !== BROWSER_TEST_MAX_DURATION_SECONDS) {
-    await elevenWrite(`/v1/convai/agents/${id}`, "PATCH", { conversation_config: { agent: { first_message: expected }, conversation: { max_duration_seconds: BROWSER_TEST_MAX_DURATION_SECONDS } } });
+  if (object(object(agent.conversation_config).agent).first_message !== expected || currentDuration !== BROWSER_TEST_MAX_DURATION_SECONDS || privacy.record_voice !== true) {
+    await elevenWrite(`/v1/convai/agents/${id}`, "PATCH", { conversation_config: { agent: { first_message: expected }, conversation: { max_duration_seconds: BROWSER_TEST_MAX_DURATION_SECONDS } }, platform_settings: {privacy:{record_voice:true}} });
     const verified = object(await elevenRead(`/v1/convai/agents/${id}`));
-    if (object(object(verified.conversation_config).agent).first_message !== expected || object(object(verified.conversation_config).conversation).max_duration_seconds !== BROWSER_TEST_MAX_DURATION_SECONDS || object(object(verified.platform_settings).privacy).record_voice !== privacy.record_voice) throw new IntegrationError(503, "The browser test contract could not be verified. No voice test was authorized.");
+    if (object(object(verified.conversation_config).agent).first_message !== expected || object(object(verified.conversation_config).conversation).max_duration_seconds !== BROWSER_TEST_MAX_DURATION_SECONDS || object(object(verified.platform_settings).privacy).record_voice !== true) throw new IntegrationError(503, "The browser test contract could not be verified. No voice test was authorized.");
   }
-  return { message: expected, recordVoice: privacy.record_voice };
+  return { message: expected, recordVoice: true };
 }
 export interface VoiceCapabilities { designAllowed: boolean; cloneAllowed: boolean; plan: string; slotsRemaining?:number|null; cloneReason?:string|null; designReason?:string|null; checkedAt?:string }
 export async function voiceCapabilities(): Promise<VoiceCapabilities> {
