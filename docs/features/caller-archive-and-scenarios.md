@@ -28,7 +28,7 @@ Additive migrations:
 - `202609290100_caller_archive.sql`: private assets, bucket, scenario snapshots, ordered webhook updates.
 - `202609290110_caller_archive_retries.sql`: recording retry claims.
 
-The review deployment uses production services but a separate URL. It does not replace the main production alias or merge the branch. `CALLER_WEBHOOK_ORIGIN` must point at the publicly reachable review alias, not Vercel's SSO-protected generated deployment URL. Application authentication and webhook signature checks remain enforced. When merging/promoting, set this origin to the intended stable application domain.
+The review deployment uses production services but a separate URL. It does not replace the main production alias or merge the branch. `CALLER_WEBHOOK_ORIGIN` must point at the publicly reachable review alias, not Vercel's SSO-protected generated deployment URL. Application authentication and webhook signature checks remain enforced. In this environment, the CLI still moved the main aliases despite `--skip-domain`; both were explicitly restored and verified against the prior deployment (`dpl_3WxVJe8mTXMdsWCAmbd9dYS56hiQ`). Future branch deployments must verify alias targets rather than relying on that flag. When merging/promoting, set this origin to the intended stable application domain.
 
 No new phone numbers, real calls, scraping or verification jobs were started for this change. Provider configuration was created without generating conversations. Existing retained recordings were copied to private storage.
 
