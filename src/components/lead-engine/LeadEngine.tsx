@@ -10,21 +10,22 @@ import { LeadSearchFlow } from "./LeadSearchFlow";
 import { LeadLibrary } from "./LeadLibrary";
 import { LeadJobs } from "./LeadJobs";
 import { LeadRegisters } from "./LeadRegisters";
+import { OperationCosts } from "@/components/account/OperationCosts";
 import { LeadBrain } from "./LeadBrain";
 
 const primaryTabs = [{ id: 'search', label: 'Build Search', icon: Search }, { id: 'lists', label: 'Lead Lists', icon: FolderOpen }] as const;
 const advancedTabs = [{ id: 'jobs', label: 'Owner research', icon: Smartphone }, { id: 'registers', label: 'Business registers', icon: Database }, { id: 'evidence', label: 'Evidence guide', icon: Fingerprint }, { id: 'brain', label: 'Research settings', icon: BrainCircuit }] as const;
-type View = typeof primaryTabs[number]['id'] | typeof advancedTabs[number]['id'];
+type View = 'costs' | typeof primaryTabs[number]['id'] | typeof advancedTabs[number]['id'];
 const illustrativeConfidence = { ...unscoredLeadConfidence(), value: 75, status: 'needs_review' as const, checks: unscoredLeadConfidence().checks.map(check => ({ ...check, points: check.key === 'independent_owner' ? 0 : check.maximum, state: check.key === 'independent_owner' ? 'missing' as const : 'passed' as const })) };
 
 export function LeadEngine() {
-  const {user} = useWorkspaceAccess();
+  const {user,token} = useWorkspaceAccess();
   const [view, setView] = useState<View>('search');
   const [advanced, setAdvanced] = useState(false);
   const [example, setExample] = useState(false);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const tabs = [...primaryTabs, ...(advanced ? advancedTabs.filter(t=>t.id!=='brain'||user?.role==='admin') : [])];
-  useEffect(()=>{const sync=()=>{const id=window.location.hash.slice(1);if([...primaryTabs,...advancedTabs].some(t=>t.id===id)&& (id!=='brain'||user?.role==='admin')){setView(id as View);if(advancedTabs.some(t=>t.id===id))setAdvanced(true);}};sync();window.addEventListener('hashchange',sync);return()=>window.removeEventListener('hashchange',sync);},[user?.role]);
+  const tabs = [...primaryTabs, ...(user?.role==='admin'?[{id:'costs' as const,label:'Costs & yield',icon:ShieldCheck}]:[]), ...(advanced ? advancedTabs.filter(t=>t.id!=='brain'||user?.role==='admin') : [])];
+  useEffect(()=>{const sync=()=>{const id=window.location.hash.slice(1);if([...primaryTabs,...advancedTabs,...(user?.role==='admin'?[{id:'costs'}]:[])].some(t=>t.id===id)&& (id!=='brain'||user?.role==='admin')){setView(id as View);if(advancedTabs.some(t=>t.id===id))setAdvanced(true);}};sync();window.addEventListener('hashchange',sync);return()=>window.removeEventListener('hashchange',sync);},[user?.role]);
   function changeView(next: View): void { setView(next);window.history.replaceState(null,'','#'+next); }
 
   return <div className={styles.workspace}>
@@ -43,6 +44,7 @@ export function LeadEngine() {
       event.preventDefault(); changeView(tabs[next].id); tabRefs.current[next]?.focus();
     }}><tab.icon size={16} />{tab.label}</button>)}</div><button className={styles.advancedToggle} aria-expanded={advanced} onClick={()=>{setAdvanced(!advanced);if(advanced&&advancedTabs.some(t=>t.id===view))changeView('search');}}><SlidersHorizontal size={15}/>Advanced tools</button></div>
 
+    {view==='costs'&&user?.role==='admin'&&<section id="panel-costs" role="tabpanel" aria-labelledby="tab-costs"><OperationCosts token={token} initialKind="Scraper"/></section>}
     <section id="panel-jobs" role="tabpanel" aria-labelledby="tab-jobs" hidden={view !== 'jobs'}>
       {view==='jobs'&&<LeadJobs />}
     </section>
@@ -70,6 +72,6 @@ export function LeadEngine() {
 
     <section hidden={view !== 'lists'} id="panel-lists" role="tabpanel" aria-labelledby="tab-lists"><div className={styles.sectionTitle}><div><span className={styles.sectionNumber}>YOUR LEAD LIBRARY</span><h2>Every market. Its own folder.</h2></div><span className={styles.softLabel}>Private lists · Shared duplicate protection</span></div>{view==='lists'&&<LeadLibrary />}</section>
     
-    <footer className={styles.workspaceFooter}><span><ShieldCheck size={14} />Published business contacts · Human review · No automatic Caller handoff</span></footer>
+    <footer className={styles.workspaceFooter}><span><ShieldCheck size={14} />Verified mobile export · Review evidence · Send selected results to Caller</span></footer>
   </div>;
 }

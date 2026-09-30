@@ -15,6 +15,7 @@ import { CallerReasons, CallerDialer, useCallerLeads } from "./CallerSalesPanels
 import { CallerVoices } from "./CallerVoices";
 import { CallerCrm } from "./CallerCrm";
 import { useCallerPipeline } from "./CallerPipeline";
+import { OperationCosts } from '@/components/account/OperationCosts';
 import { CallerAnalytics } from './CallerAnalytics';
 import { CallerVoicePresence } from './CallerVoicePresence';
 import {CallerPhoneArchive,CallRecordingAndNotes,useCallArchive,phoneAnalyticsSessions} from './CallerArchive';
@@ -268,7 +269,7 @@ export function Caller(): ReactNode {
     {!demo && tab!=="dialer" && archive.calls.some(c=>['reserved','dispatching','running','uncertain'].includes(c.state)) && <div className={sales.activeVoice} role="status"><AudioLines size={20}/><span>A phone call is active or awaiting confirmation.</span><button onClick={()=>chooseTab("dialer")}>Return to call</button></div>}
     {(active || busy === "start") && (tab !== "voice" || !testOpen) && <div className={sales.activeVoice} role="status"><AudioLines size={20} /><span>{active ? `Voice test active · ${formatCallTime(elapsed)}` : "Connecting voice test…"}</span><button onClick={() => {setTestOpen(true);chooseTab("voice");}}>Return to voice test</button><button disabled={!active || busy === "end"} onClick={() => void action("end", () => client.current?.endSession() ?? Promise.resolve())}>End voice test</button></div>}
     <section role="tabpanel" id="caller-panel-crm" aria-labelledby="caller-tab-crm" hidden={tab !== "crm"}><CallerCrm key={String(demo)} store={leads} lists={lists} pipeline={pipeline} importRequest={importRequest} send={ids=>{const lead=leads.leads.find(l=>ids.includes(l.id)&&!isBlocked(l));if(lead){setDialLead(lead);chooseTab("dialer");}}} dial={lead => { if(isBlocked(lead))return;setDialLead(lead); chooseTab("dialer"); }} /></section>
-    {tab === "analytics" && <section role="tabpanel" id="caller-panel-analytics" aria-labelledby="caller-tab-analytics"><CallerAnalytics leads={leads.leads} sessions={demo?sessions:[...sessions,...phoneAnalyticsSessions(archive.calls,sessions)]} demo={demo} pipeline={pipeline.pipeline} /></section>}
+    {tab === "analytics" && <section role="tabpanel" id="caller-panel-analytics" aria-labelledby="caller-tab-analytics"><CallerAnalytics leads={leads.leads} sessions={demo?sessions:[...sessions,...phoneAnalyticsSessions(archive.calls,sessions)]} demo={demo} pipeline={pipeline.pipeline} />{!demo&&access.user?.role==='admin'&&<OperationCosts token={access.token} initialKind="Caller"/>}</section>}
     {tab === "dialer" && <section role="tabpanel" id="caller-panel-dialer" aria-labelledby="caller-tab-dialer"><CallerDialer key={dialLead?.id || "manual"} store={leads} pipeline={pipeline} initialLead={dialLead} /></section>}
     {tab === "insights" && <section role="tabpanel" id="caller-panel-insights" aria-labelledby="caller-tab-insights"><CallerReasons sessions={sessions} inspect={id => { const result = sessions.find(session => session.id === id); if (result) inspectResult(result); }} /></section>}
     {access.user?.role === "admin" && <section role="tabpanel" id="caller-panel-coverage" aria-labelledby="caller-tab-coverage" hidden={tab !== "coverage"}><CallerCityCoverage active={tab === "coverage"} token={access.token} /></section>}
