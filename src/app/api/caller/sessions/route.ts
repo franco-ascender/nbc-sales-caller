@@ -1,5 +1,6 @@
+import { readCallerJson } from "@/services/caller-crm.service";
 import { requireCallerUser, requireWorkspaceAdmin, requireWorkspaceUser } from "@/services/workspace-auth";
-import { apiError, IntegrationError, readJson } from "@/services/integration.service";
+import { apiError, IntegrationError } from "@/services/integration.service";
 import { listSessionPage, startWebSession } from "@/services/caller.service";
 import { validSessionId } from "@/lib/caller-validation";
 import { parseSessionPage } from "@/lib/caller-pagination";
@@ -24,7 +25,7 @@ export async function GET(request: Request): Promise<Response> {
 export async function POST(request: Request): Promise<Response> {
   try {
     const user = await requireWorkspaceUser(request);
-    const body = await readJson(request);
+    const body = await readCallerJson(request, 131_072);
     if (!isRecord(body) || !validSessionId(body.sessionId)) throw new IntegrationError(400, "A valid test session ID is required.");
     let scenario;
     if (body.scenario !== undefined) {

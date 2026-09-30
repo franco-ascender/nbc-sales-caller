@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BookOpen, Check, ChevronDown, FileAudio, FileText, FlaskConical, Loader2, Plus, RotateCw, ShieldCheck, Sparkles, Upload } from "lucide-react";
 import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import type { ConversationScenario } from "@/lib/caller-knowledge";
+import { defaultPhoneScenario } from "@/lib/caller-default-scenario";
+import { parseCallerContext } from "@/lib/caller-context";
+import { CallerContextEditor } from "./CallerContextEditor";
 import { audioFileType } from "@/lib/caller-audio";
 import styles from "./CallerKnowledgeLab.module.css";
 
@@ -34,18 +37,7 @@ interface Props {
   onUseScenario: (scenario: ConversationScenario | null) => void;
 }
 
-const initialScenario: ConversationScenario = {
-  title: "Regional bank agency prospect",
-  conversationType: "outbound_prospecting",
-  agentRole: "You represent a marketing agency that helps regional banks acquire qualified customers.",
-  objective: "Understand the prospect's acquisition constraints, qualify fit, handle concerns, and earn a discovery meeting.",
-  prospectProfile: "The prospect leads growth at a regional bank, has worked with an underperforming agency before, and is cautious about compliance.",
-  offer: "A managed customer acquisition system with strategy, campaigns, qualification, and measurable reporting.",
-  ticket: "$8,000–$15,000 per month",
-  objections: "A previous agency failed; compliance risk; unclear return on investment; timing and internal capacity.",
-  tone: "consultative",
-  instructions: "Discover the situation before presenting the solution. Keep each turn concise and adapt to what the prospect says.",
-};
+const initialScenario: ConversationScenario = defaultPhoneScenario;
 
 async function api<T>(token: string, path: string, body?: object): Promise<T> {
   const response = await fetch(path, {
@@ -103,7 +95,8 @@ export function CallerKnowledgeLab({ token, activeScenario, disabled, onUseScena
 
   useEffect(() => { void load(); }, [load]);
 
-  const scenarioReady = useMemo(() => Object.entries(scenario).every(([key, value]) => ["ticket", "objections", "instructions"].includes(key) || String(value).trim()), [scenario]);
+  const contextError = useMemo(() => { try { if (scenario.context) parseCallerContext(scenario.context); return ""; } catch (error) { return error instanceof Error ? error.message : "Check the caller context."; } }, [scenario.context]);
+  const scenarioReady = [scenario.title, scenario.agentRole, scenario.objective, scenario.prospectProfile, scenario.offer].every(value => value.trim()) && !contextError;
   const update = <K extends keyof ConversationScenario>(key: K, value: ConversationScenario[K]): void => setScenario(previous => ({ ...previous, [key]: value }));
 
   async function saveScenario(): Promise<void> {
@@ -112,7 +105,8 @@ export function CallerKnowledgeLab({ token, activeScenario, disabled, onUseScena
     try {
       const result = await api<{ scenario: SavedScenario }>(token, "/api/caller/scenarios", { requestId: crypto.randomUUID(), scenario });
       setScenarios(previous => [result.scenario, ...previous]);
-      setMessage("Scenario saved. You can reuse it for future voice tests.");
+      setMessage("New version saved. Select it under Make a Call, or use this brief for your next browser test.");
+      window.dispatchEvent(new Event("nbc:scenarios-updated"));
     } catch (caught) { setError(caught instanceof Error ? caught.message : "The scenario could not be saved."); }
     finally { setBusy(""); }
   }
@@ -187,7 +181,7 @@ export function CallerKnowledgeLab({ token, activeScenario, disabled, onUseScena
 
       {view === "scenario" ? <div className={styles.scenarioGrid}>
         <div className={styles.formCard}>
-          <div className={styles.cardIntro}><span>BUILD THE BRIEF</span><h3>Tell the caller what conversation to practice.</h3><p>The brief applies only to the next browser test you start. It cannot call a lead or perform outside actions.</p></div>
+          <div className={styles.cardIntro}><span>BUILD THE BRIEF</span><h3>Give your caller the context to respond well.</h3><p>Start with the offer, then add the facts and answers your caller should know. Save a version to select in Make a Call. Editing never changes an ongoing call.</p></div>
           <div className={styles.formGrid}>
             <label className={styles.wide}>Scenario name<input value={scenario.title} maxLength={100} onChange={event => update("title", event.target.value)} /></label>
             <label>Conversation type<select value={scenario.conversationType} onChange={event => update("conversationType", event.target.value as ConversationScenario["conversationType"])}><option value="outbound_prospecting">Outbound prospecting</option><option value="inbound_sales">Inbound sales</option><option value="discovery">Discovery</option><option value="closing">Closing</option><option value="follow_up">Follow-up</option><option value="objection_practice">Objection practice</option><option value="custom">Custom</option></select></label>
@@ -200,13 +194,16 @@ export function CallerKnowledgeLab({ token, activeScenario, disabled, onUseScena
             <label>Likely objections<input value={scenario.objections} maxLength={1400} onChange={event => update("objections", event.target.value)} /></label>
             <label className={styles.wide}>Extra direction<textarea rows={2} value={scenario.instructions} maxLength={1800} onChange={event => update("instructions", event.target.value)} /></label>
           </div>
+          <CallerContextEditor value={scenario.context} onChange={value => update("context", value)} disabled={disabled || Boolean(busy)} />
+          {contextError && <p className={styles.error} role="alert">{contextError}</p>}
+          <p className={styles.contextHint}>{activeScenario ? (JSON.stringify(activeScenario) === JSON.stringify(scenario) ? "This brief is selected for your next browser test." : "Draft changes are not selected for your browser test yet.") : "Browser tests are using the standard caller until you select this brief."}</p>
           <div className={styles.actions}>
-            <button type="button" className={styles.secondary} disabled={disabled || Boolean(busy) || !scenarioReady || !configured} onClick={() => void saveScenario()}>{busy === "scenario" ? <Loader2 size={15} className={styles.spin} /> : <Plus size={15} />}Save scenario</button>
-            <button type="button" className={styles.primary} disabled={disabled || !scenarioReady} onClick={() => onUseScenario(scenario)}><Sparkles size={15} />Use for next test</button>
+            <button type="button" className={styles.secondary} disabled={disabled || Boolean(busy) || !scenarioReady || !configured} onClick={() => void saveScenario()}>{busy === "scenario" ? <Loader2 size={15} className={styles.spin} /> : <Plus size={15} />}Save new version</button>
+            <button type="button" className={styles.primary} disabled={disabled || !scenarioReady} onClick={() => onUseScenario(scenario)}><Sparkles size={15} />Use for browser test</button>
             {activeScenario && <button type="button" className={styles.clear} disabled={disabled} onClick={() => onUseScenario(null)}>Use standard caller</button>}
           </div>
         </div>
-        <aside className={styles.savedCard}><span>SAVED SCENARIOS</span><h3>Run it again without rebuilding it.</h3>{scenarios.length ? <div className={styles.savedList}>{scenarios.map(saved => <button type="button" key={saved.id} onClick={() => { setScenario(saved.brief); onUseScenario(saved.brief); }} disabled={disabled}><strong>{saved.title}</strong><small>{saved.conversationType.replaceAll("_", " ")} · {new Date(saved.createdAt).toLocaleDateString("en-US")}</small></button>)}</div> : <div className={styles.empty}><FlaskConical size={22} /><p>Your saved practice scenarios will appear here.</p></div>}</aside>
+        <aside className={styles.savedCard}><span>SAVED SCENARIOS</span><h3>Your saved versions.</h3>{scenarios.length ? <div className={styles.savedList}>{scenarios.map(saved => <button type="button" key={saved.id} onClick={() => { setScenario(saved.brief); setMessage("Saved version opened for editing. Select it for your browser test when ready."); }} disabled={disabled}><strong>{saved.title}</strong><small>{saved.conversationType.replaceAll("_", " ")} · {new Date(saved.createdAt).toLocaleString("en-US")}</small></button>)}</div> : <div className={styles.empty}><FlaskConical size={22} /><p>Saved versions appear here and in Make a Call.</p></div>}</aside>
       </div> : <div className={styles.knowledgeGrid}>
         <form className={styles.formCard} onSubmit={addKnowledge}>
           <div className={styles.cardIntro}><span>PRIVATE SOURCE INTAKE</span><h3>Add calls and proven sales material.</h3><p>Uploads enter a review queue. Nothing is added to the live caller automatically.</p></div>
