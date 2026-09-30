@@ -1,4 +1,9 @@
 import 'server-only';
+import {readPilotChecks} from './lead-cycle-checks';
+import {currentSearchRates} from './lead-cycle-quote.service';
+import {qualifiedRows} from '@/lib/run-review';
+import {priceSearch} from '@/lib/lead-cycle-quote';
+import {readSearchPage} from './lead-cycle-dataset';
 import {scenarioPhoneConfig} from './retell-scenario-config';
 import {phoneScenario} from '@/lib/phone-scenario';
 import {preflightRetell,dispatchRetell,reconcileRetell} from './retell-phone.service';
@@ -14,7 +19,7 @@ import { isChain } from '@/lib/lead-engine-brands';
 
 interface Settings { phoneEngine?:string; retell?:RetellConfig; perOperationApproval?:boolean; agentId:string; from:string; destination:string }
 interface Round { id:string; owner_id:string; cap_cents:number; paused:boolean; settings:Settings }
-interface Slot { key:string; kind:'phone'|'scrape'; title:string; allocation_cents:number; reserve_cents:number; config:{archiveEnabled?:boolean;scenario?:string;scenarioBrief?:unknown;phoneEngine?:string; retell?:RetellConfig; destination?:string; industry?:string; scope?:'nationwide'|'state'|'city'; city?:string; state?:string; location?:string; count?:number} }
+interface Slot { key:string; kind:'phone'|'scrape'; title:string; allocation_cents:number; reserve_cents:number; config:{folderId?:string|null;discoveryCapCents?:number;verificationUnitCents?:number;archiveEnabled?:boolean;scenario?:string;scenarioBrief?:unknown;phoneEngine?:string; retell?:RetellConfig; destination?:string; industry?:string; scope?:'nationwide'|'state'|'city'; city?:string; state?:string; location?:string; count?:number} }
 interface Provider { engine?:string; callId?:string; callSid?:string; agentId?:string; job?:DiscoveryJob; phase?:string }
 interface Operation { created_at?:string; updated_at?:string; key:string; state:PilotState; reserved_cents:number; reported_microusd:number|null; provider:Provider; result:PilotResult; version:number }
 interface Agent { conversation_config:{agent:{first_message:string; prompt:{llm:string; max_tokens:number; prompt:string; tool_ids?:string[]; knowledge_base?:unknown[]; tools?:Array<{type:string;name:string}>}};conversation:{max_duration_seconds:number};tts:{agent_output_audio_format:string};asr:{user_input_audio_format:string}};platform_settings:{auth:{enable_auth:boolean};call_limits:{bursting_enabled:boolean;agent_concurrency_limit:number;daily_limit:number}} }
@@ -44,17 +49,16 @@ async function load(owner:string):Promise<{round:Round;slots:Slot[];operations:O
   if(slots.error||operations.error)return fail('The test center could not load its results.');
   return {round:round.data as Round,slots:(slots.data??[]) as Slot[],operations:(operations.data??[]) as Operation[]};
 }
-export async function pilotView(owner:string):Promise<PilotView> {
+export async function pilotView(owner:string,selectedScrapeKey?:string):Promise<PilotView> {
   const {round,slots,operations}=await load(owner);
-  const {data:checks,error:checksError}=await database().from('nbc_pilot_phone_checks').select('phone10,state,verification,reserved_cents').eq('round_id',PILOT_ROUND);
-  if(checksError)return fail('Verification progress could not be loaded.');
+  const checks=await readPilotChecks(database());
   const reserved=operations.reduce((n,o)=>n+o.reserved_cents,0)+(checks??[]).reduce((n,c)=>n+c.reserved_cents,0);
   const pricing=(round.settings as Settings&{verification?:{provider:string;unitCents:number;confirmedAt:string}}).verification;
   const verifiedPrice=!!pricing&&pricing.provider==='batchdata'&&Number.isSafeInteger(pricing.unitCents)&&pricing.unitCents>=1&&pricing.unitCents<=10&&Date.parse(pricing.confirmedAt)>Date.now()-30*86400000&&Date.parse(pricing.confirmedAt)<=Date.now();
   const configured=verifiedPrice&&Boolean(process.env.BATCHDATA_API_KEY);
   return {phoneEngine:round.settings.phoneEngine==='retell'?'retell':'elevenlabs',perOperationApproval:round.settings.perOperationApproval===true,capCents:round.cap_cents,reservedCents:reserved,reportedMicrousd:operations.reduce((n,o)=>n+Number(o.reported_microusd??0),0),availableCents:Math.max(0,round.cap_cents-reserved),paused:round.paused,
     verification:{configured,unitCents:verifiedPrice?pricing!.unitCents:null,blocker:configured?null:'Account-specific verification pricing has not been confirmed. No phone checks will be charged.'}, booking:{ready:false,reason:'Connect the authorized booking calendar to offer real times and send an invitation.'}, pending:operations.some(o=>!terminal(o.state)&&(o.provider.engine??slots.find(s=>s.key===o.key)?.config.phoneEngine)!=='neuron')||(checks??[]).some(c=>c.state!=='completed'),destinationLast4:round.settings.destination.slice(-4),
-    slots:slots.map(s=>{const o=operations.find(o=>o.key===s.key);return {key:s.key,kind:s.kind,canControl:s.kind!=='phone'||['retell','elevenlabs'].includes(o?.provider.engine??s.config.phoneEngine??'elevenlabs'),title:s.title,scenarioTitle:s.config.scenario,industry:s.config.industry,allocationCents:s.allocation_cents,reserveCents:s.reserve_cents,destinationLast4:s.kind==='phone'?phoneSettings(round,s).destination.slice(-4):undefined,createdAt:o?.created_at,updatedAt:o?.updated_at,count:s.config.count??null,state:o?.state??'ready',reportedMicrousd:o?.reported_microusd??null,result:{...o?.result,phoneChecks:(checks??[]).filter(c=>o?.result.rows?.some(r=>r.phone10===c.phone10)).map(c=>({phone10:c.phone10,state:c.state,verification:c.verification}))}};})};
+    slots:slots.map(s=>{const o=operations.find(o=>o.key===s.key),rows=o?.result.rows??[],phones=new Set(rows.map(r=>r.phone10)),phoneChecks=checks.filter(c=>phones.has(c.phone10)).map(c=>({phone10:c.phone10,state:c.state,verification:c.verification})),result={...o?.result,phoneChecks};const hideRows=s.kind==='scrape'&&selectedScrapeKey!==undefined&&s.key!==selectedScrapeKey;return {key:s.key,businessCount:rows.length,verifiedMobileCount:s.kind==='scrape'?qualifiedRows(result).length:undefined,folderId:s.config.folderId??null,kind:s.kind,canControl:s.kind!=='phone'||['retell','elevenlabs'].includes(o?.provider.engine??s.config.phoneEngine??'elevenlabs'),title:s.title,scenarioTitle:s.config.scenario,industry:s.config.industry,allocationCents:s.allocation_cents,reserveCents:s.reserve_cents,destinationLast4:s.kind==='phone'?phoneSettings(round,s).destination.slice(-4):undefined,createdAt:o?.created_at,updatedAt:o?.updated_at,count:s.config.count??null,state:o?.state??'ready',reportedMicrousd:o?.reported_microusd??null,result:hideRows?{...result,rows:undefined,phoneChecks:undefined,ownerEvidence:undefined}:result};})};
 }
 function rpcError(message:string):never {
   if(message.includes('pilot_not_found'))return fail('This private test round is not assigned to your account.',403);
@@ -108,8 +112,8 @@ async function preflightScrape():Promise<void> {
 export async function startPilot(owner:string,key:string):Promise<PilotView> {
   const {round,slots,operations}=await load(owner);const slot=slots.find(s=>s.key===key);if(!slot)return fail('Choose an approved test.',400);
   if(operations.some(o=>o.key===key))return pilotView(owner);
-  if(slot.kind==='phone')await preflightPhone(phoneSettings(round,slot));else await preflightScrape();
-  const {data,error}=await database().rpc(slot.kind==='phone'?'nbc_portal_phone_reserve':'nbc_pilot_reserve',{p_owner:owner,p_key:key});if(error)return rpcError(error.message);
+  if(slot.kind==='phone')await preflightPhone(phoneSettings(round,slot));else if(slot.config.discoveryCapCents){const q=priceSearch(slot.config.count!,await currentSearchRates(owner));if(q.blockers.length||q.discoveryCapCents>slot.config.discoveryCapCents||q.verificationUnitCents!==slot.config.verificationUnitCents)return fail(q.blockers[0]??'Pricing changed since approval. Review a new estimate before starting.',409);}else await preflightScrape();
+  const {data,error}=await database().rpc(slot.kind==='phone'?'nbc_portal_phone_reserve':'nbc_portal_scrape_reserve',{p_owner:owner,p_key:key});if(error)return rpcError(error.message);
   const claim=data as {acquired:boolean;operation:Operation};if(!claim.acquired)return pilotView(owner);
   let o=claim.operation;let provider:Provider={phase:'reserved'};
   try {
@@ -128,8 +132,8 @@ export async function startPilot(owner:string,key:string):Promise<PilotView> {
       if(!/^CA[0-9a-f]{32}$/i.test(call.sid))return fail('The call identity could not be confirmed.');
       provider={...provider,callSid:call.sid,phase:'dispatched'};await observe(owner,o,'running',provider,{providerStatus:call.status,message:'Your phone test is connecting.'});
     }else{
-      const c=slot.config;if(!c.location||!c.industry||!c.count||c.count>50)return fail('Invalid approved search configuration.');
-      const job:DiscoveryJob={operatorId:owner,batchId:randomUUID(),planId:randomUUID(),actorId:'nwua9Gu5YrADL7ZDj',build:'0.14.757',searchTerm:c.industry,location:c.location,maxResults:c.count,maxCostCents:50,status:'dispatching',runId:null,datasetId:null};
+      const c=slot.config;if(!c.location||!c.industry||!c.count||c.count>5000)return fail('Invalid approved search configuration.');
+      const job:DiscoveryJob={operatorId:owner,batchId:randomUUID(),planId:randomUUID(),actorId:'nwua9Gu5YrADL7ZDj',build:'0.14.757',searchTerm:c.industry,location:c.location,maxResults:c.count,maxCostCents:c.discoveryCapCents??50,status:'dispatching',runId:null,datasetId:null};
       provider={job,phase:'dispatching'};o=await observe(owner,o,'dispatching',provider,{});
       const observed=await createApifyDiscoveryProvider(required('APIFY_API_TOKEN')).start(job);
       provider={job:{...job,...observed},phase:'dispatched'};await observe(owner,o,'running',provider,{message:'Finding published business listings.'});
@@ -142,7 +146,7 @@ export async function startPilot(owner:string,key:string):Promise<PilotView> {
 }
 export async function checkPilot(owner:string,key:string):Promise<PilotView>{
   const {round,slots}=await load(owner);const slot=slots.find(s=>s.key===key);if(!slot)return fail('Choose an approved test.',400);
-  if(slot.kind==='phone')await preflightPhone(phoneSettings(round,slot));else await preflightScrape();
+  if(slot.kind==='phone')await preflightPhone(phoneSettings(round,slot));else if(slot.config.discoveryCapCents){const q=priceSearch(slot.config.count!,await currentSearchRates(owner));if(q.blockers.length||q.discoveryCapCents>slot.config.discoveryCapCents||q.verificationUnitCents!==slot.config.verificationUnitCents)return fail(q.blockers[0]??'Pricing changed since approval. Review a new estimate before starting.',409);}else await preflightScrape();
   return pilotView(owner);
 }
 export async function syncPilot(owner:string,key:string,stop=false):Promise<PilotView> {
@@ -191,13 +195,15 @@ export async function syncPilot(owner:string,key:string,stop=false):Promise<Pilo
     if(stop&&!terminal(o.state))await apify(`actor-runs/${job.runId}/abort`,{method:'POST'});
     const observed=await createApifyDiscoveryProvider(required('APIFY_API_TOKEN')).poll(job);
     if(observed.status==='running')state='running';else{
-      const [receipt,rows]=await Promise.all([apify<{data:{id:string;usageTotalUsd:number}}>(`actor-runs/${job.runId}`),apify<unknown[]>(`datasets/${job.datasetId}/items?format=json&limit=150&clean=true`)]);
-      if(receipt.data.id!==job.runId||!Number.isFinite(receipt.data.usageTotalUsd)||receipt.data.usageTotalUsd<0||!Array.isArray(rows)||rows.length>125)return fail('Search receipt or dataset could not be verified.');
-      const seen=new Set<string>();
-      const sample=slot.key.startsWith('list-')?rows.slice(0,slot.config.count):rows;
-      const reviewed=sample.map(row=>{const parsed=parseDiscoveryCandidate(row,{industry:slot.config.industry!,metro:`${slot.config.city}, ${slot.config.state}`,target:slot.config.count!,hardBudgetCents:slot.allocation_cents,exclusions:[]},slot.config.scope==='nationwide'?'nationwide':'local');const duplicate=seen.has(parsed.businessKey);seen.add(parsed.businessKey);return {...parsed,duplicate,chain:isChain(parsed.name,slot.config.industry!)};});
-      state=terminal(o.state)?o.state:observed.status==='succeeded'?'completed':stop?'stopped':'failed';reported=Math.ceil(receipt.data.usageTotalUsd*1e6);
-      result={...result,rawBusinesses:rows.length,acceptedForReview:reviewed.filter(r=>!r.rejection&&!r.duplicate&&!r.chain).length,rows:reviewed,message:'Published business listings. Phone verification and owner identity remain unconfirmed.',costComplete:false,costNote:'Search receipt; data-read fees may arrive later. Reservation retained.'};
+      if(terminal(o.state)&&result.rows&&result.datasetComplete!==false)return pilotView(owner);
+      const receipt=await apify<{data:{id:string;usageTotalUsd:number}}>(`actor-runs/${job.runId}`);
+      if(receipt.data.id!==job.runId||!Number.isFinite(receipt.data.usageTotalUsd)||receipt.data.usageTotalUsd<0)return fail('Search receipt could not be verified.');
+      const page=await readSearchPage(required('APIFY_API_TOKEN'),job.datasetId,result.datasetCursor??0,job.maxResults);
+      const previous=result.rows??[],seen=new Set(previous.map(r=>[r.name,r.city,r.state].map(s=>s.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()).join('|')));
+      const reviewed=page.rows.map(row=>{const parsed=parseDiscoveryCandidate(row,{industry:slot.config.industry!,metro:`${slot.config.city}, ${slot.config.state}`,target:slot.config.count!,hardBudgetCents:slot.allocation_cents,exclusions:[]},slot.config.scope==='nationwide'?'nationwide':'local');const duplicate=seen.has(parsed.businessKey);seen.add(parsed.businessKey);return {...parsed,duplicate,chain:isChain(parsed.name,slot.config.industry!)};});
+      const rows=[...previous,...reviewed],complete=page.nextOffset>=Math.min(page.total,job.maxResults);
+      state=complete?(terminal(o.state)?o.state:observed.status==='succeeded'?'completed':stop?'stopped':'failed'):'running';reported=Math.ceil(receipt.data.usageTotalUsd*1e6);
+      result={...result,datasetCursor:page.nextOffset,datasetTotal:page.total,datasetComplete:complete,rawBusinesses:page.total,acceptedForReview:rows.filter(r=>!r.rejection&&!r.duplicate&&!r.chain).length,rows,message:complete?'Business listings saved. Preparing phone checks.':`Saving results: ${rows.length} of ${Math.min(page.total,job.maxResults)} businesses.`,costComplete:false,costNote:'Discovery receipt. Phone checks and data delivery are accounted for separately; final invoice may differ.'};
     }
   }
   await observe(owner,o,state,o.provider,result,reported);return pilotView(owner);

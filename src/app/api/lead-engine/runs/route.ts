@@ -4,7 +4,7 @@ import {leadCycleView,createLeadCycle,advanceLeadCycle,controlLeadCycle} from '@
 import {parseCycleInput,cycleKey} from '@/lib/lead-cycle';
 export const runtime='nodejs';export const maxDuration=60;
 const response=(value:unknown)=>Response.json(value,{headers:{'Cache-Control':'no-store'}});
-export async function GET(request:Request):Promise<Response>{try{const user=await requireWorkspaceAdmin(request);return response(await leadCycleView(user.id));}catch(error){return apiError(error);}}
+export async function GET(request:Request):Promise<Response>{try{const user=await requireWorkspaceAdmin(request);return response(await leadCycleView(user.id,new URL(request.url).searchParams.get('key')??undefined));}catch(error){return apiError(error);}}
 export async function POST(request:Request):Promise<Response>{try{
  const user=await requireWorkspaceAdmin(request),body=await readJson(request);
  if(!body||typeof body!=='object'||Array.isArray(body))throw new IntegrationError(400,'Choose a list action.');

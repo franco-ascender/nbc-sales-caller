@@ -7,7 +7,7 @@ import { estimateScrapeCost, belowProviderMinimum, PROVIDER_MIN_CHARGE_CENTS } f
 import { LeadEngineError } from '@/lib/lead-engine-storage';
 import type { SavedLeadPlan } from '@/lib/lead-engine-storage';
 import type { LeadListPage, ScrapeQuote } from '@/lib/lead-engine-scrape';
-import { NativeRunPanel } from '@/components/pilot/NativeRunPanel';
+import { LeadRunWorkspace } from './LeadRunWorkspace';
 import { LeadTable } from './LeadTable';
 import styles from './LeadSearchFlow.module.css';
 
@@ -31,9 +31,8 @@ async function call<T>(token: string, path: string, body?: object): Promise<T> {
 
 export function LeadSearchFlow() {
   const { token, user } = useWorkspaceAccess();
-  const [nativeUnavailable,setNativeUnavailable]=useState(false);
   if (!token || !user) return null;
-  if(user.role==='admin'&&!nativeUnavailable)return <NativeRunPanel kind="scrape" onUnavailable={()=>setNativeUnavailable(true)}/>;
+  if(user.role==='admin')return <LeadRunWorkspace/>;
   return <SearchFlow key={user.id} token={token} />;
 }
 

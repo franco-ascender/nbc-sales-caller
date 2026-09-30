@@ -70,7 +70,7 @@ export function LeadEngine() {
       <div className={styles.evidencePrinciple}><ShieldCheck size={21} /><p><strong>Mobile does not automatically mean owner.</strong>100 is the highest evidence score, not a guarantee that the number belongs to the owner. Sources can be outdated, and numbers can change hands.</p></div>
     </section>
 
-    <section hidden={view !== 'lists'} id="panel-lists" role="tabpanel" aria-labelledby="tab-lists"><div className={styles.sectionTitle}><div><span className={styles.sectionNumber}>YOUR LEAD LIBRARY</span><h2>Every market. Its own folder.</h2></div><span className={styles.softLabel}>Private lists · Shared duplicate protection</span></div>{view==='lists'&&<LeadLibrary />}</section>
+    <section hidden={view !== 'lists'} id="panel-lists" role="tabpanel" aria-labelledby="tab-lists">{view==='lists'&&<LeadLibrary />}</section>
     
     <footer className={styles.workspaceFooter}><span><ShieldCheck size={14} />Verified mobile export · Review evidence · Send selected results to Caller</span></footer>
   </div>;

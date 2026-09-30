@@ -65,7 +65,7 @@ export function qualifiedRows(result: PilotResult): PilotRow[] {
   });
 }
 
-export function runEvidenceCsv(result: PilotResult, qualifiedOnly = false): string {
+export function runEvidenceRows(result: PilotResult, qualifiedOnly = false) {
   const rows = qualifiedOnly ? qualifiedRows(result) : result.rows ?? [];
   return [
     ['Business','City','State','Published phone','Website','Discovery decision','Phone decision','Line type','DNC','TCPA','Reachable','Verified at','Owner identity','Registry person','Registry role','Registry phone (not verified)','Registry evidence','Registry basis','Listing source'],
@@ -75,7 +75,11 @@ export function runEvidenceCsv(result: PilotResult, qualifiedOnly = false): stri
       const evidence = result.ownerEvidence?.find(e => e.business === row.name && e.phone10 === row.phone10);
       return [row.name,row.city,row.state,row.phone10,row.website,excludeBeforeVerification(row) ?? 'Eligible',check?.state === 'completed' ? phoneDecision(v).label : check?.state ?? 'Not checked',v?.lineType,v?.dnc,v?.tcpa,v?.reachable,v?.verifiedAt,'Not established',evidence?.person,evidence?.role,evidence?.registryPhone,evidence?.source,evidence?.basis,row.sourceUrl];
     }),
-  ].map(row => row.map(csvCell).join(',')).join('\r\n');
+  ];
+}
+
+export function runEvidenceCsv(result: PilotResult, qualifiedOnly = false): string {
+ return runEvidenceRows(result,qualifiedOnly).map(row=>row.map(csvCell).join(',')).join('\r\n');
 }
 
 /** Counts unique eligible phones, not duplicate listings or unsent numbers. */

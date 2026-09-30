@@ -28,8 +28,8 @@ export function assertDiscoveryJob(job: DiscoveryJob, operator: string, batch: s
   if (job.operatorId !== operator || job.batchId !== batch || !leadUuid(job.planId)
     || !apifyId(job.actorId) || !/^\d{1,8}\.\d{1,8}\.\d{1,8}$/.test(job.build)
     || [job.searchTerm, job.location].some(value => typeof value !== 'string' || !value.trim() || value.length > 150 || /[\u0000-\u001f\u007f]/.test(value))
-    || !Number.isSafeInteger(job.maxResults) || job.maxResults < 1 || job.maxResults > 300
-    || !Number.isSafeInteger(job.maxCostCents) || job.maxCostCents < 1 || job.maxCostCents > 1000
+    || !Number.isSafeInteger(job.maxResults) || job.maxResults < 1 || job.maxResults > 5000
+    || !Number.isSafeInteger(job.maxCostCents) || job.maxCostCents < 1 || job.maxCostCents > 100000
     || !['prepared','dispatching','running','succeeded','failed','uncertain'].includes(job.status)
     || (job.runId !== null && !apifyId(job.runId)) || (job.datasetId !== null && !apifyId(job.datasetId))
     || ((job.runId === null) !== (job.datasetId === null))

@@ -17,7 +17,7 @@ test('verification reserves before POST and does not repeat an ambiguous charge 
    if(u.pathname.endsWith('/nbc_pilot_operations'))return Response.json([{state:'completed',result:{rows}}]);
    if(u.pathname.endsWith('/nbc_pilot_phone_checks'))return Response.json(checks);
    const body=JSON.parse(String(init?.body));
-   if(u.pathname.endsWith('/nbc_pilot_claim_phone_batch')){assert.deepEqual(body.p_phones,[base.phone10]);if(checks.some(c=>c.phone10===base.phone10))return Response.json({acquired:false});checks.push({phone10:base.phone10,state:'dispatching'});return Response.json({acquired:true,phones:[base.phone10]});}
+   if(u.pathname.endsWith('/nbc_portal_scrape_phone_batch')){assert.deepEqual(body.p_phones,[base.phone10]);if(checks.some(c=>c.phone10===base.phone10))return Response.json({acquired:false});checks.push({phone10:base.phone10,state:'dispatching'});return Response.json({acquired:true,phones:[base.phone10]});}
    if(u.pathname.endsWith('/nbc_pilot_finish_phone')){const c=checks.find(c=>c.phone10===body.p_phone)!;c.state=body.p_verification?'completed':'uncertain';c.verification=body.p_verification;return Response.json(null);}
   }
   if(u.hostname==='api.batchdata.com'){
@@ -48,7 +48,7 @@ test('23 phones use three provider requests; a lost receipt preserves saved resu
    if(u.pathname.endsWith('/nbc_pilot_operations'))return Response.json([{state:'completed',result:{rows}}]);
    if(u.pathname.endsWith('/nbc_pilot_phone_checks'))return Response.json(checks);
    const b=JSON.parse(String(init?.body));
-   if(u.pathname.endsWith('/nbc_pilot_claim_phone_batch')){if(checks.some(c=>c.state!=='completed'))return Response.json({message:'pilot_operation_pending'},{status:400});const phones=b.p_phones.filter((p:string)=>!checks.some(c=>c.phone10===p));checks.push(...phones.map((phone10:string)=>({phone10,state:'dispatching'})));return Response.json({acquired:phones.length>0,phones});}
+   if(u.pathname.endsWith('/nbc_portal_scrape_phone_batch')){if(checks.some(c=>c.state!=='completed'))return Response.json({message:'pilot_operation_pending'},{status:400});const phones=b.p_phones.filter((p:string)=>!checks.some(c=>c.phone10===p));checks.push(...phones.map((phone10:string)=>({phone10,state:'dispatching'})));return Response.json({acquired:phones.length>0,phones});}
    if(u.pathname.endsWith('/nbc_pilot_finish_phone')){if(failSave&&b.p_phone===rows[1].phone10&&b.p_verification)return Response.json({message:'Fixture save failed'},{status:400});const c=checks.find(c=>c.phone10===b.p_phone)!;c.state=b.p_verification?'completed':'uncertain';c.verification=b.p_verification;return Response.json(null);}
   }
   if(u.hostname==='api.batchdata.com'){const phones=JSON.parse(String(init?.body)).requests as string[];batches.push(phones.length);assert.ok(phones.length<=10);assert.ok(phones.every(p=>checks.find(c=>c.phone10===p)?.state==='dispatching'));return Response.json({results:{phoneNumbers:phones.toReversed().map(number=>({number,type:'Land Line',reachable:true,dnc:false,tcpa:false}))}});}

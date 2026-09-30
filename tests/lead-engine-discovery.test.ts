@@ -70,7 +70,7 @@ test('known-run GET failure is retryable and cannot release a reservation or sta
 test('invalid identities, ownership and malformed persisted jobs prevent provider calls', async () => {
   const f = memoryStore(), worker = createDiscoveryWorker(f.store,f.provider);
   await assert.rejects(worker.start('bad',batch)); await assert.rejects(worker.start('22222222-2222-4222-8222-222222222222',batch));
-  for (const change of [{maxCostCents:0},{maxCostCents:1001},{maxResults:301},{build:'latest'},{actorId:'../admin'},{location:'\n'}, {status:'running',runId:null}]) {
+  for (const change of [{maxCostCents:0},{maxCostCents:100001},{maxResults:5001},{build:'latest'},{actorId:'../admin'},{location:'\n'}, {status:'running',runId:null}]) {
     assert.throws(() => assertDiscoveryJob({...job,...change} as DiscoveryJob,owner,batch));
   }
   f.store.claim = async () => ({ job: {...job,operatorId:'22222222-2222-4222-8222-222222222222',status:'dispatching'}, acquired:true });

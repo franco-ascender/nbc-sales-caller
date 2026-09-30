@@ -1,4 +1,5 @@
 import 'server-only';
+import {verifySearchQuote} from './lead-cycle-quote.service';
 import {randomUUID} from 'node:crypto';
 import {database,IntegrationError} from './integration.service';
 import {pilotView,startPilot,syncPilot} from './live-pilot.service';
@@ -16,36 +17,43 @@ function storageError(message:string):never {
  if(message.includes('pending'))throw new IntegrationError(409,'Pause or finish the active list, and resolve pending operations, before starting another.');
  throw new IntegrationError(409,'This step could not be saved. Refresh your list before continuing.');
 }
-export async function leadCycleView(owner:string):Promise<LeadCycleView>{
- const pilot=await pilotView(owner);
+export async function leadCycleView(owner:string,selectedKey?:string):Promise<LeadCycleView>{
+
  const {data,error}=await database().from('nbc_lead_cycles').select(columns).eq('round_id',PILOT_ROUND).order('started_at',{ascending:false}).limit(100);
  if(error)throw new IntegrationError(503,'Saved search progress could not be loaded.');
- return {runs:(data??[]) as LeadCycle[],pilot};
+ const runs=(data??[]) as LeadCycle[];
+ const pilot=await pilotView(owner,selectedKey??runs.find(r=>r.status==='running')?.key??runs[0]?.key??'__summary__');
+ return {runs,pilot};
 }
 export async function createLeadCycle(owner:string,input:CycleInput):Promise<LeadCycleView>{
  try{assertCycleExecutable(input.count);}catch(e){throw new IntegrationError(409,e instanceof Error?e.message:'Testing limit exceeded.');}
- const {requestId,...details}=input;
+ const current=await leadCycleView(owner);
+ const existing=current.runs.find(r=>r.key==='list-'+input.requestId);
+ if(existing){if(['name','industry','city','state','count'].some(k=>existing[k as keyof LeadCycle]!==input[k as keyof CycleInput]))throw new IntegrationError(409,'This request belongs to different list details.');return current;}
+ const quote=verifySearchQuote(owner,input);
+ const {requestId,quoteToken,...details}=input;
+ Object.assign(details,{quote:{...quote,token:undefined,discoveryReserveCents:quote.discoveryCapCents+quote.dataAllowanceCents}});
  const {error}=await database().rpc('nbc_lead_cycle_create',{p_owner:owner,p_request:requestId,p_input:details});
  if(error)storageError(error.message);
- return leadCycleView(owner);
+ return leadCycleView(owner,'list-'+requestId);
 }
 export async function controlLeadCycle(owner:string,key:string,action:'pause'|'resume'):Promise<LeadCycleView>{
  const {error}=await database().rpc('nbc_lead_cycle_control',{p_owner:owner,p_key:key,p_action:action});
  if(error)storageError(error.message);
- return leadCycleView(owner);
+ return leadCycleView(owner,key);
 }
 // Every advance does at most one external step. A lease serializes tabs; provider dispatch and phone
 // checks retain their own durable spending claims even if the lease expires or the response is lost.
 export async function advanceLeadCycle(owner:string,key:string):Promise<LeadCycleView>{
- const before=await leadCycleView(owner),run=before.runs.find(r=>r.key===key);
+ const before=await leadCycleView(owner,key),run=before.runs.find(r=>r.key===key);
  if(!run)throw new IntegrationError(404,'This list was not found.');
  if(run.status!=='running')return before;
  const lease=randomUUID(),db=database();
  const claim=await db.rpc('nbc_lead_cycle_claim',{p_owner:owner,p_key:key,p_lease:lease});
  if(claim.error)storageError(claim.error.message);
- if(!claim.data)return leadCycleView(owner);
+ if(!claim.data)return leadCycleView(owner,key);
  // Re-read after acquiring the lease: another tab may have advanced since our initial GET.
- const current=await leadCycleView(owner),saved=current.runs.find(r=>r.key===key)!;
+ const current=await leadCycleView(owner,key),saved=current.runs.find(r=>r.key===key)!;
  let phase:CyclePhase=saved.phase,status:CycleStatus='running',message:string|null=null;
  try{
   const slot=current.pilot.slots.find(s=>s.key===key);
@@ -77,5 +85,5 @@ export async function advanceLeadCycle(owner:string,key:string):Promise<LeadCycl
  }catch(error){status='needs_attention';message=error instanceof Error?error.message:'This step could not be confirmed. Review before resuming.';}
  const finish=await db.rpc('nbc_lead_cycle_finish',{p_owner:owner,p_key:key,p_lease:lease,p_status:status,p_phase:phase,p_message:message});
  if(finish.error)storageError(finish.error.message);
- return leadCycleView(owner);
+ return leadCycleView(owner,key);
 }

@@ -33,7 +33,7 @@ export function createApifyDiscoveryProvider(token: string, request: typeof fetc
       if (job.status !== 'dispatching' || job.runId !== null) throw discoveryError();
       // The Actor refuses a cap below its minimum, and the approved quote is the only cap we may send.
       if (belowProviderMinimum(job.maxCostCents)) throw discoveryError();
-      const query = new URLSearchParams({ build: job.build, maxTotalChargeUsd: (job.maxCostCents / 100).toFixed(2), restartOnError: 'false', waitForFinish: '0' });
+      const query = new URLSearchParams({ build: job.build, maxTotalChargeUsd: (job.maxCostCents / 100).toFixed(2), restartOnError: 'false', memory: '4096', waitForFinish: '0' });
       return call(`acts/${job.actorId}/runs?${query}`, job, {
         searchStringsArray: [job.searchTerm], locationQuery: job.location, maxCrawledPlacesPerSearch: job.maxResults,
         language: 'en', scrapeContacts: false, maxReviews: 0, scrapeReviewsPersonalData: false, maxImages: 0,

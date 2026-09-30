@@ -1,120 +1,34 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, FolderOpen, FolderPlus, Loader2 } from 'lucide-react';
-import { useWorkspaceAccess } from '@/components/workspace/WorkspaceAccess';
-import { LeadEngineError } from '@/lib/lead-engine-storage';
-import type { LeadFolder, LeadList } from '@/lib/lead-engine-scrape';
-import { LeadTable } from './LeadTable';
-import styles from './LeadTable.module.css';
-
-// The lists tab opens straight into the leads themselves. Folders group the searches: one folder per
-// industry, one list per city, which is how a scrape is already shaped.
-async function call<T>(token: string, path: string, body?: object): Promise<T> {
-  const response = await fetch(`/api/lead-engine${path}`, {
-    method: body ? 'POST' : 'GET', headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
-    ...(body ? { body: JSON.stringify(body) } : {}), cache: 'no-store', signal: AbortSignal.timeout(25000),
-  });
-  const data = await response.json() as T & { error?: string; code?: string };
-  if (!response.ok) throw new LeadEngineError(response.status, data.code ?? 'request_failed', data.error ?? 'That could not be loaded.');
-  return data;
-}
-
-export function LeadLibrary() {
-  const { token, user } = useWorkspaceAccess();
-  if (!token || !user) return null;
-  return <Library key={user.id} token={token} />;
-}
-
-function Library({ token }: { token: string }) {
-  const [folders, setFolders] = useState<LeadFolder[]>([]);
-  const [lists, setLists] = useState<LeadList[] | null>(null);
-  const [open, setOpen] = useState<LeadList | null>(null);
-  const [folderName, setFolderName] = useState('');
-  const [busy, setBusy] = useState('');
-  const [error, setError] = useState('');
-
-  const load = useCallback(async () => {
-    setError('');
-    try {
-      const [folderData, collected] = await Promise.all([
-        call<{ folders: LeadFolder[] }>(token, '/folders'),
-        (async () => {
-          const all: LeadList[] = [];
-          for (let offset = 0, guard = 0; guard < 20; guard++) {
-            const page = await call<{ lists: LeadList[]; nextOffset: number | null }>(token, `/lists?offset=${offset}`);
-            all.push(...page.lists);
-            if (page.nextOffset === null) break;
-            offset = page.nextOffset;
-          }
-          return all;
-        })(),
-      ]);
-      setFolders(folderData.folders); setLists(collected);
-    } catch (failure) { setError(failure instanceof Error ? failure.message : 'Your lists could not be loaded.'); }
-  }, [token]);
-
-  useEffect(() => { void load(); }, [load]);
-
-  async function createFolder(): Promise<void> {
-    const name = folderName.trim();
-    if (!name) return;
-    setBusy('folder'); setError('');
-    try { await call(token, '/folders', { id: crypto.randomUUID(), name }); setFolderName(''); await load(); }
-    catch (failure) { setError(failure instanceof Error ? failure.message : 'That folder could not be created.'); }
-    finally { setBusy(''); }
-  }
-
-  async function move(list: LeadList, folderId: string): Promise<void> {
-    setBusy(list.id); setError('');
-    try { await call(token, `/lists/${list.id}/move`, { folderId: folderId || null }); await load(); }
-    catch (failure) { setError(failure instanceof Error ? failure.message : 'That list could not be moved.'); }
-    finally { setBusy(''); }
-  }
-
-  if (open) return <div>
-    <button type="button" className={styles.backLink} onClick={() => setOpen(null)}><ArrowLeft size={15} />All lists</button>
-    <LeadTable key={open.id} token={token} listId={open.id} listName={open.name} />
-  </div>;
-
-  if (!lists) return <p className={styles.loading}><Loader2 size={15} className={styles.spin} />Loading your lists…</p>;
-
-  const groups: Array<{ id: string | null; name: string; lists: LeadList[] }> = [
-    ...folders.map(folder => ({ id: folder.id, name: folder.name, lists: lists.filter(list => list.folderId === folder.id) })),
-    { id: null, name: 'Unfiled', lists: lists.filter(list => !list.folderId) },
-  ];
-
-  return <div className={styles.panel}>
-    <div className={styles.head}>
-      <div><h3>Your lists</h3><p>One folder per industry, one list per city. Open any list to see its phone numbers.</p></div>
-      <div className={styles.folderForm}>
-        <input value={folderName} maxLength={80} placeholder="New folder, e.g. Roofing" onChange={event => setFolderName(event.target.value)}
-          onKeyDown={event => { if (event.key === 'Enter') void createFolder(); }} />
-        <button type="button" className={styles.primary} disabled={!folderName.trim() || busy === 'folder'} onClick={() => void createFolder()}>
-          {busy === 'folder' ? <Loader2 size={15} className={styles.spin} /> : <FolderPlus size={15} />}Create folder
-        </button>
-      </div>
-    </div>
-    {error && <p className={styles.error} role="alert">{error}</p>}
-    {lists.length === 0 && <p>No searches yet. Build one in the search tab and its leads appear here.</p>}
-
-    {groups.filter(group => group.lists.length > 0 || group.id !== null).map(group => <section key={group.id ?? 'unfiled'} className={styles.group}>
-      <h4>{group.name} <span>{group.lists.length} {group.lists.length === 1 ? 'list' : 'lists'}</span></h4>
-      {group.lists.length === 0
-        ? <p className={styles.emptyGroup}>Empty. Move a list here with its folder menu.</p>
-        : <table className={styles.table}>
-          <thead><tr><th>List</th><th>Businesses</th><th>Status</th><th>Folder</th><th /></tr></thead>
-          <tbody>{group.lists.map(list => <tr key={list.id}>
-            <td>{list.name}</td>
-            <td>{list.processed} of {list.maxResults}</td>
-            <td>{list.importStatus === 'complete' ? 'Collected' : list.importStatus === 'importing' ? 'Collecting…' : 'Waiting'}</td>
-            <td><select aria-label={`Folder for ${list.name}`} value={list.folderId ?? ''} disabled={busy === list.id}
-              onChange={event => void move(list, event.target.value)}>
-              <option value="">Unfiled</option>
-              {folders.map(folder => <option key={folder.id} value={folder.id}>{folder.name}</option>)}
-            </select></td>
-            <td><button type="button" className={styles.primary} onClick={() => setOpen(list)}><FolderOpen size={15} />Open leads</button></td>
-          </tr>)}</tbody>
-        </table>}
-    </section>)}
-  </div>;
+import {useEffect,useState} from 'react';
+import {ArrowLeft,FolderOpen,FolderPlus,Search,RefreshCw,ArrowRight} from 'lucide-react';
+import {useWorkspaceAccess} from '@/components/workspace/WorkspaceAccess';
+import type {LeadFolder,LeadList} from '@/lib/lead-engine-scrape';
+import type {PilotSlotView} from '@/lib/live-pilot';
+import type {LeadCycle} from '@/lib/lead-cycle';
+import {qualifiedRows} from '@/lib/run-review';
+import {LeadTable} from './LeadTable';
+import {LeadRunResults} from './LeadRunResults';
+import styles from './LeadListWorkspace.module.css';
+type Entry={id:string;name:string;folderId:string|null;count:number;status:string;date:string;native?:PilotSlotView;legacy?:LeadList};
+export function LeadLibrary(){const {token,user}=useWorkspaceAccess();return token&&user?<Library key={user.id} token={token}/>:null;}
+function Library({token}:{token:string}){
+ const [folders,setFolders]=useState<LeadFolder[]>([]),[entries,setEntries]=useState<Entry[]>([]),[open,setOpen]=useState(''),[folder,setFolder]=useState('all'),[query,setQuery]=useState(''),[name,setName]=useState(''),[creating,setCreating]=useState(false),[loaded,setLoaded]=useState(false),[busy,setBusy]=useState(''),[error,setError]=useState(''),[drag,setDrag]=useState('');
+ async function api<T>(path:string,body?:object):Promise<T>{const r=await fetch('/api/lead-engine'+path,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{}),cache:'no-store'});const b=await r.json();if(!r.ok)throw Error(b.error??'Your lists could not be loaded.');return b;}
+ async function load(){setError('');try{
+  const [f,n,legacy]=await Promise.all([api<{folders:LeadFolder[]}>('/folders'),api<{runs:LeadCycle[];pilot:{slots:PilotSlotView[]}}>('/runs'),(async()=>{const all:LeadList[]=[];let offset:number|null=0;while(offset!==null){const page:{lists:LeadList[];nextOffset:number|null}=await api('/lists?offset='+offset);all.push(...page.lists);if(page.nextOffset!==null&&page.nextOffset<=offset)throw Error('Saved list pagination did not advance.');offset=page.nextOffset;}return all;})()]);
+  const cycles=new Map(n.runs.map(r=>[r.key,r]));setFolders(f.folders);setEntries([...n.pilot.slots.filter(s=>s.kind==='scrape'&&s.state!=='ready').map(s=>({id:s.key,name:s.title,folderId:s.folderId??null,count:s.businessCount??s.result.rows?.length??0,status:cycles.get(s.key)?.status??s.state,date:cycles.get(s.key)?.started_at??s.createdAt??'',native:s})),...legacy.map(l=>({id:l.id,name:l.name,folderId:l.folderId,count:l.processed,status:l.importStatus==='complete'?'completed':l.importStatus,date:l.createdAt,legacy:l}))].sort((a,b)=>b.date.localeCompare(a.date)));setLoaded(true);
+ }catch(e){setError(e instanceof Error?e.message:'Could not load lists.');}}
+ useEffect(()=>{void load();},[token]);
+ async function create(){if(!name.trim()||busy)return;setBusy('folder');setError('');try{await api('/folders',{id:crypto.randomUUID(),name:name.trim()});setName('');setCreating(false);await load();}catch(e){setError(e instanceof Error?e.message:'Could not create folder.');}finally{setBusy('');}}
+ async function move(id:string,to:string){const entry=entries.find(l=>l.id===id);if(!entry||busy)return;setBusy(id);setError('');try{await api(`/${entry.native?'runs':'lists'}/${id}/move`,{folderId:to||null});setEntries(old=>old.map(l=>l.id===id?{...l,folderId:to||null}:l));}catch(e){setError(e instanceof Error?e.message:'Move failed.');}finally{setBusy('');setDrag('');}}
+ async function openList(entry:Entry){if(!entry.native){setOpen(entry.id);return;}setBusy(entry.id);setError('');try{const data=await api<{pilot:{slots:PilotSlotView[]}}>('/runs?key='+encodeURIComponent(entry.id));const slot=data.pilot.slots.find(s=>s.key===entry.id);if(!slot)throw Error('List not found.');setEntries(old=>old.map(e=>e.id===entry.id?{...e,native:slot}:e));setOpen(entry.id);}catch(e){setError(e instanceof Error?e.message:'Could not open contacts.');}finally{setBusy('');}}
+ const chosen=entries.find(l=>l.id===open),visible=entries.filter(l=>(folder==='all'||(l.folderId??'')===folder)&&l.name.toLowerCase().includes(query.toLowerCase()));
+ if(chosen)return <div className={styles.workspace}><button className={styles.back} onClick={()=>setOpen('')}><ArrowLeft size={16}/>Back to Lead Lists</button>{chosen.native?<LeadRunResults slot={chosen.native} token={token}/>:<LeadTable token={token} listId={chosen.id} listName={chosen.name}/>}</div>;
+ return <section className={styles.card} aria-label="Lead list library"><header className={styles.header}><div><h2>Lead Lists</h2><p>Every search is saved here. Open a list, export contacts, or organize it into a folder.</p></div><div className={styles.actions}><button onClick={()=>void load()} aria-label="Refresh lead lists"><RefreshCw size={16}/></button><button onClick={()=>setCreating(v=>!v)}><FolderPlus size={16}/>New folder</button></div></header>
+ {creating&&<form className={styles.folderForm} onSubmit={e=>{e.preventDefault();void create();}}><input aria-label="Folder name" placeholder="Folder name" maxLength={80} value={name} onChange={e=>setName(e.target.value)} autoFocus/><button disabled={!name.trim()||!!busy}>Create folder</button><button type="button" onClick={()=>setCreating(false)}>Cancel</button></form>}
+ {error&&<p role="alert">{error} <button onClick={()=>void load()}>Retry</button></p>}
+ <div className={styles.libraryLayout}><nav className={styles.folders} aria-label="List folders">{[{id:'all',name:'All lists'},{id:'',name:'Unfiled'},...folders].map(f=><button key={f.id} aria-pressed={folder===f.id} onClick={()=>setFolder(f.id)} onDragOver={e=>{if(f.id!=='all')e.preventDefault();}} onDrop={e=>{e.preventDefault();if(f.id!=='all'&&drag)void move(drag,f.id);}}><FolderOpen size={16}/><span>{f.name}</span><small>{entries.filter(l=>f.id==='all'||(l.folderId??'')===f.id).length}</small></button>)}<p>Drag a list into a folder, or use its folder menu.</p></nav>
+ <div className={styles.listContent}><div className={styles.filters}><label><Search size={16}/><input aria-label="Search saved lists" placeholder="Search your lists" value={query} onChange={e=>setQuery(e.target.value)}/></label><span>{visible.length} {visible.length===1?'list':'lists'}</span></div>
+ {!loaded&&!error?<p role="status">Loading saved lists…</p>:!visible.length?<div className={styles.empty}><FolderOpen size={30}/><h3>{query?'No matching lists':'No lists in this folder yet'}</h3><p>New searches are saved automatically. Move existing lists here using their folder menu.</p><a href="#search">Build a search ↗</a></div>:<div className={styles.listCards}>{visible.map(l=><article key={l.id} draggable={!busy} onDragStart={()=>setDrag(l.id)} onDragEnd={()=>setDrag('')}><button className={styles.openList} disabled={!!busy} onClick={()=>void openList(l)}><div><span className={styles.status}>{l.status==='completed'?'Ready':l.status.replaceAll('_',' ')}</span><h3>{l.name}</h3><p>{l.count} businesses{l.native?` · ${(l.native.verifiedMobileCount??qualifiedRows(l.native.result).length)} verified mobiles`:''}</p>{l.date&&<small>{new Date(l.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</small>}</div><ArrowRight size={18}/></button><label>Folder<select aria-label={`Folder for ${l.name}`} value={l.folderId??''} disabled={!!busy} onChange={e=>void move(l.id,e.target.value)}><option value="">Unfiled</option>{folders.map(f=><option key={f.id} value={f.id}>{f.name}</option>)}</select></label></article>)}</div>}
+ </div></div></section>;
 }

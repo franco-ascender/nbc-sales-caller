@@ -3,7 +3,7 @@ export type PilotState = 'dispatching'|'running'|'uncertain'|'completed'|'failed
 export interface PilotRow { name: string; city: string; state: string; website: string|null; sourceUrl: string|null; phone10: string|null; rejection: string|null; duplicate: boolean; chain: string|null }
 export interface PilotPhoneCheck { phone10: string; state: 'dispatching'|'completed'|'uncertain'; verification: import('./lead-engine-quality').LeadVerification|null }
 export interface PilotResult {
-  phoneEngine?:string; callStatus?:string; retellCostMicrousd?:number|null; retellComponents?:Array<{product:string;costMicrousd:number|null}>;
+  datasetCursor?:number; datasetTotal?:number; datasetComplete?:boolean; phoneEngine?:string; callStatus?:string; retellCostMicrousd?:number|null; retellComponents?:Array<{product:string;costMicrousd:number|null}>;
   message?: string; rawBusinesses?: number; acceptedForReview?: number; rows?: PilotRow[];
   durationSeconds?: number; outcome?: string; summary?: string; transcript?: Array<{role:string;message:string}>;
   ownerEvidence?: import('./run-owner-evidence').RegistryEvidence[]; registryTruncated?: boolean; phoneChecks?: PilotPhoneCheck[];
@@ -12,7 +12,7 @@ export interface PilotResult {
   costNote?: string; costComplete?: boolean; feedback?: string;
 }
 export interface PilotSlotView {
-  key: string; canControl?:boolean; kind: 'phone'|'scrape'; title: string; allocationCents: number; reserveCents: number;
+  key: string; businessCount?:number; verifiedMobileCount?:number; folderId?:string|null; canControl?:boolean; kind: 'phone'|'scrape'; title: string; allocationCents: number; reserveCents: number;
   scenarioTitle?:string; industry?: string; destinationLast4?: string; createdAt?: string; updatedAt?: string; count: number|null; state: PilotState|'ready'; reportedMicrousd: number|null; result: PilotResult;
 }
 export interface PilotView {

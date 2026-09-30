@@ -24,12 +24,12 @@ test('all 36 catalog niches and the legacy medspa ID are accepted with explicit 
  assert.equal(cycleNiche('medspa')?.searchTerm,'med spa');assert.equal(parseCycleInput({...input,industry:'medspa'}).industry,'medspa');assert.throws(()=>parseCycleInput({...input,industry:'invented_niche'}));
 });
 
-test('optional geography and large-list plans retain a separate execution gate',async()=>{
+test('optional geography and large lists are executable up to 5,000',async()=>{
  const {assertCycleExecutable,cycleVolumePlan}=await import('../src/lib/lead-cycle.ts');
  const national=parseCycleInput({...input,city:undefined,state:undefined,count:50});assert.equal(national.city,'');assert.equal(national.state,'');
  assert.equal(parseCycleInput({...input,city:'',state:'tx'}).state,'TX');assert.throws(()=>parseCycleInput({...input,state:''}));
  assert.equal(parseCycleInput({...input,city:'',state:'',count:5000}).count,5000);
- assert.equal(cycleVolumePlan(5000).length,100);assert.deepEqual(cycleVolumePlan(51),[50,1]);assert.throws(()=>assertCycleExecutable(51),/Testing limit/);assert.doesNotThrow(()=>assertCycleExecutable(50));
+ assert.equal(cycleVolumePlan(5000).length,100);assert.deepEqual(cycleVolumePlan(51),[50,1]);assert.doesNotThrow(()=>assertCycleExecutable(5000));assert.throws(()=>assertCycleExecutable(5001));assert.doesNotThrow(()=>assertCycleExecutable(50));
 });
 test('nationwide filtering accepts multiple US states without dropping the country guard',async()=>{
  const {parseDiscoveryCandidate}=await import('../src/lib/lead-engine-scrape.ts');
