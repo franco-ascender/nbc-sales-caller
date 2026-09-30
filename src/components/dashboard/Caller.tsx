@@ -1,5 +1,6 @@
 "use client";
 import {isBlocked} from '@/lib/caller-workbench';
+import { voiceAudioOptions, voiceStartError } from '@/lib/caller-browser-audio';
 
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
@@ -187,6 +188,7 @@ export function Caller(): ReactNode {
       if (!mounted.current) return;
       const { Conversation: Voice } = await import("@elevenlabs/client");
       const conversation = await Voice.startSession({
+        ...voiceAudioOptions,
         signedUrl: authorization.signedUrl, connectionType: "websocket",
         ...(authorization.conversationOverride ? { overrides: { agent: { prompt: { prompt: authorization.conversationOverride.prompt }, firstMessage: authorization.conversationOverride.firstMessage } } } : {}),
         onConnect: () => { if (mounted.current && voiceRun.current === currentRun) setActive(true); },
@@ -203,7 +205,7 @@ export function Caller(): ReactNode {
       timeout.current = setTimeout(() => { void conversation.endSession().catch(() => { if (mounted.current) setError("The browser could not close the connection. Try End voice test again; the agent also enforces its ten-minute limit."); }); }, authorization.maxDurationSeconds * 1000);
       void refresh().catch(() => { if (mounted.current) setError("The voice test is connected, but history could not refresh. You can still end the test normally."); });
     } catch (caught) {
-      if (mounted.current) { setActive(false); setBusy(""); setError(caught instanceof DOMException && caught.name === "NotAllowedError" ? "Allow microphone access in your browser, then start again." : reserved ? "The voice connection could not start. Refresh the session result; an unused authorization expires after 10 minutes." : caught instanceof Error ? caught.message : "The test could not start."); }
+      if (mounted.current) { setActive(false); setBusy(""); setError(reserved || caught instanceof DOMException ? voiceStartError(caught) : caught instanceof Error ? caught.message : "The test could not start."); }
       if (client.current) await client.current.endSession().catch(() => undefined);
       const failedSessionId = sessionId.current;
       client.current = null; sessionId.current = null;

@@ -8,7 +8,8 @@ artifacts
 playwright-report
 docs
 tests
-scripts
+scripts/*
+!scripts/prepare-voice-audio.mjs
 config
 *.md
 .windsurfrules

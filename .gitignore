@@ -3,6 +3,7 @@
 .env.*
 !.env.example
 node_modules/
+/public/voice-audio/
 .next/
 out/
 *.tsbuildinfo
