@@ -53,8 +53,8 @@ export async function pilotView(owner:string):Promise<PilotView> {
   const verifiedPrice=!!pricing&&pricing.provider==='batchdata'&&Number.isSafeInteger(pricing.unitCents)&&pricing.unitCents>=1&&pricing.unitCents<=10&&Date.parse(pricing.confirmedAt)>Date.now()-30*86400000&&Date.parse(pricing.confirmedAt)<=Date.now();
   const configured=verifiedPrice&&Boolean(process.env.BATCHDATA_API_KEY);
   return {phoneEngine:round.settings.phoneEngine==='retell'?'retell':'elevenlabs',perOperationApproval:round.settings.perOperationApproval===true,capCents:round.cap_cents,reservedCents:reserved,reportedMicrousd:operations.reduce((n,o)=>n+Number(o.reported_microusd??0),0),availableCents:Math.max(0,round.cap_cents-reserved),paused:round.paused,
-    verification:{configured,unitCents:verifiedPrice?pricing!.unitCents:null,blocker:configured?null:'Account-specific verification pricing has not been confirmed. No phone checks will be charged.'}, booking:{ready:false,reason:'Connect the authorized booking calendar to offer real times and send an invitation.'}, pending:operations.some(o=>!terminal(o.state))||(checks??[]).some(c=>c.state!=='completed'),destinationLast4:round.settings.destination.slice(-4),
-    slots:slots.map(s=>{const o=operations.find(o=>o.key===s.key);return {key:s.key,kind:s.kind,title:s.title,scenarioTitle:s.config.scenario,industry:s.config.industry,allocationCents:s.allocation_cents,reserveCents:s.reserve_cents,destinationLast4:s.kind==='phone'?phoneSettings(round,s).destination.slice(-4):undefined,createdAt:o?.created_at,updatedAt:o?.updated_at,count:s.config.count??null,state:o?.state??'ready',reportedMicrousd:o?.reported_microusd??null,result:{...o?.result,phoneChecks:(checks??[]).filter(c=>o?.result.rows?.some(r=>r.phone10===c.phone10)).map(c=>({phone10:c.phone10,state:c.state,verification:c.verification}))}};})};
+    verification:{configured,unitCents:verifiedPrice?pricing!.unitCents:null,blocker:configured?null:'Account-specific verification pricing has not been confirmed. No phone checks will be charged.'}, booking:{ready:false,reason:'Connect the authorized booking calendar to offer real times and send an invitation.'}, pending:operations.some(o=>!terminal(o.state)&&(o.provider.engine??slots.find(s=>s.key===o.key)?.config.phoneEngine)!=='neuron')||(checks??[]).some(c=>c.state!=='completed'),destinationLast4:round.settings.destination.slice(-4),
+    slots:slots.map(s=>{const o=operations.find(o=>o.key===s.key);return {key:s.key,kind:s.kind,canControl:s.kind!=='phone'||['retell','elevenlabs'].includes(o?.provider.engine??s.config.phoneEngine??'elevenlabs'),title:s.title,scenarioTitle:s.config.scenario,industry:s.config.industry,allocationCents:s.allocation_cents,reserveCents:s.reserve_cents,destinationLast4:s.kind==='phone'?phoneSettings(round,s).destination.slice(-4):undefined,createdAt:o?.created_at,updatedAt:o?.updated_at,count:s.config.count??null,state:o?.state??'ready',reportedMicrousd:o?.reported_microusd??null,result:{...o?.result,phoneChecks:(checks??[]).filter(c=>o?.result.rows?.some(r=>r.phone10===c.phone10)).map(c=>({phone10:c.phone10,state:c.state,verification:c.verification}))}};})};
 }
 function rpcError(message:string):never {
   if(message.includes('pilot_not_found'))return fail('This private test round is not assigned to your account.',403);
@@ -74,6 +74,7 @@ async function observe(owner:string,o:Operation,state:PilotState,provider:Provid
 }
 function phoneSettings(round:Round,slot:Slot):Settings {return {...round.settings,phoneEngine:slot.config.phoneEngine??'elevenlabs',retell:slot.config.retell,destination:slot.config.destination??round.settings.destination};}
 async function preflightPhone(s:Settings):Promise<void> {
+  if(s.phoneEngine&&!['retell','elevenlabs'].includes(s.phoneEngine))return fail('This call belongs to another phone integration. Its connection must be configured before dispatching from this portal.',409);
   if(s.phoneEngine==='retell'){
     if(!s.retell)return fail('The phone configuration is incomplete.');
     const lookup=await remote<{valid:boolean;country_code:string;phone_number:string}>(`https://lookups.twilio.com/v2/PhoneNumbers/${encodeURIComponent(s.destination)}`,twAuth());
@@ -108,7 +109,7 @@ export async function startPilot(owner:string,key:string):Promise<PilotView> {
   const {round,slots,operations}=await load(owner);const slot=slots.find(s=>s.key===key);if(!slot)return fail('Choose an approved test.',400);
   if(operations.some(o=>o.key===key))return pilotView(owner);
   if(slot.kind==='phone')await preflightPhone(phoneSettings(round,slot));else await preflightScrape();
-  const {data,error}=await database().rpc('nbc_pilot_reserve',{p_owner:owner,p_key:key});if(error)return rpcError(error.message);
+  const {data,error}=await database().rpc(slot.kind==='phone'?'nbc_portal_phone_reserve':'nbc_pilot_reserve',{p_owner:owner,p_key:key});if(error)return rpcError(error.message);
   const claim=data as {acquired:boolean;operation:Operation};if(!claim.acquired)return pilotView(owner);
   let o=claim.operation;let provider:Provider={phase:'reserved'};
   try {
@@ -149,7 +150,14 @@ export async function syncPilot(owner:string,key:string,stop=false):Promise<Pilo
   if(!slot||!o)return fail('That test has not started.',404);
   if(stop&&terminal(o.state))return pilotView(owner);
   let state:PilotState=o.state,result:PilotResult={...o.result},reported:number|null=null;
-  if(slot.kind==='phone'&&slot.config.phoneEngine==='retell'){
+  const engine=o.provider.engine??slot.config.phoneEngine??'elevenlabs';
+  if(slot.kind==='phone'&&!['retell','elevenlabs'].includes(engine)){
+    if(stop)return fail('This call is managed by another phone integration. Cancellation requires that integration; the call has not been canceled.',409);
+    // Another integration updates this shared record. Read its saved status, never
+    // reinterpret its request ID as Twilio or release a potentially queued call.
+    return pilotView(owner);
+  }
+  if(slot.kind==='phone'&&engine==='retell'){
     if(!slot.config.retell||!o.provider.callId)return fail('The call ID is not confirmed. Reconciliation is required; this attempt will not dial again.',409);
     const observed=await reconcileRetell(slot.config.retell,phoneSettings(round,slot).destination,o.provider.callId,stop);
     await observe(owner,o,terminal(o.state)?o.state:observed.state,o.provider,{...o.result,...observed.result},observed.reported);return pilotView(owner);
@@ -200,7 +208,7 @@ export async function pilotFeedback(owner:string,key:string,feedback:string):Pro
 }
 
 export async function startDialerTrial(owner:string,requestId:string,destination:string,approvedMaxCents?:number,scenarioId?:string):Promise<PilotView>{
-  const {data:key,error}=await database().rpc('nbc_phone_scenario_slot',{p_owner:owner,p_request:requestId,p_destination:destination,p_max_cents:approvedMaxCents??null,p_scenario_id:scenarioId??null,p_retell:scenarioPhoneConfig});
+  const {data:key,error}=await database().rpc('nbc_portal_phone_scenario_slot',{p_owner:owner,p_request:requestId,p_destination:destination,p_max_cents:approvedMaxCents??null,p_scenario_id:scenarioId??null,p_retell:scenarioPhoneConfig});
   if(error)return rpcError(error.message);
   return startPilot(owner,key as string);
 }
