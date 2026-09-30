@@ -8,7 +8,7 @@ import styles from './CallerPhoneTrial.module.css';
 import {useCallArchive} from './CallerArchive';
 const money=(n:number)=>'$'+(n/100).toFixed(2);
 export function CallerPhoneTrial({initialPhone=''}:{initialPhone?:string}){
- const {token,user}=useWorkspaceAccess();const [data,setData]=useState<PilotView|null>(null),[phone,setPhone]=useState(initialPhone),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(''),[error,setError]=useState(''),[requestId,setRequestId]=useState(''),[available,setAvailable]=useState(true);
+ const {token,user}=useWorkspaceAccess();const [data,setData]=useState<PilotView|null>(null),[phone,setPhone]=useState(initialPhone),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(''),[error,setError]=useState(''),[requestId,setRequestId]=useState('');
  const archive=useCallArchive(token);
  const [scenarios,setScenarios]=useState<Array<{id:string;title:string}>>([]),[scenarioId,setScenarioId]=useState(''),[scenarioError,setScenarioError]=useState(''),[now,setNow]=useState(Date.now());
  useEffect(()=>{if(!token)return;let live=true;void fetch('/api/caller/scenarios',{headers:{Authorization:'Bearer '+token},cache:'no-store'}).then(async r=>{if(!r.ok)throw Error('Saved scenarios could not load.');return r.json();}).then(b=>{if(live)setScenarios(b.scenarios??[]);}).catch(e=>{if(live)setScenarioError(e.message);});return()=>{live=false;};},[token]);
@@ -26,7 +26,7 @@ export function CallerPhoneTrial({initialPhone=''}:{initialPhone?:string}){
     payload={requestId:id,phone,confirmed,approvedMaxCents:250,...(scenarioId?{scenarioId}:{})};
    }else if(action){endpoint='/api/pilot';payload={action,key};}
    const r=await fetch(endpoint,{method:payload?'POST':'GET',headers:{Authorization:'Bearer '+token,...(payload?{'Content-Type':'application/json'}:{})},...(payload?{body:JSON.stringify(payload)}:{}),cache:'no-store',signal:AbortSignal.timeout(65000)});const b=await r.json();
-   if(r.status===403){setAvailable(false);return;}if(!r.ok)throw Error(b.error??'The call could not be confirmed. Refresh its status before trying again.');if(alive.current)setData(b);
+   if(r.status===403){if(alive.current)setData(null);throw Error(b.error??'Your account does not currently have access to phone calls. Refresh to check access again.');}if(!r.ok)throw Error(b.error??'The call could not be confirmed. Refresh its status before trying again.');if(alive.current)setData(b);
   }catch(e){
    if(alive.current)setError(e instanceof Error?e.message:'Could not reach the caller.');
    // Recover the saved claim after a lost response; never repeat a dialing POST.
@@ -37,6 +37,7 @@ export function CallerPhoneTrial({initialPhone=''}:{initialPhone?:string}){
  // Typing never triggers network activity or dialing.
  const loadRef=useRef(load);loadRef.current=load;
  useEffect(()=>{if(token)void loadRef.current();},[token]);
+ useEffect(()=>{const refresh=()=>{if(document.visibilityState==='visible')void loadRef.current();};window.addEventListener('focus',refresh);document.addEventListener('visibilitychange',refresh);const timer=setInterval(()=>{if(!latest.current)refresh();},15000);return()=>{window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);clearInterval(timer);};},[]);
  useEffect(()=>{const timer=setInterval(()=>{const active=latest.current?.slots.find(s=>s.kind==='phone'&&['dispatching','running'].includes(s.state));if(active)void loadRef.current('sync',active.key);},5000);return()=>clearInterval(timer);},[]);
  const calls=data?.slots.filter(s=>s.kind==='phone'&&s.state!=='ready').sort((a,b)=>(b.createdAt??'').localeCompare(a.createdAt??''))??[];
  const chosen=data?.slots.find(s=>s.key==='dial-'+requestId)??calls[0];const requested=data?.slots.find(s=>s.key==='dial-'+requestId&&s.state!=='ready');
@@ -54,7 +55,7 @@ export function CallerPhoneTrial({initialPhone=''}:{initialPhone?:string}){
  const elapsed=chosen?.createdAt?Math.max(0,Math.floor((now-Date.parse(chosen.createdAt))/1000)):0;
  const today=new Date().toISOString().slice(0,10),usedToday=calls.filter(s=>s.createdAt?.startsWith(today)).length;
  const blocker=!data?'Loading the available allowance…':busy?'Updating the trial…':data.paused?'Spending is paused.':data.pending?'Finish or reconcile the current operation before another trial.':!data.perOperationApproval&&usedToday>=3?'All three trials for today are reserved. The daily limit renews at midnight UTC.':!data.perOperationApproval&&data.availableCents<250?'Less than $2.50 remains available to reserve.':!valid?'Enter a valid US phone number (+1).':!confirmed?'Confirm that the recipient expects this call and approve its reservation.':null;
- if(user?.role!=='admin'||!available)return null;
+ if(user?.role!=='admin')return <section className={styles.card} aria-label="AI phone trial"><h2>Start a conversation.</h2><p>Phone calls are currently available to administrators.</p></section>;
  function newTrial(){if(data?.pending||busy)return;setRequestId('');setConfirmed(false);setError('');try{localStorage.removeItem(storageKey);}catch{}}
  return <section className={styles.card} aria-label="AI phone trial"><header><div><span>OUTBOUND CALL</span><h2>Start a conversation.</h2><p>Enter the recipient’s number, review the scenario, and approve the call.</p></div><button disabled={Boolean(busy)} onClick={()=>void load()} aria-label="Refresh phone trial"><RefreshCw size={16}/></button></header>
  <div className={styles.budget}>{data?.perOperationApproval?<span>Pay per approved call · no cumulative trial limit</span>:<><span>Shared limit <b>{data?money(data.capCents):'…'}</b></span><span>Available to reserve <b>{data?money(data.availableCents):'…'}</b></span></>}<span>Per call <b>$2.50 maximum reserved</b></span></div>
