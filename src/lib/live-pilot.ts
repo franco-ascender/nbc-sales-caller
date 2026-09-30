@@ -12,6 +12,7 @@ export interface PilotResult {
   costNote?: string; costComplete?: boolean; feedback?: string;
 }
 export interface PilotSlotView {
+  costs?: import('./lead-list-costs').LeadListCosts;
   emailsRequested?: boolean;
   key: string; businessCount?:number; verifiedMobileCount?:number; folderId?:string|null; canControl?:boolean; kind: 'phone'|'scrape'; title: string; allocationCents: number; reserveCents: number;
   scenarioTitle?:string; industry?: string; destinationLast4?: string; createdAt?: string; updatedAt?: string; count: number|null; state: PilotState|'ready'; reportedMicrousd: number|null; result: PilotResult;

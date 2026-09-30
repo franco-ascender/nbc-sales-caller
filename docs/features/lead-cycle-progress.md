@@ -54,3 +54,10 @@ At the account's inspected Free tier, website contact enrichment is $0.002 per p
 The reported Pest Control list had 25 businesses: 19 rows with phones, 6 without, and 16 unique numbers. Saved checks show 5 mobile, 9 landline and 2 inconclusive line types; repeated numbers explain the 19/16 difference. Six missing normalized phones are a stored-result observation, not proof that those businesses have no phone anywhere. The parser now falls back to the formatted phone when the unformatted field is empty or invalid. No paid provider run or verification was started to diagnose or test this release.
 
 Validation: unit tests cover quote binding, paid add-on isolation, contact parsing, phone fallback and evidence exports; browser mocks cover email choice invalidating approval, saved contacts and email filtering on desktop/mobile; SQL rollback checks prove the option survives quote persistence. Sources: https://apify.com/compass/crawler-google-places/input-schema and live account pricing metadata (read-only).
+
+
+## Cost visible inside saved searches
+
+Opening a native saved search now shows total list cost, cost per unique verified mobile, and an expandable breakdown. It reuses the cost dashboard's operation attribution: provider discovery receipt (including any website enrichment), completed phone checks at their stored historical rates, and the saved quote's data/storage allowance when available. Reused checks are charged only to their original list. Reserved ceilings are excluded. Missing receipts, historical rates, storage allowances and unfinished checks are labelled partial; even fully priced lists remain estimates until provider billing is reconciled. Shared subscriptions, taxes and infrastructure are not allocated per list. Contact table filters do not change the denominator. Zero mobiles produces no unit price.
+
+Validated by calculation tests for reused checks, duplicate businesses, unknown rates and incomplete operations, and desktop/mobile browser fixtures. No new paid provider operation is needed to view costs.
