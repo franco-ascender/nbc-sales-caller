@@ -5,6 +5,7 @@ import { BookOpen, Check, ChevronDown, FileAudio, FileText, FlaskConical, Loader
 import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import type { ConversationScenario } from "@/lib/caller-knowledge";
 import { defaultPhoneScenario } from "@/lib/caller-default-scenario";
+import { consolidateScenario, briefCharacterCount, briefLimits, BRIEF_CHARACTER_LIMIT } from "@/lib/caller-brief";
 import { parseCallerContext } from "@/lib/caller-context";
 import { CallerContextEditor } from "./CallerContextEditor";
 import { audioFileType } from "@/lib/caller-audio";
@@ -37,7 +38,7 @@ interface Props {
   onUseScenario: (scenario: ConversationScenario | null) => void;
 }
 
-const initialScenario: ConversationScenario = defaultPhoneScenario;
+const initialScenario: ConversationScenario = consolidateScenario(defaultPhoneScenario);
 
 async function api<T>(token: string, path: string, body?: object): Promise<T> {
   const response = await fetch(path, {
@@ -95,7 +96,7 @@ export function CallerKnowledgeLab({ token, activeScenario, disabled, onUseScena
 
   useEffect(() => { void load(); }, [load]);
 
-  const contextError = useMemo(() => { try { if (scenario.context) parseCallerContext(scenario.context); return ""; } catch (error) { return error instanceof Error ? error.message : "Check the caller context."; } }, [scenario.context]);
+  const contextError = useMemo(() => { try { if (scenario.context) parseCallerContext(scenario.context); for (const [key, limit] of Object.entries(briefLimits)) if (scenario[key as keyof typeof briefLimits].length > limit) return `${key} exceeds its character limit. Review the combined saved content.`; if (briefCharacterCount(scenario) > BRIEF_CHARACTER_LIMIT) return "Keep the brief under 22,000 characters."; return ""; } catch (error) { return error instanceof Error ? error.message : "Check the caller context."; } }, [scenario]);
   const scenarioReady = [scenario.title, scenario.agentRole, scenario.objective, scenario.prospectProfile, scenario.offer].every(value => value.trim()) && !contextError;
   const update = <K extends keyof ConversationScenario>(key: K, value: ConversationScenario[K]): void => setScenario(previous => ({ ...previous, [key]: value }));
 
@@ -182,19 +183,8 @@ export function CallerKnowledgeLab({ token, activeScenario, disabled, onUseScena
       {view === "scenario" ? <div className={styles.scenarioGrid}>
         <div className={styles.formCard}>
           <div className={styles.cardIntro}><span>BUILD THE BRIEF</span><h3>Give your caller the context to respond well.</h3><p>Start with the offer, then add the facts and answers your caller should know. Save a version to select in Make a Call. Editing never changes an ongoing call.</p></div>
-          <div className={styles.formGrid}>
-            <label className={styles.wide}>Scenario name<input value={scenario.title} maxLength={100} onChange={event => update("title", event.target.value)} /></label>
-            <label>Conversation type<select value={scenario.conversationType} onChange={event => update("conversationType", event.target.value as ConversationScenario["conversationType"])}><option value="outbound_prospecting">Outbound prospecting</option><option value="inbound_sales">Inbound sales</option><option value="discovery">Discovery</option><option value="closing">Closing</option><option value="follow_up">Follow-up</option><option value="objection_practice">Objection practice</option><option value="custom">Custom</option></select></label>
-            <label>Tone<select value={scenario.tone} onChange={event => update("tone", event.target.value as ConversationScenario["tone"])}><option value="consultative">Consultative</option><option value="direct">Direct</option><option value="warm">Warm</option><option value="challenger">Challenger</option></select></label>
-            <label className={styles.wide}>Agent role<textarea rows={2} value={scenario.agentRole} maxLength={600} onChange={event => update("agentRole", event.target.value)} /></label>
-            <label className={styles.wide}>Goal<textarea rows={2} value={scenario.objective} maxLength={1000} onChange={event => update("objective", event.target.value)} /></label>
-            <label className={styles.wide}>Prospect and situation<textarea rows={3} value={scenario.prospectProfile} maxLength={1400} onChange={event => update("prospectProfile", event.target.value)} /></label>
-            <label className={styles.wide}>Offer or solution<textarea rows={3} value={scenario.offer} maxLength={1400} onChange={event => update("offer", event.target.value)} /></label>
-            <label>Ticket / commercial range<input value={scenario.ticket} maxLength={300} onChange={event => update("ticket", event.target.value)} /></label>
-            <label>Likely objections<input value={scenario.objections} maxLength={1400} onChange={event => update("objections", event.target.value)} /></label>
-            <label className={styles.wide}>Extra direction<textarea rows={2} value={scenario.instructions} maxLength={1800} onChange={event => update("instructions", event.target.value)} /></label>
-          </div>
-          <CallerContextEditor value={scenario.context} onChange={value => update("context", value)} disabled={disabled || Boolean(busy)} />
+          <div className={styles.formGrid}><label className={styles.wide}>Scenario name<input disabled={disabled || Boolean(busy)} value={scenario.title} maxLength={100} onChange={event => update("title", event.target.value)} /></label></div>
+          <CallerContextEditor value={scenario} onChange={setScenario} disabled={disabled || Boolean(busy)} />
           {contextError && <p className={styles.error} role="alert">{contextError}</p>}
           <p className={styles.contextHint}>{activeScenario ? (JSON.stringify(activeScenario) === JSON.stringify(scenario) ? "This brief is selected for your next browser test." : "Draft changes are not selected for your browser test yet.") : "Browser tests are using the standard caller until you select this brief."}</p>
           <div className={styles.actions}>
@@ -203,7 +193,7 @@ export function CallerKnowledgeLab({ token, activeScenario, disabled, onUseScena
             {activeScenario && <button type="button" className={styles.clear} disabled={disabled} onClick={() => onUseScenario(null)}>Use standard caller</button>}
           </div>
         </div>
-        <aside className={styles.savedCard}><span>SAVED SCENARIOS</span><h3>Your saved versions.</h3>{scenarios.length ? <div className={styles.savedList}>{scenarios.map(saved => <button type="button" key={saved.id} onClick={() => { setScenario(saved.brief); setMessage("Saved version opened for editing. Select it for your browser test when ready."); }} disabled={disabled}><strong>{saved.title}</strong><small>{saved.conversationType.replaceAll("_", " ")} · {new Date(saved.createdAt).toLocaleString("en-US")}</small></button>)}</div> : <div className={styles.empty}><FlaskConical size={22} /><p>Saved versions appear here and in Make a Call.</p></div>}</aside>
+        <aside className={styles.savedCard}><span>SAVED SCENARIOS</span><h3>Your saved versions.</h3>{scenarios.length ? <div className={styles.savedList}>{scenarios.map(saved => <button type="button" key={saved.id} onClick={() => { setScenario(consolidateScenario(saved.brief)); setMessage("Saved version opened for editing. Select it for your browser test when ready."); }} disabled={disabled}><strong>{saved.title}</strong><small>{saved.conversationType.replaceAll("_", " ")} · {new Date(saved.createdAt).toLocaleString("en-US")}</small></button>)}</div> : <div className={styles.empty}><FlaskConical size={22} /><p>Saved versions appear here and in Make a Call.</p></div>}</aside>
       </div> : <div className={styles.knowledgeGrid}>
         <form className={styles.formCard} onSubmit={addKnowledge}>
           <div className={styles.cardIntro}><span>PRIVATE SOURCE INTAKE</span><h3>Add calls and proven sales material.</h3><p>Uploads enter a review queue. Nothing is added to the live caller automatically.</p></div>

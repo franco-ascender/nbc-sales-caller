@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { emptyCallerContext, parseCallerContext } from '../src/lib/caller-context.ts';
 import { parseConversationScenario, compileScenarioPrompt } from '../src/lib/caller-knowledge.ts';
+import { consolidateScenario } from '../src/lib/caller-brief.ts';
 import { defaultPhoneScenario } from '../src/lib/caller-default-scenario.ts';
 import { phoneScenario } from '../src/lib/phone-scenario.ts';
 const scenarioRoutes = await import('../src/app/api/caller/scenarios/route.ts');
@@ -20,7 +21,7 @@ test('old scenario snapshots remain unchanged; additional facts and answer guida
   for (const value of Object.values(context).filter(v => typeof v === 'string')) assert.ok(prompt.includes(value));
   for (const answer of context.answers) { assert.ok(prompt.includes(answer.question)); assert.ok(prompt.includes(answer.answer)); }
   assert.match(prompt, /same business and offer/);
-  assert.match(prompt, /If interrupted/);
+  assert.match(prompt, /when interrupted/);
   assert.match(prompt, /An opt-out takes priority/);
   assert.match(prompt, /without a successful connected-tool receipt/);
   assert.ok(prompt.indexOf('RESPONSE RULES') > prompt.indexOf(context.answers[1].answer));
@@ -39,7 +40,7 @@ test('real save/browser routes and phone adapter carry a >8KB context with owner
   const values = ['https://context-fixture.supabase.co','fixture-public','fixture-secret','fixture@example.test','fixture','fixture-agent','fixture-agent','fixture','https://context.example.test'];
   names.forEach((n,i) => { process.env[n] = values[i]; });
   const owner = '11111111-1111-4111-8111-111111111111', id = '22222222-2222-4222-8222-222222222222';
-  const expanded = parseConversationScenario({ ...defaultPhoneScenario, context: { ...context, answers: Array.from({ length: 8 }, (_, i) => ({ kind: 'question', question: `Fixture question ${i}`, answer: 'Specific approved business detail. '.repeat(30) + `tail-${i}` })) } });
+  const expanded = parseConversationScenario(consolidateScenario({ ...defaultPhoneScenario, context: { ...context, answers: Array.from({ length: 8 }, (_, i) => ({ kind: 'question', question: `Fixture question ${i}`, answer: 'Specific approved business detail. '.repeat(30) + `tail-${i}` })) } }));
   const req = (path: string, body: unknown, auth = 'admin') => new Request(`https://context.example.test${path}`, { method: 'POST', headers: { Authorization: `Bearer ${auth}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   let role = "admin";
   let saved: Record<string, unknown> | null = null, sessionBrief: unknown, providerAuthorizations = 0;

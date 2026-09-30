@@ -21,13 +21,18 @@ return r.fulfill({json:{configured:true,voices:[],sessions:[],sources:[],assets:
 await page.goto(origin+'/caller');await page.getByLabel('Email address',{exact:true}).fill('fixture@example.test');await page.getByLabel('Password',{exact:true}).fill('fixture-password');await page.getByRole('button',{name:'Enter NBC Sales'}).click();
 await page.getByRole('heading',{name:'Start a conversation.',exact:true}).waitFor();
 await page.getByRole('tab',{name:'Conversation Lab',exact:true}).click();
-await page.getByRole('heading',{name:'The knowledge behind the conversation.',exact:true}).waitFor();
+await page.getByRole('heading',{name:'One brief. Everything the caller needs.',exact:true}).waitFor();
 await page.getByLabel('Scenario name',{exact:true}).fill('Fixture • Extended Nalify');
-const editor=page.locator('section[aria-label="Agent context"]');
-await editor.getByLabel('Business background',{exact:false}).fill('Fixture: marketing for garage businesses in Florida.');
-await editor.getByLabel('Lead origin',{exact:false}).fill('Requested information through the agency website.');
-await editor.getByLabel('Qualification criteria',{exact:false}).fill('Ask about service area and available capacity.');
-await editor.getByLabel('Commercial boundaries',{exact:false}).fill('No guaranteed revenue or lead volume.');
+const editor=page.locator('section[aria-label="Agent brief"]');
+assert.equal(await editor.getByRole('tab').count(),4);
+await editor.getByLabel('Business & representation',{exact:true}).fill('Fixture: marketing for garage businesses in Florida.');
+await editor.getByLabel('Pricing & terms',{exact:true}).fill('$2,500 per month. No guaranteed lead volume.');
+await editor.getByRole('tab',{name:'Lead context',exact:false}).click();
+await editor.getByLabel('Prospect & lead origin',{exact:true}).fill('Owner requested information through the agency website.');
+await editor.getByLabel('Fit criteria & disqualifiers',{exact:true}).fill('Ask about service area and available capacity.');
+await editor.getByRole('tab',{name:'Conversation goal',exact:false}).click();
+await editor.getByLabel('Goal & next step',{exact:true}).fill('Check fit, then offer a discovery conversation.');
+assert.equal(await page.getByLabel('Goal',{exact:true}).count(),0);
 await editor.getByRole('tab',{name:'Questions & objections',exact:false}).click();
 await editor.getByRole('button',{name:'Add approved answer',exact:false}).click();
 assert.ok(await page.getByRole('button',{name:'Save new version',exact:true}).isDisabled());
@@ -35,11 +40,11 @@ await editor.getByLabel('What the prospect might say',{exact:true}).fill('Is ad 
 await editor.getByRole('textbox',{name:'Approved answer',exact:true}).fill('Advertising spend has not been confirmed. We need to clarify that before agreeing to terms.');
 await editor.getByRole('button',{name:'Add approved answer',exact:false}).click();
 await editor.getByRole('button',{name:'Remove answer 2',exact:true}).click();
-await editor.getByText('Review added context',{exact:true}).click();
+await editor.getByText('Review complete brief',{exact:true}).click();
 assert.match(await editor.locator('pre').innerText(),/Is ad spend included/);
 await page.getByRole('button',{name:'Save new version',exact:true}).click();
 await page.getByRole('status').filter({hasText:'New version saved.'}).waitFor();
-assert.equal(saved.length,1);assert.equal(saved[0].brief.context.answers.length,1);
+assert.equal(saved.length,1);assert.equal(saved[0].brief.briefVersion,2);assert.equal(saved[0].brief.context.business,'');assert.equal(saved[0].brief.context.leadSource,'');assert.equal(saved[0].brief.context.answers.length,1);
 await page.getByRole('button',{name:'Use for browser test',exact:true}).click();
 await page.getByText('This brief is selected for your next browser test.',{exact:true}).waitFor();
 await editor.getByRole('textbox',{name:'Approved answer',exact:true}).fill('Draft edit that is not selected yet.');
@@ -54,5 +59,13 @@ await editor.getByRole('tab',{name:'Questions & objections',exact:false}).click(
 assert.match(await editor.getByRole('textbox',{name:'Approved answer',exact:true}).inputValue(),/Advertising spend has not been confirmed/);
 await editor.scrollIntoViewIfNeeded();await page.screenshot({path:out+`/context-${width}.png`,fullPage:true});
 assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
+const oldBrief={...saved[0].brief,title:'Legacy fixture',agentRole:'Original representation.',prospectProfile:'Original prospect.',objective:'Original goal.',ticket:'Original price.',context:{...saved[0].brief.context,business:'Existing business detail.',leadSource:'Existing lead source.',nextStep:'Existing next step.',boundaries:'Existing commercial limit.'}};delete oldBrief.briefVersion;
+saved.push({id:id(88),title:oldBrief.title,conversationType:oldBrief.conversationType,createdAt:now,brief:oldBrief});
+await page.reload();await page.getByRole('tab',{name:'Conversation Lab',exact:true}).click();await page.getByRole('button').filter({hasText:'Legacy fixture'}).click();
+assert.equal(await editor.getByLabel('Business & representation',{exact:true}).inputValue(),'Original representation.\n\nExisting business detail.');
+assert.equal(await editor.getByLabel('Pricing & terms',{exact:true}).inputValue(),'Original price.\n\nExisting commercial limit.');
+await editor.getByRole('tab',{name:'Lead context',exact:false}).click();assert.equal(await editor.getByLabel('Prospect & lead origin',{exact:true}).inputValue(),'Original prospect.\n\nExisting lead source.');
+await editor.getByRole('tab',{name:'Conversation goal',exact:false}).click();assert.equal(await editor.getByLabel('Goal & next step',{exact:true}).inputValue(),'Original goal.\n\nExisting next step.');
+await page.getByRole('button',{name:'Save new version',exact:true}).click();await page.getByRole('status').filter({hasText:'New version saved.'}).waitFor();assert.equal(saved[0].brief.briefVersion,2);assert.equal(saved[0].brief.context.business,'');assert.equal(saved[0].brief.context.boundaries,'');assert.equal(starts,0);
 checks.push(`${width}px: structured context, incomplete answer blocks save, add/remove, preview, save, browser draft isolation, Make a Call refresh without reload, saved context survives reload; zero calls; no overflow`);await context.close();}
-assert.deepEqual(errors,[]);writeFileSync(out+'/browser.json',JSON.stringify({checks,errors,realCalls:0},null,2));console.log(checks.join('\n'));}catch(e){console.log('Page errors',errors);console.log(await debugPage.locator('section[aria-label="Agent context"]').ariaSnapshot());console.log((await debugPage.locator('body').innerText()).slice(0,3500));await debugPage.screenshot({path:out+'/failure.png',fullPage:true});throw e;}finally{await browser.close();}
+assert.deepEqual(errors,[]);writeFileSync(out+'/browser.json',JSON.stringify({checks,errors,realCalls:0},null,2));console.log(checks.join('\n'));}catch(e){console.log('Page errors',errors);console.log(await debugPage.locator('section[aria-label="Agent brief"]').ariaSnapshot());console.log((await debugPage.locator('body').innerText()).slice(0,3500));await debugPage.screenshot({path:out+'/failure.png',fullPage:true});throw e;}finally{await browser.close();}
