@@ -23,6 +23,21 @@ if (mode === '--deploy' && deploymentId) {
   process.exit(1);
 }
 
+// A deployment from an older lane can silently remove already-shipped features.
+// Dirty files are allowed for the shared release workspace; missing main commits are not.
+if (mode === '--deploy') {
+  const fetched = spawnSync('git', ['fetch', '--quiet', 'origin', 'main'], { encoding: 'utf8' });
+  if (fetched.status !== 0) {
+    console.error('Cannot verify the latest main branch. Deployment stopped before changing production.');
+    process.exit(1);
+  }
+  const containsMain = spawnSync('git', ['merge-base', '--is-ancestor', 'FETCH_HEAD', 'HEAD']);
+  if (containsMain.status !== 0) {
+    console.error('This checkout is missing commits already on main. Integrate origin/main while preserving local work, validate the combined app, then deploy again.');
+    process.exit(1);
+  }
+}
+
 // The CLI reads VERCEL_TOKEN from its environment. Keeping it out of argv and
 // setting both project-link variables keeps the local project link complete.
 const env = { ...process.env, VERCEL_TOKEN: token, VERCEL_ORG_ID: teamId, VERCEL_PROJECT_ID: projectId };
