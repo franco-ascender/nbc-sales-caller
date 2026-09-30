@@ -134,3 +134,11 @@ L02 local, 2026-09-16: operaciones de planes y research Lead Engine exigen opera
 
 ### GET /api/admin/costs (2026-09-26)
 Admin-only, private/no-store, read-only breakdown of saved telephone-trial and lead-list operations. Returns per-operation/provider reported micro-USD, rate-based verification estimates, missing cost components, approved/reserved amounts, qualification counts and provider response timing when measured. Does not initiate provider work. Existing member/browser and workspace-provider totals overlap and must not be added to this report. Up to 10,000 rows per source, with explicit `truncated` flag. Not an invoice or universal account reconciliation endpoint.
+
+## Caller booking — 2026-09-30
+
+Admin/owner-scoped: `GET/PUT/PATCH /api/caller/booking/config` (redacted settings/history, validate+save GHL configuration, pause); `POST /api/caller/booking/options` (read-only location/calendar/pipeline discovery, write-only credential input); `POST /api/caller/booking/:id/refresh` (reconcile saved booking/message receipts and resume only unclaimed post-booking actions).
+
+Provider: `POST /api/caller/booking/tools` requires a Retell HMAC over bounded raw body, fresh timestamp and exact saved ongoing call identity plus pre-dispatch booking permission. Actions: `nbc_available_slots`, `nbc_book_meeting`, `nbc_booking_status`. No unsigned/browser booking route. `GET /api/caller/booking/:id/invite` requires an expiring HMAC URL and emits an ICS attachment for a confirmed saved booking.
+
+`POST /api/caller/phone-test` adds optional boolean `booking`. True requires a saved scenario, enabled owner connection and pinned booking agent. GHL message charges are approved separately in the existing call confirmation, outside the voice maximum. Existing request IDs cannot change booking intent.

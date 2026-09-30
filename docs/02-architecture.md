@@ -169,3 +169,7 @@ Vercel actual confirmado L01-r9:234 archivos manifest coinciden con fuente local
 ## Actualización L02 / I10
 
 L02 local, 2026-09-16: src/services/lead-engine-auth.ts centraliza el guard interno para ambos adaptadores Lead Engine; reutiliza requireOperator y consulta membresía antes del store. Auth común de otros módulos permanece intacto. T1 excluye artifacts históricos del typecheck, conservando src/tests.
+
+## Caller booking (2026-09-30)
+
+Booking configuration UI lives inside Caller Advanced tools. Caller phone request → atomic booking slot/snapshot → isolated Retell agent tools → signed server handler → GHL availability/appointment → durable per-action CRM/notification work. Credentials, vendor adapter, orchestration and pure validators/ICS/tool manifest are separate modules. Tracker credentials remain independent while that lane is being rewritten. Details: features/caller-booking.md. Missing connection keeps existing voice tests functional.

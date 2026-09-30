@@ -1,3 +1,5 @@
+import { getBookingConnection, getBookingCall } from './caller-booking-store';
+import { bookingInstructions } from '@/lib/caller-booking';
 import {operationCosts} from '@/lib/operation-costs';
 import {leadListCosts} from '@/lib/lead-list-costs';
 import 'server-only';
@@ -125,7 +127,9 @@ export async function startPilot(owner:string,key:string):Promise<PilotView> {
       const s=phoneSettings(round,slot);
       if(s.phoneEngine==='retell'&&s.retell){
         provider={engine:'retell',agentId:s.retell.agentId,phase:'dispatching'};o=await observe(owner,o,'dispatching',provider,{phoneEngine:'retell'});
-        const callId=await dispatchRetell(s.retell,s.destination,key,slot.config.archiveEnabled?phoneScenario(slot.config.scenarioBrief):undefined);provider={...provider,callId,phase:'dispatched'};
+        const scenario=slot.config.archiveEnabled?phoneScenario(slot.config.scenarioBrief):undefined;
+        const binding=await getBookingCall(key);if(binding&&scenario)scenario.prompt+='\n\n'+bookingInstructions;
+        const callId=await dispatchRetell(s.retell,s.destination,key,scenario);provider={...provider,callId,phase:'dispatched'};
         await observe(owner,o,'running',provider,{phoneEngine:'retell',message:'Your phone test is connecting.'});return pilotView(owner);
       }
       provider={agentId:s.agentId,phase:'registering'};o=await observe(owner,o,'dispatching',provider,{});
@@ -217,8 +221,10 @@ export async function pilotFeedback(owner:string,key:string,feedback:string):Pro
   await observe(owner,o,o.state,o.provider,{...o.result,feedback});return pilotView(owner);
 }
 
-export async function startDialerTrial(owner:string,requestId:string,destination:string,approvedMaxCents?:number,scenarioId?:string):Promise<PilotView>{
-  const {data:key,error}=await database().rpc('nbc_portal_phone_scenario_slot',{p_owner:owner,p_request:requestId,p_destination:destination,p_max_cents:approvedMaxCents??null,p_scenario_id:scenarioId??null,p_retell:scenarioPhoneConfig});
+export async function startDialerTrial(owner:string,requestId:string,destination:string,approvedMaxCents?:number,scenarioId?:string,booking=false):Promise<PilotView>{
+  const connection=booking?await getBookingConnection(owner):null;
+  if(booking&&(!connection?.config.enabled||!connection.retell_config))return fail('Configure and enable NBC booking before this call.',409);
+  const {data:key,error}=await database().rpc('nbc_portal_phone_booking_slot',{p_booking:booking,p_owner:owner,p_request:requestId,p_destination:destination,p_max_cents:approvedMaxCents??null,p_scenario_id:scenarioId??null,p_retell:booking?connection!.retell_config:scenarioPhoneConfig});
   if(error)return rpcError(error.message);
   return startPilot(owner,key as string);
 }

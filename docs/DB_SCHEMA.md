@@ -183,3 +183,14 @@ Migration `202609260300_lead_cycles.sql` applied: service-only `nbc_lead_cycles`
 
 ### Verification price snapshots (2026-09-26)
 Migration `202609261000_verification_rate_snapshot.sql`: nullable `rate_microusd`, `rate_source`, `rate_confirmed_at` on `nbc_pilot_phone_checks`. Before-insert trigger captures a valid confirmed exact account rate within the held reserve. Future changes to account pricing do not rewrite historical checks. Old rows remain unknown without historical evidence; snapshots yield estimates, not provider invoices. Existing service-only table access and RLS retained.
+
+## Caller booking — migration 202609300500
+
+Applied 2026-09-30; rollback checks verified. Four server-only RLS tables, no anon/authenticated privileges. `service_role` accesses only after route owner/signature validation.
+
+- `caller_booking_connections`: owner_id UUID PK/FK auth.users cascade, config JSONB, token_ciphertext TEXT (AES-GCM + owner AAD), verified_at/updated_at timestamps default now, nullable retell_config JSONB. One connection per owner; no direct browser secrets.
+- `caller_booking_calls`: operation_key TEXT PK, owner_id UUID FK auth.users cascade, config JSONB, token_ciphertext TEXT, phone TEXT E164 check, created_at timestamp. Indexed owner. Immutable permissions/credential/recipient snapshot before phone dispatch.
+- `caller_bookings`: id UUID PK default gen_random_uuid, operation_key TEXT unique FK binding, owner_id UUID FK auth.users cascade, request JSONB, state TEXT constrained booking/booked/unavailable/uncertain, nullable contact_id/appointment_id TEXT, receipt JSONB default {}, created_at/updated_at timestamp. Owner+created_at descending index.
+- `caller_booking_steps`: (booking_id UUID FK caller_bookings cascade, kind TEXT tags/opportunity/email/sms) composite PK, state constrained pending/running/accepted/delivered/skipped/failed/uncertain, nullable provider_id/reason TEXT and cost_microusd nonnegative BIGINT, updated_at timestamp. NULL cost means unknown, not zero. Atomic pending→running claims and unique action key prevent duplicate side effects.
+
+`nbc_portal_phone_booking_slot(uuid,uuid,text,integer,uuid,jsonb,boolean)` wraps existing owner lock/budget/scenario RPC and atomically creates a booking permission snapshot. Only service_role execute; existing request IDs cannot change booking mode. No automatic retry of ambiguous external writes. No new triggers; services update timestamps explicitly.

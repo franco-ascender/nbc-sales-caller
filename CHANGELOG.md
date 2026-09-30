@@ -355,3 +355,9 @@ Se comprobó la existencia de los archivos previstos, los enlaces relativos de d
 - User-started automatic discovery, filtering, available registry research, phone verification and delivery; pause/resume and refresh recovery.
 - Animated status, real elapsed clock, stage-based progress, approximate ETA and persisted activity history; reduced-motion support.
 - Missing verification pricing and ambiguous paid responses pause visibly. Shared USD25 allowance and Outscraper suspension unchanged. Engineering validation uses fixtures only.
+
+## [2026-09-30] - NBC caller booking infrastructure
+
+ADDED: Admin GHL booking setup, live availability/booking tool contract, encrypted owner connections, atomic call permission snapshots, durable reservations and separate tag/pipeline/email/SMS states; signed calendar attachments and direct GHL notifications with pending costs. Make a Call explicitly opts into real booking. Existing caller and browser practice remain available. New Retell agent preparation is gated on a verified NBC connection; no real calls/messages/appointments executed.
+
+Validation: 499 automated checks, build, browser fixtures and database rollback checks. Activation requires NBC GHL credentials, calendar/pipeline and working senders. Request: integrate GHL booking, email/text invitations, lead tags and backend movement; user confirmed NBC and direct sending.

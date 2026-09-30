@@ -80,3 +80,7 @@ Verificaciones de OR02 usan fixtures para casos de roles/carreras; GET Vercel/p�
 ## Actualización L02 / I10
 
 L02 local, 2026-09-16: cerrado L-AUTH mediante membresía admin/active además del operador interno, sin fallback bootstrap para research. Doce operaciones cubiertas con transporte controlado, sin acceso a negocio/proveedores tras denegación. No amplía roles ni modifica políticas SQL. No publicado.
+
+## Caller booking (2026-09-30)
+
+GHL tokens are encrypted using CALLER_BOOKING_ENCRYPTION_KEY (32 random bytes base64), AES-256-GCM and owner ID as AAD; never returned in APIs. Booking tools verify raw Retell signatures, timestamp and persisted exact phone/agent/version/call identity; browser practice is excluded. Call booking permissions are snapshotted atomically before dispatch. Public ICS delivery uses expiring purpose-bound HMAC links, no-store and no-referrer; treat the signed URL as a bearer secret. No automatic replay of ambiguous appointments or message sends. Tables have RLS and no direct client grants. Connection setup/enable is admin-only and GHL account/calendar/stage are verified by read-only APIs. Message DND and recipient equality checked again immediately before dispatch.

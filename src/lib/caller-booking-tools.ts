@@ -1,0 +1,9 @@
+export function bookingTools(origin:string){
+ const u=new URL(origin);if(u.protocol!=='https:'||u.username||u.password||u.pathname!=='/'||u.search||u.hash)throw new Error('Use the public HTTPS portal origin.');
+ const tool=(name:string,description:string,properties:Record<string,unknown>,required:string[])=>({type:'custom',name,description,url:u.origin+'/api/caller/booking/tools',method:'POST',timeout_ms:60000,max_retry:0,speak_during_execution:true,speak_after_execution:true,parameters:{type:'object',properties,required,additionalProperties:false}});
+ return [
+  tool('nbc_available_slots','Check real meeting availability. Ask the recipient timezone first; search up to seven days.',{startTime:{type:'string',description:'ISO 8601 start, with timezone offset'},endTime:{type:'string',description:'ISO 8601 end, with timezone offset'},timezone:{type:'string',description:'Recipient IANA timezone, e.g. America/New_York'}},['startTime','endTime','timezone']),
+  tool('nbc_book_meeting','Reserve the chosen available time only after the recipient confirms the date/time/timezone and spelled email. One booking per call; unknown results must be checked, never repeated.',{timezone:{type:'string',description:'The recipient IANA timezone already confirmed when choosing the slot'},startTime:{type:'string',description:'Exact startTime returned by nbc_available_slots'},name:{type:'string'},email:{type:'string'},confirmed:{type:'boolean',description:'True only after explicit agreement to the meeting'},smsConsent:{type:'boolean',description:'True only if recipient asked for or agreed to the SMS confirmation'}},['timezone','startTime','name','email','confirmed','smsConsent']),
+  tool('nbc_booking_status','Check the existing booking and separate invitation statuses. Never claim a message was delivered when only accepted for sending.',{},[])
+ ];
+}

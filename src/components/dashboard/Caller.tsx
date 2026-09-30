@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { Conversation } from "@elevenlabs/client";
 import { useWorkspaceAccess } from "@/components/workspace/WorkspaceAccess";
-import { BarChart3, Phone, Users, MessageSquareText, SlidersHorizontal, AudioLines, Check, Clock3, Download, Loader2, LockKeyhole, Mic, MicOff, PhoneOff, RefreshCw, Search, MapPinned } from "lucide-react";
+import { CalendarDays, BarChart3, Phone, Users, MessageSquareText, SlidersHorizontal, AudioLines, Check, Clock3, Download, Loader2, LockKeyhole, Mic, MicOff, PhoneOff, RefreshCw, Search, MapPinned } from "lucide-react";
 import type { CallSession, ReconcilePage, SessionPage } from "@/lib/caller-types";
 import { canExportSession, exportSessionTranscript, filterSessions, formatCallTime, mergeSessionHistory, retainFinalResult, sessionInsights } from "@/lib/caller-insights";
 import type { SessionFilter } from "@/lib/caller-insights";
@@ -28,6 +28,7 @@ import { beginRecovery, finishRecovery } from '@/lib/caller-recovery';
 import type { RecoveryLock } from '@/lib/caller-recovery';
 import ops from './CallerOperations.module.css';
 import type { CallerLead } from "@/lib/caller-crm";
+import { CallerBooking } from "./CallerBooking";
 import { CallerKnowledgeLab } from "./CallerKnowledgeLab";
 import type { ConversationScenario } from "@/lib/caller-knowledge";
 
@@ -260,9 +261,9 @@ export function Caller(): ReactNode {
   const visibleSessions = filterSessions(sessions, query, statusFilter);
 
   const primaryTabs = [{ id: "dialer", label: "Make a Call", icon: Phone }, { id: "voice", label: "Conversation Lab", icon: AudioLines }, { id: "crm", label: "Contacts", icon: Users }, { id: "archive", label: "Archive", icon: MessageSquareText }, { id: "analytics", label: "Analytics", icon: BarChart3 }];
-  const advancedTabs = [{ id: "insights", label: "Insights", icon: MessageSquareText }, ...(access.user?.role === "admin" ? [{ id: "coverage", label: "Local numbers", icon: MapPinned }, { id: "voices", label: "Voice settings", icon: SlidersHorizontal }] : [])];
+  const advancedTabs = [{ id: "insights", label: "Insights", icon: MessageSquareText }, ...(access.user?.role === "admin" ? [{ id: "booking", label: "Booking", icon: CalendarDays }, { id: "coverage", label: "Local numbers", icon: MapPinned }, { id: "voices", label: "Voice settings", icon: SlidersHorizontal }] : [])];
   const tabs = [...primaryTabs, ...(advanced ? advancedTabs : [])];
-  useEffect(()=>{const followHash=()=>{const hash=window.location.hash.slice(1);const value=hash==='ai-caller'?'voice':hash;if(['dialer','voice','crm','archive','insights','analytics','coverage','voices'].includes(value)){if(['coverage','voices'].includes(value)&&access.user?.role!=='admin')return;setTab(value);if(['insights','coverage','voices'].includes(value))setAdvanced(true);if(value==='voices')setStudioOpened(true);}};followHash();window.addEventListener("hashchange",followHash);return()=>window.removeEventListener("hashchange",followHash);},[access.user?.role]);
+  useEffect(()=>{const followHash=()=>{const hash=window.location.hash.slice(1);const value=hash==='ai-caller'?'voice':hash;if(['dialer','voice','crm','archive','insights','analytics','coverage','voices','booking'].includes(value)){if(['coverage','voices','booking'].includes(value)&&access.user?.role!=='admin')return;setTab(value);if(['insights','coverage','voices','booking','booking'].includes(value))setAdvanced(true);if(value==='voices')setStudioOpened(true);}};followHash();window.addEventListener("hashchange",followHash);return()=>window.removeEventListener("hashchange",followHash);},[access.user?.role]);
   function chooseTab(value: string): void { setTab(value); window.history.replaceState(null,"",window.location.pathname+window.location.search+'#'+(value==="voice"?"ai-caller":value)); if (value === "voices") setStudioOpened(true); }
   return <div className={styles.workspace}>
     <header className={sales.workspaceHead}><div><span className={sales.callerEyebrow}>CONVERSATIONS THAT MOVE BUSINESS</span><h1>AI Caller</h1><p>Make a call, refine your conversation, and review what happened.</p></div></header>
@@ -275,6 +276,7 @@ export function Caller(): ReactNode {
     {tab === "dialer" && <section role="tabpanel" id="caller-panel-dialer" aria-labelledby="caller-tab-dialer"><CallerDialer key={dialLead?.id || "manual"} store={leads} pipeline={pipeline} initialLead={dialLead} /></section>}
     {tab === "insights" && <section role="tabpanel" id="caller-panel-insights" aria-labelledby="caller-tab-insights"><CallerReasons sessions={sessions} inspect={id => { const result = sessions.find(session => session.id === id); if (result) inspectResult(result); }} /></section>}
     {access.user?.role === "admin" && <section role="tabpanel" id="caller-panel-coverage" aria-labelledby="caller-tab-coverage" hidden={tab !== "coverage"}><CallerCityCoverage active={tab === "coverage"} token={access.token} /></section>}
+    {tab === "booking" && access.user?.role === "admin" && !demo && <section role="tabpanel" id="caller-panel-booking" aria-labelledby="caller-tab-booking"><CallerBooking token={access.token} /></section>}
     {studioOpened && access.user?.role === "admin" && <section role="tabpanel" id="caller-panel-voices" aria-labelledby="caller-tab-voices" hidden={tab !== "voices"}><CallerVoices active={tab === "voices"} /></section>}
     <section role="tabpanel" id="caller-panel-voice" aria-labelledby="caller-tab-voice" hidden={tab !== "voice"}>
 
