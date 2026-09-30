@@ -58,6 +58,6 @@ Do not reuse the current global GHL environment credential across clients. Selec
 
 Inputs still needed from Anas: examples of real Slack channels/threads and task assignments; roles/visibility; exact weekly questions; systems used by clients; metric definitions; priorities for NBC internal operations. No new navigation tabs are required merely to collect this context.
 
-## Current collaboration issue
+## Collaboration issue and resolution
 
-The Caller test round is currently scoped to a single `owner_id`. Changing that field to enable a different teammate removes the previous user's access even though application roles remain admin. On investigation, the live round was assigned to another collaborator while historical recording assets remained owned by Franco. Resolve the intended sharing policy before changing ownership or adding permissions; do not erase or take over the collaborator's newer operations. This demonstrates why team access should be explicit membership rather than owner reassignment.
+The Caller test round is currently scoped to a single `owner_id`. Changing that field to enable a different teammate removes the previous user's access even though application roles remain admin. On investigation, the live round was assigned to another collaborator while historical recording assets remained owned by Franco. The user explicitly confirmed that this round must be accessible only from Franco's account. Its owner was restored to that active account, preserving all 13 operations and the existing recording assets. No other account permissions or call operations were changed. Future shared team access must use explicit membership rather than owner reassignment.
