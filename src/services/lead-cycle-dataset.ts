@@ -2,7 +2,7 @@ import {apifyId,discoveryError} from '../lib/lead-engine-discovery.ts';
 export async function readSearchPage(token:string,dataset:string,offset:number,maximum:number,request:typeof fetch=fetch){
  if(!apifyId(dataset)||!Number.isInteger(maximum)||maximum<1||maximum>5000||!Number.isInteger(offset)||offset<0||offset>maximum)throw discoveryError();
  const limit=Math.min(200,maximum-offset);
- const fields='title,city,state,countryCode,phone,phoneUnformatted,url,website,categoryName,categories,permanentlyClosed,temporarilyClosed,placeId';
+ const fields='title,city,state,countryCode,phone,phoneUnformatted,url,website,emails,categoryName,categories,permanentlyClosed,temporarilyClosed,placeId';
  const r=await request(`https://api.apify.com/v2/datasets/${dataset}/items?${new URLSearchParams({format:'json',offset:String(offset),limit:String(limit),clean:'false',fields})}`,{headers:{Authorization:'Bearer '+token},cache:'no-store',redirect:'error',signal:AbortSignal.timeout(15000)});
  if(!r.ok||!r.body)throw discoveryError();
  const reader=r.body.getReader(),parts:Uint8Array[]=[];let size=0;

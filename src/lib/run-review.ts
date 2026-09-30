@@ -14,7 +14,7 @@ export function phoneDecision(v: LeadVerification | null | undefined): { label: 
   if (!v) return { label: 'Not checked', accepted: false };
   const checkedAt = Date.parse(v.verifiedAt ?? '');
   if (!Number.isFinite(checkedAt) || checkedAt > Date.now() || Date.now() - checkedAt >= 31 * 86400000) return { label: 'Fresh verification required · held', accepted: false };
-  if (v.lineType === null) return { label: 'Provider could not identify line type', accepted: false };
+  if (!v.lineType?.trim()) return { label: 'Provider could not identify line type', accepted: false };
   if (v.lineType.toLowerCase() !== 'mobile') return { label: `${v.lineType} · not a mobile`, accepted: false };
   if (v.dnc === true) return { label: 'Do Not Call match · excluded', accepted: false };
   if (v.tcpa === true) return { label: 'TCPA risk signal · excluded', accepted: false };
@@ -68,12 +68,12 @@ export function qualifiedRows(result: PilotResult): PilotRow[] {
 export function runEvidenceRows(result: PilotResult, qualifiedOnly = false) {
   const rows = qualifiedOnly ? qualifiedRows(result) : result.rows ?? [];
   return [
-    ['Business','City','State','Published phone','Website','Discovery decision','Phone decision','Line type','DNC','TCPA','Reachable','Verified at','Owner identity','Registry person','Registry role','Registry phone (not verified)','Registry evidence','Registry basis','Listing source'],
+    ['Business','City','State','Published phone','Website','Discovery decision','Phone decision','Line type','DNC','TCPA','Reachable','Verified at','Owner identity','Registry person','Registry role','Registry phone (not verified)','Registry evidence','Registry basis','Listing source','Business emails','Email status','Email source'],
     ...rows.map(row => {
       const check = result.phoneChecks?.find(c => c.phone10 === row.phone10);
       const v = check?.verification;
       const evidence = result.ownerEvidence?.find(e => e.business === row.name && e.phone10 === row.phone10);
-      return [row.name,row.city,row.state,row.phone10,row.website,excludeBeforeVerification(row) ?? 'Eligible',check?.state === 'completed' ? phoneDecision(v).label : check?.state ?? 'Not checked',v?.lineType,v?.dnc,v?.tcpa,v?.reachable,v?.verifiedAt,'Not established',evidence?.person,evidence?.role,evidence?.registryPhone,evidence?.source,evidence?.basis,row.sourceUrl];
+      return [row.name,row.city,row.state,row.phone10,row.website,excludeBeforeVerification(row) ?? 'Eligible',check?.state === 'completed' ? phoneDecision(v).label : check?.state ?? 'Not checked',v?.lineType,v?.dnc,v?.tcpa,v?.reachable,v?.verifiedAt,'Not established',evidence?.person,evidence?.role,evidence?.registryPhone,evidence?.source,evidence?.basis,row.sourceUrl,row.emails?.join('; '),(row.emails?.length??0)>0?'Published on business website · not deliverability verified':'No saved email',row.emails?.length?row.website:null];
     }),
   ];
 }

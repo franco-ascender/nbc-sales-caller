@@ -5,13 +5,13 @@ import type {PilotSlotView} from './live-pilot.ts';
 export type CyclePhase='discover'|'filter'|'research'|'verify'|'deliver'|'done';
 export type CycleStatus='running'|'paused'|'waiting_rate'|'needs_attention'|'completed';
 export interface LeadCycle {key:string;name:string;industry:string;city:string;state:string;count:number;status:CycleStatus;phase:CyclePhase;message:string|null;started_at:string;phase_started_at:string;finished_at:string|null;events:Array<{phase:CyclePhase;at:string;message:string|null}>}
-export interface CycleInput {quoteToken?:string;approvedMaxCents?:number;requestId:string;name:string;industry:string;city:string;state:string;count:number}
+export interface CycleInput {includeEmails?:boolean;quoteToken?:string;approvedMaxCents?:number;requestId:string;name:string;industry:string;city:string;state:string;count:number}
 export const cycleKey=/^list-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export function parseCycleInput(value:unknown):CycleInput {
  if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Enter the list details.');
  const b=value as Record<string,unknown>;
- if(Object.keys(b).some(k=>!['action','requestId','name','industry','city','state','count','confirmed','approvedMaxCents','quoteToken'].includes(k))||b.action!=='create'||b.confirmed!==true||typeof b.requestId!=='string'||!uuid.test(b.requestId))throw Error('Confirm the displayed reservation before starting.');
+ if(Object.keys(b).some(k=>!['action','requestId','name','industry','city','state','count','confirmed','approvedMaxCents','quoteToken','includeEmails'].includes(k))||b.action!=='create'||b.confirmed!==true||typeof b.requestId!=='string'||!uuid.test(b.requestId))throw Error('Confirm the displayed reservation before starting.');
  if(typeof b.name!=='string'||b.name.trim().length<2||b.name.length>80||/[\x00-\x1f]/.test(b.name))throw Error('Use a list name of 2–80 characters.');
  if(typeof b.industry!=='string'||!cycleNiche(b.industry))throw Error('Choose an available industry.');
  const city=typeof b.city==='string'?b.city.trim():b.city==null?'':null;
@@ -21,7 +21,8 @@ export function parseCycleInput(value:unknown):CycleInput {
  if(typeof b.count!=='number'||!Number.isInteger(b.count)||b.count<5||b.count>5000)throw Error('Choose 5–5,000 businesses.');
  if(b.approvedMaxCents!==undefined&&(!Number.isSafeInteger(b.approvedMaxCents)||Number(b.approvedMaxCents)<1||Number(b.approvedMaxCents)>100000))throw Error('Review the current maximum list cost.');
  if(b.quoteToken!==undefined&&(typeof b.quoteToken!=='string'||b.quoteToken.length>10000))throw Error('Review the current cost estimate.');
- return {...(typeof b.quoteToken==='string'?{quoteToken:b.quoteToken}:{}),...(b.approvedMaxCents!==undefined?{approvedMaxCents:b.approvedMaxCents as number}:{}),requestId:b.requestId.toLowerCase(),name:b.name.trim(),industry:b.industry,city,state,count:b.count};
+ if(b.includeEmails!==undefined&&typeof b.includeEmails!=='boolean')throw Error('Choose whether to include business emails.');
+ return {...(b.includeEmails!==undefined?{includeEmails:b.includeEmails as boolean}:{}),...(typeof b.quoteToken==='string'?{quoteToken:b.quoteToken}:{}),...(b.approvedMaxCents!==undefined?{approvedMaxCents:b.approvedMaxCents as number}:{}),requestId:b.requestId.toLowerCase(),name:b.name.trim(),industry:b.industry,city,state,count:b.count};
 }
 export function cycleCounts(slot: PilotSlotView|undefined) {
  const rows=slot?.result.rows??[], checks=slot?.result.phoneChecks??[];

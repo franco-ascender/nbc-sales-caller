@@ -4,7 +4,7 @@ export type DiscoveryStatus = 'prepared' | 'dispatching' | 'running' | 'succeede
 export interface DiscoveryJob {
   batchId: string; planId: string; operatorId: string;
   actorId: string; build: string; searchTerm: string; location: string;
-  maxResults: number; maxCostCents: number; status: DiscoveryStatus;
+  includeEmails?: boolean; maxResults: number; maxCostCents: number; status: DiscoveryStatus;
   runId: string | null; datasetId: string | null;
 }
 export interface DiscoveryObservation { runId: string; datasetId: string; actorId: string; build: string; status: 'running' | 'succeeded' | 'failed' }
@@ -28,6 +28,7 @@ export function assertDiscoveryJob(job: DiscoveryJob, operator: string, batch: s
   if (job.operatorId !== operator || job.batchId !== batch || !leadUuid(job.planId)
     || !apifyId(job.actorId) || !/^\d{1,8}\.\d{1,8}\.\d{1,8}$/.test(job.build)
     || [job.searchTerm, job.location].some(value => typeof value !== 'string' || !value.trim() || value.length > 150 || /[\u0000-\u001f\u007f]/.test(value))
+    || (job.includeEmails!==undefined && typeof job.includeEmails!=='boolean')
     || !Number.isSafeInteger(job.maxResults) || job.maxResults < 1 || job.maxResults > 5000
     || !Number.isSafeInteger(job.maxCostCents) || job.maxCostCents < 1 || job.maxCostCents > 100000
     || !['prepared','dispatching','running','succeeded','failed','uncertain'].includes(job.status)

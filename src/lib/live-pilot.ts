@@ -1,6 +1,6 @@
 export const PILOT_ROUND = '2026-09-25-first-live-tests';
 export type PilotState = 'dispatching'|'running'|'uncertain'|'completed'|'failed'|'stopped';
-export interface PilotRow { name: string; city: string; state: string; website: string|null; sourceUrl: string|null; phone10: string|null; rejection: string|null; duplicate: boolean; chain: string|null }
+export interface PilotRow { emails?: string[]; name: string; city: string; state: string; website: string|null; sourceUrl: string|null; phone10: string|null; rejection: string|null; duplicate: boolean; chain: string|null }
 export interface PilotPhoneCheck { phone10: string; state: 'dispatching'|'completed'|'uncertain'; verification: import('./lead-engine-quality').LeadVerification|null }
 export interface PilotResult {
   datasetCursor?:number; datasetTotal?:number; datasetComplete?:boolean; phoneEngine?:string; callStatus?:string; retellCostMicrousd?:number|null; retellComponents?:Array<{product:string;costMicrousd:number|null}>;
@@ -12,6 +12,7 @@ export interface PilotResult {
   costNote?: string; costComplete?: boolean; feedback?: string;
 }
 export interface PilotSlotView {
+  emailsRequested?: boolean;
   key: string; businessCount?:number; verifiedMobileCount?:number; folderId?:string|null; canControl?:boolean; kind: 'phone'|'scrape'; title: string; allocationCents: number; reserveCents: number;
   scenarioTitle?:string; industry?: string; destinationLast4?: string; createdAt?: string; updatedAt?: string; count: number|null; state: PilotState|'ready'; reportedMicrousd: number|null; result: PilotResult;
 }

@@ -36,7 +36,8 @@ export function createApifyDiscoveryProvider(token: string, request: typeof fetc
       const query = new URLSearchParams({ build: job.build, maxTotalChargeUsd: (job.maxCostCents / 100).toFixed(2), restartOnError: 'false', memory: '4096', waitForFinish: '0' });
       return call(`acts/${job.actorId}/runs?${query}`, job, {
         searchStringsArray: [job.searchTerm], locationQuery: job.location, maxCrawledPlacesPerSearch: job.maxResults,
-        language: 'en', scrapeContacts: false, maxReviews: 0, scrapeReviewsPersonalData: false, maxImages: 0,
+        language: 'en', scrapeContacts: job.includeEmails === true, maxReviews: 0, scrapeReviewsPersonalData: false, maxImages: 0,
+        maximumLeadsEnrichmentRecords: 0, verifyLeadsEnrichmentEmails: false,
       });
     },
     async poll(job) {

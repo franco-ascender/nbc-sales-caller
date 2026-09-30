@@ -29,7 +29,7 @@ export async function createLeadCycle(owner:string,input:CycleInput):Promise<Lea
  try{assertCycleExecutable(input.count);}catch(e){throw new IntegrationError(409,e instanceof Error?e.message:'Testing limit exceeded.');}
  const current=await leadCycleView(owner);
  const existing=current.runs.find(r=>r.key==='list-'+input.requestId);
- if(existing){if(['name','industry','city','state','count'].some(k=>existing[k as keyof LeadCycle]!==input[k as keyof CycleInput]))throw new IntegrationError(409,'This request belongs to different list details.');return current;}
+ if(existing){if((current.pilot.slots.find(s=>s.key===existing.key)?.emailsRequested===true)!==(input.includeEmails===true))throw new IntegrationError(409,'This request belongs to different contact options.');if(['name','industry','city','state','count'].some(k=>existing[k as keyof LeadCycle]!==input[k as keyof CycleInput]))throw new IntegrationError(409,'This request belongs to different list details.');return current;}
  const quote=verifySearchQuote(owner,input);
  const {requestId,quoteToken,...details}=input;
  Object.assign(details,{quote:{...quote,token:undefined,discoveryReserveCents:quote.discoveryCapCents+quote.dataAllowanceCents}});

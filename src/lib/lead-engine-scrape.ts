@@ -1,3 +1,4 @@
+import {publishedBusinessEmails} from './lead-business-emails.ts';
 import type { LeadConfidence } from './lead-engine-confidence.ts';
 import { LeadEngineError, leadRecord, leadUuid } from './lead-engine-storage.ts';
 import { matchesPhrase, normalizeWords } from './lead-engine-plan.ts';
@@ -12,7 +13,7 @@ export interface LeadList { id: string; name: string; folderId: string | null; p
 export interface LeadListRecord { position: number; name: string; city: string; state: string; website: string | null; sourceUrl: string | null; reviewStatus: string; confidence?: LeadConfidence }
 export interface LeadListPage { list: LeadList; records: LeadListRecord[]; nextOffset: number | null }
 export interface ScrapeInput { quoteId: string; planId: string; folderId: string | null; name: string; count: number }
-export interface DiscoveryCandidate { name: string; city: string; state: string; website: string | null; sourceUrl: string | null; phone10: string | null; placeId: string | null; businessKey: string; rejection: string | null; fitTier: FitTier | null; franchise: string | null; timeZone: string | null }
+export interface DiscoveryCandidate { emails?: string[]; name: string; city: string; state: string; website: string | null; sourceUrl: string | null; phone10: string | null; placeId: string | null; businessKey: string; rejection: string | null; fitTier: FitTier | null; franchise: string | null; timeZone: string | null }
 export function scrapeInvalid(): never { throw new LeadEngineError(400,'invalid_input','Check the request fields, name and business count (1–300).'); }
 export function exactScrapeBody(body: unknown, keys: string[]): Record<string,unknown> {
   if (!leadRecord(body) || Object.keys(body).some(key=>!keys.includes(key))) scrapeInvalid(); return body;
@@ -47,7 +48,7 @@ export function parseDiscoveryCandidate(value: unknown, plan: LeadPlanInput, sco
   const row=leadRecord(value)?value:{};
   const str=(v:unknown,max:number)=>typeof v==='string'?v.replace(/[\u0000-\u001f\u007f]/g,'').trim().slice(0,max):'';
   const name=str(row.title,200),city=str(row.city,150),rawState=str(row.state,100),state=codes.has(rawState)?rawState:stateNames.get(normalizeWords(rawState))??'';
-  const phone10=normalizeBusinessPhone(row.phoneUnformatted??row.phone),sourceUrl=safeBusinessUrl(row.url,true);
+  const phone10=normalizeBusinessPhone(row.phoneUnformatted)??normalizeBusinessPhone(row.phone),sourceUrl=safeBusinessUrl(row.url,true);
   const text=[name,str(row.categoryName,150),...(Array.isArray(row.categories)?row.categories.filter(v=>typeof v==='string').slice(0,30):[])].join(' ');
   const fitTier=classifyRelevance(text,plan.industry);
   let rejection:string|null=null;
@@ -58,7 +59,7 @@ export function parseDiscoveryCandidate(value: unknown, plan: LeadPlanInput, sco
   else if(/^(800|888|877|866|855|844|833)/.test(phone10)) rejection='toll_free';
   else if(fitTier===null) rejection='no_positive_relevance';
   else if(plan.exclusions.some(term=>matchesPhrase(`${text} ${city} ${state}`,term))) rejection='operator_exclusion';
-  return {name,city,state,website:safeBusinessUrl(row.website),sourceUrl,phone10,placeId:str(row.placeId,200)||null,
+  return {...(Array.isArray(row.emails)?{emails:publishedBusinessEmails(row.emails)}:{}),name,city,state,website:safeBusinessUrl(row.website),sourceUrl,phone10,placeId:str(row.placeId,200)||null,
     businessKey:[name,city,state].map(normalizeWords).join('|'),rejection,fitTier,
     franchise:franchiseBrand(name),timeZone:resolveTimeZone({state,city,phone10})};
 }

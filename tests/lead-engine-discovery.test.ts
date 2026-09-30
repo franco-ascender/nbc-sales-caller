@@ -89,7 +89,7 @@ test('Apify transport fixes cap, build, source input and disabled add-ons; secre
   assert.equal(options.redirect,'error'); assert.equal(options.cache,'no-store'); assert.ok(options.signal);
   assert.equal((options.headers as Record<string,string>).Authorization,'Bearer synthetic-private-token');
   assert.deepEqual(JSON.parse(String(options.body)),{searchStringsArray:['Roofing'],locationQuery:'Charlotte, NC',maxCrawledPlacesPerSearch:50,
-    language:'en',scrapeContacts:false,maxReviews:0,scrapeReviewsPersonalData:false,maxImages:0});
+    language:'en',scrapeContacts:false,maxReviews:0,scrapeReviewsPersonalData:false,maxImages:0,maximumLeadsEnrichmentRecords:0,verifyLeadsEnrichmentEmails:false});
   assert.deepEqual(started,observation); assert.equal(JSON.stringify(started).includes('private'),false);
   await provider.poll({...job,status:'running',runId:started.runId,datasetId:started.datasetId});
   assert.equal(calls[1].options.method,'GET'); assert.equal(calls[1].url.pathname,`/v2/actor-runs/${started.runId}`);
