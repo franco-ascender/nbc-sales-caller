@@ -43,3 +43,5 @@ Token, NBC calendar, pipeline/stage and authorized GHL email/SMS sender remain r
 - https://marketplace.gohighlevel.com/docs/ghl/opportunities/search-opportunity/
 - https://marketplace.gohighlevel.com/docs/ghl/conversations/send-a-new-message/
 - https://docs.retellai.com/build/single-multi-prompt/custom-function
+
+Deployment check: `.vercelignore` now anchors `/config` at repository root, keeping the server configuration directory excluded without omitting the new `/api/caller/booking/config` route. Uploaded source digests are checked before alias promotion.

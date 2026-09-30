@@ -10,7 +10,7 @@ docs
 tests
 scripts/*
 !scripts/prepare-voice-audio.mjs
-config
+/config
 *.md
 .windsurfrules
 .cursorrules
