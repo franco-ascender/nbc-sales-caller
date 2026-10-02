@@ -32,7 +32,8 @@ export function PlatformShell({ children }: PlatformShellProps): ReactNode {
   const navRef = useRef<HTMLElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   useEffect(() => { if (menuOpen) navRef.current?.querySelector<HTMLAnchorElement>("a")?.focus(); }, [menuOpen]);
-  const current = navigation.find(item => item.href === pathname)?.title ?? (pathname === "/settings" ? "Settings" : pathname === "/support" ? "Support" : pathname === "/credits" ? "NBC Credits" : "NBC Sales");
+  const visibleNavigation = access.user?.role === "admin" ? [...navigation, { href: "/onboarding", title: "Client onboarding", icon: Layers3 }] : navigation;
+  const current = visibleNavigation.find(item => item.href === pathname)?.title ?? (pathname === "/settings" ? "Settings" : pathname === "/support" ? "Support" : pathname === "/credits" ? "NBC Credits" : "NBC Sales");
   return <div className={`${styles.shell} ${styles.platformTheme} ${collapsed ? styles.sidebarCollapsed : ""}`}>
     <a href="#workspace-content" className={styles.skipLink}>Skip to content</a>
     <aside className={`${styles.sidebar} ${menuOpen ? styles.sidebarOpen : ""}`}>
@@ -40,7 +41,7 @@ export function PlatformShell({ children }: PlatformShellProps): ReactNode {
       <div className={styles.workspaceIdentity}><span className={styles.workspaceIcon}><Layers3 size={18} /></span><div><strong>NBC Sales</strong><small>Your sales workspace</small></div></div>
       <p className={styles.navLabel}>YOUR WORKSPACE</p>
       <nav ref={navRef} id="platform-navigation" aria-label="Platform navigation" className={styles.nav} onKeyDown={event => { if (event.key === "Escape") { setMenuOpen(false); toggleRef.current?.focus(); } }}>
-        {navigation.map(({ href, title, icon: Icon }) => <Link key={href} href={href} onClick={() => setMenuOpen(false)} aria-current={pathname === href ? "page" : undefined} className={`${styles.navLink} ${pathname === href ? styles.navActive : ""}`}><Icon size={18} /><span>{title}</span>{pathname === href && <ChevronRight size={15} />}</Link>)}
+        {visibleNavigation.map(({ href, title, icon: Icon }) => <Link key={href} href={href} onClick={() => setMenuOpen(false)} aria-current={pathname === href ? "page" : undefined} className={`${styles.navLink} ${pathname === href ? styles.navActive : ""}`}><Icon size={18} /><span>{title}</span>{pathname === href && <ChevronRight size={15} />}</Link>)}
       </nav>
       <div className={styles.sidebarBottom}><div className={styles.brandNote}><span className={styles.gold}>NEVER BE CLOSING.</span><p>Your systems.<br />Your knowledge.<br />One place to grow.</p></div><div className={styles.workspaceFooter}><div className={styles.profileLink}><span className={styles.profileAvatar} data-tone={profile?.avatarTone||'blue'}>{(profile?.name||access.user?.name||'N').split(' ').map(n=>n[0]).slice(0,2).join('')}</span><span><strong>{profile?.name||access.user?.name||'NBC member'}</strong><small>Your workspace</small></span></div></div></div>
     </aside>
