@@ -23,3 +23,9 @@ Task name = client/company name; Client Email = ebef69b4-0e31-4b97-9dbc-3ed4a154
 No sales-call summaries, GHL close trigger, invitations, calendar sharing or questionnaire migration implemented in this slice. These remain subsequent connections. Operational state always distinguishes draft, starting, queued in ClickUp, existing task, uncertain, and needs review; it never labels overall onboarding complete.
 
 Validation completed: provider/API fixtures passed; real schema and example task read-only checks passed; database unique-email, atomic-claim and role-grant assertions passed inside rollback; desktop/mobile browser fixtures passed (1440/390), including review confirmation and reload without re-dispatch. No live ClickUp task or Slack message created.
+
+## Publication receipt
+
+Published 2026-10-02 at https://nbc-sales-nbc-sales.vercel.app/onboarding, deployment `dpl_BwQHQjW7sHu3NxfLSFqLfqc2Qjxk`. The release combined this branch's source commit `6947d10` with the then-current production deployment `dpl_Egago6PuBwweALmcJYqCAnBrVa7s`. Source hashes outside this feature were preserved, including the newer tasks, tracker and scraper work. Do not redeploy bare main as a replacement for this combined release.
+
+Both additive onboarding migrations were applied; the ClickUp key is encrypted in the production environment. Canonical URL verification passed with the actual NBC login and read-only ClickUp connection: anonymous API returns 401, authenticated page loads at desktop/mobile sizes without overflow or JavaScript errors. No real onboarding was started. The feature branch is `feature/client-onboarding-20261002`; its source remains separate from main pending the coordinated merge.
