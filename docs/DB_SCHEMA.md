@@ -198,3 +198,7 @@ Applied 2026-09-30; rollback checks verified. Four server-only RLS tables, no an
 ## Client onboarding transport and receipts — 2026-10-02
 
 Additive migration `202610022020_onboarding_automation.sql` extends `nbc_client_onboardings`: nullable `transport` (`clickup`/`zapier`, pinned on start), `automation_claimed_at`, `slack_channel_id`, `welcome_message_ts`. Started legacy rows backfill to ClickUp. New states `automation_pending` and `slack_ready` require Zapier transport; ready requires execution claim and channel/message receipt. Existing revision-checked updates arbitrate concurrent start/claim/callback. RLS and service-role-only grants remain unchanged. A Slack receipt does not complete the entire onboarding. No secret/token is stored in rows.
+
+## GHL onboarding capture — 2026-10-02
+
+`nbc_onboarding_ghl_receipts` stores location/pipeline/stage/opportunity/contact IDs, normalized intake, validation issues and capture time. Unique `(location_id, opportunity_id)` with insert-on-conflict-do-nothing preserves the first receipt. RLS enabled; only service_role select/insert; no public/authenticated grants. Contains no full webhook payload, tokens or unneeded contact custom fields. It is separate from operational client onboarding records and never indicates Slack completion. Migration: `202610022030_onboarding_ghl_capture.sql`.

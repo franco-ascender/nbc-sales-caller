@@ -369,3 +369,7 @@ Se comprobó la existencia de los archivos previstos, los enlaces relativos de d
 ADDED: Admin GHL booking setup, live availability/booking tool contract, encrypted owner connections, atomic call permission snapshots, durable reservations and separate tag/pipeline/email/SMS states; signed calendar attachments and direct GHL notifications with pending costs. Make a Call explicitly opts into real booking. Existing caller and browser practice remain available. New Retell agent preparation is gated on a verified NBC connection; no real calls/messages/appointments executed.
 
 Validation: 499 automated checks, build, browser fixtures and database rollback checks. Activation requires NBC GHL credentials, calendar/pipeline and working senders. Request: integrate GHL booking, email/text invitations, lead tags and backend movement; user confirmed NBC and direct sending.
+
+### 2026-10-02 — GHL onboarding capture
+
+Added an authenticated capture-only receiver for NBC Sales / Closed Won, dedicated read-only GHL credentials, API verification of opportunity/contact identity, deduplicated capture receipts and an admin read endpoint. No automatic onboarding dispatch or Slack actions are enabled by this release.
