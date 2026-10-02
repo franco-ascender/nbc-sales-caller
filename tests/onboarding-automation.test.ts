@@ -42,6 +42,7 @@ test('direct dispatch and callbacks: one transport, one claim, receipts, races, 
  try{
   for(const bad of ['http://hooks.zapier.com/hooks/catch/123/x/','https://hooks.zapier.com.evil.test/hooks/catch/123/x/','https://hooks.zapier.com/hooks/catch/123/x/?token=secret','https://user:pass@hooks.zapier.com/hooks/catch/123/x/','https://127.0.0.1/']){process.env.ONBOARDING_ZAPIER_WEBHOOK_URL=bad;assert.throws(zapierConfiguration);}
   process.env.ONBOARDING_ZAPIER_WEBHOOK_URL='https://hooks.zapier.com/hooks/catch/12345/fixture/';
+  const badName=await saveOnboarding(actor,{id:randomUUID(),intake:{...base,company:'A & B'}});await assert.rejects(()=>start(badName),/unaccented/);assert.equal(records.get(badName.id)?.state,'draft');assert.equal(hooks,0);
   const first=await draft();assert.equal((await callback(first.id,{action:'claim'})).status,409);
   await assert.rejects(()=>startOnboarding(actor,first.id,{confirmed:true,revision:1}),/connection changed/);assert.equal(hooks,0);
   const both=await Promise.allSettled([start(first),start(first)]);assert.equal(hooks,1);assert.ok(both.some(r=>r.status==='fulfilled'&&r.value.state==='automation_pending'));assert.equal(clickupWrites,0);

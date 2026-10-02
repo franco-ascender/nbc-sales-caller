@@ -15,6 +15,8 @@ This replaces only the ClickUp task trigger. Keep the original published Zap unt
    - Send Channel Message: same created channel; preserve the existing welcome text and questionnaire link. Use the new trigger's name/email fields wherever needed.
 6. After the welcome-message action succeeds, add another Custom Request with the same callback URL and headers. Data: `{"action":"complete","channel_id":"<created channel ID>","message_ts":"<welcome message ts>"}`. Insert mapped values, not the angle-bracket placeholders. Stop on failure.
 
+Direct setup validates Slack's channel-name character rules before dispatch; edit unsupported company names in the draft. It does not silently normalize punctuation into colliding names.
+
 The client invitation stays manual with Elias. The callback must be after **all** required Slack actions; otherwise the portal could report completion too early. It confirms what Zapier reports, not an independent Slack audit. The welcome video still precedes completion of the client's questionnaire.
 
 ## Trigger contract
@@ -40,3 +42,5 @@ During transition both routes check the existing ClickUp queue read-only to avoi
 
 - https://help.zapier.com/hc/en-us/articles/8496215655437-Zap-is-not-receiving-webhooks
 - https://help.zapier.com/hc/en-us/articles/8496326446989-Send-webhooks-in-Zap-workflows
+
+- https://docs.slack.dev/reference/methods/conversations.create/

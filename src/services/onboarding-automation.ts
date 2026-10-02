@@ -1,6 +1,6 @@
 import 'server-only';
 import {createHmac,timingSafeEqual} from 'node:crypto';
-import {OnboardingError,channelName,validId,type IntakeRecord,type OnboardingTransport} from '../lib/client-onboarding.ts';
+import {OnboardingError,channelName,validId,type Intake,type IntakeRecord,type OnboardingTransport} from '../lib/client-onboarding.ts';
 import {loadOnboarding,updateOnboarding} from './onboarding-store';
 const ORIGIN='https://nbc-sales-nbc-sales.vercel.app';
 export function configuredTransport():OnboardingTransport {
@@ -19,6 +19,9 @@ export function zapierConfiguration():{url:string} {
  try{url=new URL(process.env.ONBOARDING_ZAPIER_WEBHOOK_URL??'');}catch{throw new OnboardingError(503,'The direct automation connection is not configured.');}
  if(url.protocol!=='https:'||url.hostname!=='hooks.zapier.com'||url.port||url.username||url.password||url.search||url.hash||!/^\/hooks\/catch\/[0-9]+\/[A-Za-z0-9_-]+\/$/.test(url.pathname))throw new OnboardingError(503,'The automation URL must be a Zapier Catch Hook.');
  callbackKey();return {url:url.toString()};
+}
+export function validateAutomationIntake(intake:Intake):void {
+ if(!/^[a-z0-9_-]{1,80}$/.test(channelName(intake.company)))throw new OnboardingError(400,'For direct Slack setup, use a client/company name with unaccented letters, numbers, spaces, hyphens or underscores. Edit the draft before starting.');
 }
 export function automationPayload(row:IntakeRecord){return {
  schema_version:1,event:'nbc.onboarding.started',event_id:row.id,program:'ELITE',

@@ -4,7 +4,7 @@ import {requireWorkspaceUser} from './workspace-auth';
 import {OnboardingError,parseIntake,validId,revision,type IntakeRecord} from '../lib/client-onboarding.ts';
 import {ClickUpOnboarding,fieldsMatch} from './onboarding-clickup';
 import {ONBOARDING_TABLE as TABLE,ONBOARDING_SELECT as SELECT,checked,loadOnboarding,updateOnboarding as update} from './onboarding-store';
-import {configuredTransport,zapierConfiguration,dispatchAutomation} from './onboarding-automation';
+import {configuredTransport,zapierConfiguration,dispatchAutomation,validateAutomationIntake} from './onboarding-automation';
 export {loadOnboarding} from './onboarding-store';
 export async function onboardingAdmin(request:Request){const user=await requireWorkspaceUser(request);if(user.role!=='admin')throw new OnboardingError(403,'Only NBC administrators can manage client onboarding.');return user;}
 export async function listOnboardings(){return checked(await database().from(TABLE).select(SELECT).order('created_at',{ascending:false}).limit(100)) as IntakeRecord[];}
@@ -26,7 +26,7 @@ export async function startOnboarding(actor:string,id:string,body:any,client=new
  if(revision(body.revision)!==row.revision)throw new OnboardingError(409,'Review the latest saved draft before starting.');
  const transport=configuredTransport();
  if((body.transport&&body.transport!==transport)||(transport==='zapier'&&body.transport!=='zapier'))throw new OnboardingError(409,'The onboarding connection changed. Reload and review before starting.');
- if(transport==='zapier')zapierConfiguration();
+ if(transport==='zapier'){zapierConfiguration();validateAutomationIntake(row.intake);}
  await client.verify();
  const previous=await client.existing(row.intake);
  if(previous)return update(row,actor,{state:'existing',transport:'clickup',task_id:previous.id,issue:'An existing ClickUp entry was found. No new task or automation was requested.'});
