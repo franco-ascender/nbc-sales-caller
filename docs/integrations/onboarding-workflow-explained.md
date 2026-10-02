@@ -2,7 +2,7 @@
 
 **Goal:** Anas moves the lead to **Closed Won** in the **NBC Sales** pipeline in GHL, as he does today. NBC imports the available client details and starts Slack setup automatically. No second form or extra start button is required in the normal flow.
 
-**Status — October 2, 2026:** The eight-step Slack Zap is configured as a draft. The GHL-to-NBC automatic trigger still needs to be implemented and validated. The current portal implementation requires a manual start; that is a fallback, not the intended everyday process. End-to-end validation is pending.
+**Status — October 2, 2026:** The eight-step Slack Zap is configured as a draft. The GHL receiver is published in capture-only mode for validation; automatic dispatch from GHL still needs to be implemented and validated. The current portal implementation requires a manual start; that is a fallback, not the intended everyday process. End-to-end validation is pending.
 
 ## Zap name and eight stages
 
