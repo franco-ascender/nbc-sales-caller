@@ -1,3 +1,11 @@
+## [2026-10-02] - Prepare direct onboarding automation
+
+- **ADDED**: Opt-in NBC → Zapier delivery, event-scoped callback credentials, one-time execution claim, and final Slack receipt.
+- **CHANGED**: Durable onboarding records pin their chosen transport; the UI distinguishes pending automation from reported Slack setup.
+- **SECURITY**: No fallback/resend on ambiguous writes; callback credentials never appear in admin APIs. Existing ClickUp/Zaps remain the default.
+- Files: onboarding services, API routes, component, additive automation migration and fixture tests; setup guide in `docs/integrations/onboarding-zapier.md`.
+- Request: “okay segui con todo lo necesario”. Real Zapier setup and controlled live validation are required before activation.
+
 # Changelog — NBC Voice AI
 
 ## [2026-09-21] — Owner Cell App: Phase 0 completa y Lane A por job detrás del meter

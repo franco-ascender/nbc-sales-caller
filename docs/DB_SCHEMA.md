@@ -194,3 +194,7 @@ Applied 2026-09-30; rollback checks verified. Four server-only RLS tables, no an
 - `caller_booking_steps`: (booking_id UUID FK caller_bookings cascade, kind TEXT tags/opportunity/email/sms) composite PK, state constrained pending/running/accepted/delivered/skipped/failed/uncertain, nullable provider_id/reason TEXT and cost_microusd nonnegative BIGINT, updated_at timestamp. NULL cost means unknown, not zero. Atomic pending→running claims and unique action key prevent duplicate side effects.
 
 `nbc_portal_phone_booking_slot(uuid,uuid,text,integer,uuid,jsonb,boolean)` wraps existing owner lock/budget/scenario RPC and atomically creates a booking permission snapshot. Only service_role execute; existing request IDs cannot change booking mode. No automatic retry of ambiguous external writes. No new triggers; services update timestamps explicitly.
+
+## Client onboarding transport and receipts — 2026-10-02
+
+Additive migration `202610022020_onboarding_automation.sql` extends `nbc_client_onboardings`: nullable `transport` (`clickup`/`zapier`, pinned on start), `automation_claimed_at`, `slack_channel_id`, `welcome_message_ts`. Started legacy rows backfill to ClickUp. New states `automation_pending` and `slack_ready` require Zapier transport; ready requires execution claim and channel/message receipt. Existing revision-checked updates arbitrate concurrent start/claim/callback. RLS and service-role-only grants remain unchanged. A Slack receipt does not complete the entire onboarding. No secret/token is stored in rows.

@@ -5,8 +5,9 @@ export class OnboardingError extends Error {
 export interface Intake {
   company: string; name: string; email: string; partnerName: string; partnerEmail: string; recording: string; transcript: string;
 }
-export type IntakeState = 'draft'|'starting'|'queued'|'existing'|'uncertain'|'needs_review';
-export interface IntakeRecord { id: string; intake: Intake; state: IntakeState; revision: number; task_id: string|null; issue: string|null; created_at: string; updated_at: string }
+export type OnboardingTransport = 'clickup'|'zapier';
+export type IntakeState = 'draft'|'starting'|'queued'|'existing'|'uncertain'|'needs_review'|'automation_pending'|'slack_ready';
+export interface IntakeRecord { id: string; intake: Intake; state: IntakeState; revision: number; task_id: string|null; issue: string|null; created_at: string; updated_at: string; transport: OnboardingTransport|null; automation_claimed_at: string|null; slack_channel_id: string|null; welcome_message_ts: string|null }
 export const emptyIntake = (): Intake => ({company:'',name:'',email:'',partnerName:'',partnerEmail:'',recording:'',transcript:''});
 export const LIST_ID = '901417783941';
 export const SPACE_ID = '90145865057';

@@ -142,3 +142,9 @@ Admin/owner-scoped: `GET/PUT/PATCH /api/caller/booking/config` (redacted setting
 Provider: `POST /api/caller/booking/tools` requires a Retell HMAC over bounded raw body, fresh timestamp and exact saved ongoing call identity plus pre-dispatch booking permission. Actions: `nbc_available_slots`, `nbc_book_meeting`, `nbc_booking_status`. No unsigned/browser booking route. `GET /api/caller/booking/:id/invite` requires an expiring HMAC URL and emits an ICS attachment for a confirmed saved booking.
 
 `POST /api/caller/phone-test` adds optional boolean `booking`. True requires a saved scenario, enabled owner connection and pinned booking agent. GHL message charges are approved separately in the existing call confirmation, outside the voice maximum. Existing request IDs cannot change booking intent.
+
+## Internal client onboarding — 2026-10-02
+
+`GET/POST /api/onboarding`, `GET/POST /api/onboarding/[id]`: active admin bearer authentication; server-only records. Save is draft-only. Start requires `confirmed:true`, current `revision`, and the reviewed `transport` (`clickup` or `zapier`; direct mode requires explicit match). Configuration defaults to ClickUp. The atomic claim pins the transport; failures never fall back or automatically resend. GET includes active transport and connection readiness, but no hook URL or callback token.
+
+`POST /api/onboarding/automation/[id]`: event-scoped HMAC bearer credential; bounded JSON. `{"action":"claim"}` returns `{run:true}` once, then `{run:false}`. Zapier must filter on this before any side effect. `{"action":"complete","channel_id":"C…","message_ts":"…"}` stores the final Slack receipt only after a claim. Matching repeats are idempotent; conflicting receipts return409. Responses contain no intake data. Details and cutover requirements: `docs/integrations/onboarding-zapier.md`.
