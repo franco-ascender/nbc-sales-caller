@@ -6,7 +6,7 @@ import {ClickUpOnboarding,fieldsMatch} from './onboarding-clickup';
 const TABLE='nbc_client_onboardings';
 const SELECT='id,intake,state,revision,task_id,issue,created_at,updated_at';
 export async function onboardingAdmin(request:Request){const user=await requireWorkspaceUser(request);if(user.role!=='admin')throw new OnboardingError(403,'Only NBC administrators can manage client onboarding.');return user;}
-function checked<T>(r:{data:T;error:any}):T{if(r.error){if(r.error.code==='23505')throw new OnboardingError(409,'An onboarding entry already exists for this email. Open it from Recent onboarding.');throw new OnboardingError(503,'The onboarding record could not be saved or loaded. Refresh before continuing.');}return r.data;}
+function checked<T>(r:{data:T;error:any}):T{if(r.error){if(r.error.code==='23505')throw new OnboardingError(409,'An onboarding entry already exists for this email or channel name. Open it from Recent onboarding.');throw new OnboardingError(503,'The onboarding record could not be saved or loaded. Refresh before continuing.');}return r.data;}
 export async function listOnboardings(){return checked(await database().from(TABLE).select(SELECT).order('created_at',{ascending:false}).limit(100)) as IntakeRecord[];}
 export async function loadOnboarding(id:string):Promise<IntakeRecord>{const row=checked(await database().from(TABLE).select(SELECT).eq('id',validId(id)).maybeSingle());if(!row)throw new OnboardingError(404,'Onboarding not found.');return row as IntakeRecord;}
 export async function saveOnboarding(actor:string,body:any):Promise<IntakeRecord>{
